@@ -1,0 +1,65 @@
+[tool.poetry]
+name = "emma"
+version = "0.1.0"
+description = "Emma is an agent designed to help you interact with Infrahub."
+authors = ["OpsMill <info@opsmill.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+streamlit = "^1.36.0"
+infrahub-sdk = {version = "^0.11.1", extras = ["all"]}
+watchdog = "^4.0.1"
+
+[tool.poetry.group.dev.dependencies]
+ruff = "^0.4.8"
+mypy = "^1.10.0"
+yamllint = "^1.35.1"
+
+
+[tool.coverage.run]
+branch = true
+
+[tool.coverage.report]
+exclude_lines = ["if TYPE_CHECKING:", "raise NotImplementedError()"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+filterwarnings = ["ignore:pkg_resources is deprecated"]
+addopts = "-vs"
+
+
+[tool.mypy]
+pretty = true
+ignore_missing_imports = true
+
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.lint]
+select = [
+    "C90",   # mccabe
+    "ASYNC", # flake8-async
+    "DTZ",   # flake8-datetimez
+    "E",     # style errors
+    "F",     # flakes
+    "I",     # isort
+    "ICN",   # flake8-import-conventions
+    "TCH",   # flake8-type-checking
+    "T10",   # flake8-debugger
+    "PL",    # pylint
+    "Q",     # flake8-quotes
+    "W",     # pycodestyle
+    "YTT",   # flake8-2020
+]
+
+
+[tool.ruff.lint.mccabe]
+max-complexity = 15
+
+[tool.ruff.lint.per-file-ignores]
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
