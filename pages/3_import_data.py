@@ -71,9 +71,8 @@ if uploaded_file is not None:
         if st.button("Import Data"):
             nbr_errors = 0
             with st.status("Loading data...", expanded=True) as status:
-                clean_df = edited_df.drop(edited_df.columns[0], axis=1)
 
-                for index, row in clean_df.iterrows():
+                for index, row in edited_df.iterrows():
                     node = client.create(kind=option, **dict(row), branch=st.session_state["infrahub_branch"])
                     node.save(allow_upsert=True)
                     edited_df.at[index, "Status"] = "ONGOING"
