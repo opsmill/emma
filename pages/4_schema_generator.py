@@ -15,13 +15,10 @@ if not os.environ.get("OPENAI_API_KEY"):
     st.error("You must provide a valid OpenAI API Key to use this application : OPENAI_API_KEY")
 
 else:
-    st.error("DEMO INSTANCE")
-    st.warning("Currently not connected to a GPT that has been trained to generate Infrahub Schema ")
-
-    agent = OpenAIAssistantV2Runnable(assistant_id="asst_FWLhN6yGRh5UvuD52ajckMXK", as_agent=True)
+    agent = OpenAIAssistantV2Runnable(assistant_id="asst_qgYySlyquR4WcJp294IR5f2L", as_agent=True)
 
     if "openai_model" not in st.session_state:
-        st.session_state["openai_model"] = "gpt-3.5-turbo"
+        st.session_state["openai_model"] = "gpt-4o"
 
     if "messages" not in st.session_state:
         st.session_state.messages = []
