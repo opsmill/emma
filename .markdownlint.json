@@ -6,6 +6,7 @@
     "MD013": {
         "line_length": 99999
     },
+    "MD024": false,
     "MD025": false,
     "MD026": {
         "punctuation": ".,;:。，；："

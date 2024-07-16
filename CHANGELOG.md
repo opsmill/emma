@@ -13,15 +13,13 @@ This project uses [*towncrier*](https://towncrier.readthedocs.io/) and the chang
 
 ## [0.2.0](https://github.com/opsmill/emma/tree/0.2.0) - 2024-07-16
 
-
 ### Added
 
-- Added the tool [`towncrier`](https://towncrier.readthedocs.io/) to manage changelog creation. 
+- Added the tool [`towncrier`](https://towncrier.readthedocs.io/) to manage changelog creation.
 
   See the `CONTRIBUTING.md` file for more information and usage instructions. ([#4](https://github.com/opsmill/emma/issues/4))
 
 ## [0.1.0](https://github.com/opsmill/emma/tre/0.1.0) - 2024-07-07
-
 
 ### Added
 
