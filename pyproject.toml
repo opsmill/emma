@@ -69,7 +69,7 @@ max-complexity = 15
 
 [tool.towncrier]
 package = "emma"
-directory = "changelog.d"
+directory = "emma/changelog.d"
 filename = "CHANGELOG.md"
 start_string = "<!-- towncrier release notes start -->\n"
 underlines = ["", "", ""]
