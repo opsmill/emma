@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "emma"
-version = "0.1.0"
+version = "0.2.0"
 description = "Emma is an agent designed to help you interact with Infrahub."
 authors = ["OpsMill <info@opsmill.com>"]
 readme = "README.md"
@@ -65,6 +65,47 @@ select = [
 max-complexity = 15
 
 [tool.ruff.lint.per-file-ignores]
+
+
+[tool.towncrier]
+package = "emma"
+directory = "changelog.d"
+filename = "CHANGELOG.md"
+start_string = "<!-- towncrier release notes start -->\n"
+underlines = ["", "", ""]
+title_format = "## [{version}](https://github.com/opsmill/emma/tree/{version}) - {project_date}"
+issue_format = "[#{issue}](https://github.com/opsmill/emma/issues/{issue})"
+
+[[tool.towncrier.type]]
+directory = "security"
+name = "Security"
+showcontent = true
+
+[[tool.towncrier.type]]
+directory = "removed"
+name = "Removed"
+showcontent = true
+
+[[tool.towncrier.type]]
+directory = "deprecated"
+name = "Deprecated"
+showcontent = true
+
+[[tool.towncrier.type]]
+directory = "added"
+name = "Added"
+showcontent = true
+
+[[tool.towncrier.type]]
+directory = "changed"
+name = "Changed"
+showcontent = true
+
+[[tool.towncrier.type]]
+directory = "fixed"
+name = "Fixed"
+showcontent = true
+
 
 [build-system]
 requires = ["poetry-core"]
