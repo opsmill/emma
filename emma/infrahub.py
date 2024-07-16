@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Any
 import pandas as pd
 import streamlit as st
 from httpx import HTTPError
-from infrahub_sdk import InfrahubClientSync, InfrahubNodeSync
+from infrahub_sdk import InfrahubClientSync, InfrahubNodeSync, InfrahubSchema
 from infrahub_sdk.exceptions import (
     AuthenticationError,
     GraphQLError,
@@ -35,13 +35,16 @@ def get_schema(branch: str | None = None):
     client = get_client(branch=branch)
     return client.schema.all(branch=branch)
 
+def load_schema(branch: str, schemas: list[dict] | None = None):
+    client = get_client(branch=branch)
+    return client.InfrahubSchema.load(schemas, branch)
 
 def get_branches():
     client = get_client()
     return client.branch.all()
 
 
-def check_reacheability(client: InfrahubClientSync) -> bool:
+def check_reachability(client: InfrahubClientSync) -> bool:
     try:
         get_version(client=client)
         st.session_state["infrahub_status"] = InfrahubStatus.OK
