@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Any
 import pandas as pd
 import streamlit as st
 from httpx import HTTPError
-from infrahub_sdk import InfrahubClientSync, InfrahubNodeSync, InfrahubSchema
+from infrahub_sdk import InfrahubClientSync, InfrahubNodeSync
 from infrahub_sdk.exceptions import (
     AuthenticationError,
     GraphQLError,
