@@ -1,114 +1,122 @@
-import json
-import os
-from enum import Enum
-
-import requests
 import streamlit as st
 import yaml
-from pydantic import BaseModel
 
-from emma.infrahub import add_branch_selector, get_client, get_schema, load_schema
+from emma.infrahub import add_branch_selector, add_infrahub_address, load_schema
 
+# Initialization
+if "is_smth_uploaded" not in st.session_state:
+    st.session_state["is_smth_uploaded"] = False
+if "is_schema_applied" not in st.session_state:
+    st.session_state["is_schema_applied"] = False
+
+
+def click_apply_schema():
+    st.session_state["is_schema_applied"] = True
+
+
+def preview_upload_files():
+    st.session_state["is_smth_uploaded"] = True
+
+
+# Page layout
+# TODO: Add icon to that page page_icon=":material/upload_file:"
+st.markdown("# Schema Importer")
 st.set_page_config(page_title="Schema Importer")
-
+add_infrahub_address(st.sidebar)
 add_branch_selector(st.sidebar)
 
-st.markdown("# Schema Importer")
+uploaded_files = st.file_uploader(
+    "Uploader",
+    label_visibility="hidden",
+    accept_multiple_files=True,
+    type=["yaml", "yml"],
+    help="If you need help building your schema, feel free to reach out to Opsmill team!",
+    on_change=preview_upload_files,
+)
 
-client = get_client(branch=st.session_state["infrahub_branch"])
-schema = get_schema(branch=st.session_state["infrahub_branch"])
+preview_container = st.container(border=False)
 
-# option = st.selectbox("Select schema to import:", options=schema.keys())
-# selected_schema = schema[option]
+apply_button = st.button(
+    label="🚀 Apply to Infrahub",
+    type="primary",
+    # help="You first need to upload valid YAML files...", #TODO: Make this dynamic somehow?
+    disabled=not st.session_state.is_smth_uploaded,
+    on_click=click_apply_schema,
+    use_container_width=True,
+)
 
-uploaded_file = st.file_uploader("Choose a schema file")
+result_container = st.container(border=False)
 
+# TODO: Handle reupload and so on ...
+# TODO: Schema validation?
+# TODO: Add session storage and so on
+# TODO: Handle states so if non valid or empty files button remains disabled
+# TODO: Somehow the button is updated before the end of the upload ...
+# If someone uploads something
+if (
+    st.session_state.is_smth_uploaded is True
+    and len(uploaded_files) > 0
+    and st.session_state.is_schema_applied is False
+):
+    # Loop over all uploaded files
+    for uploaded_file in uploaded_files:
+        # Prep a preview expander for each file
+        with preview_container.status("Checking YAML ...") as preview_status:
+            # Check if the provided file contains a valid YAML
+            try:
+                python_dict = yaml.safe_load(uploaded_file.read())
+                preview_status.success("This file is valid!", icon="✅")
+                preview_status.code(
+                    yaml.dump(python_dict), language="yaml", line_numbers=True
+                )
+                preview_status.update(
+                    label=uploaded_file.name, state="complete", expanded=True
+                )
 
-class MessageSeverity(str, Enum):
-    INFO = "info"
-    WARNING = "warning"
-    ERROR = "error"
+            # Something wrong happened
+            except yaml.YAMLError as exc:
+                preview_status.error("This file contains an error!", icon="🚨")
+                preview_status.write(exc)  # TODO: Improve that?
+                preview_status.update(
+                    label=uploaded_file.name, state="error", expanded=True
+                )
 
+# If someone clicks the button
+if apply_button:
+    # Loop over all uploaded files
+    for uploaded_file in uploaded_files:
+        try:
+            with result_container.status("Loading schema ...") as result_status:
+                result_status.update(expanded=True)
 
-class Message(BaseModel):
-    severity: MessageSeverity = MessageSeverity.INFO
-    message: str
+                st.write("Loading YAML files...")
+                python_dict = yaml.safe_load(uploaded_file.read())
 
+                st.write("Calling Infrahub API...")
+                response = load_schema(
+                    branch=st.session_state.infrahub_branch, schemas=[python_dict]
+                )
 
-def validate_yaml(file):
-    error = ""
-    try:
-        yaml.safe_load(file)
-    except yaml.YAMLError as error:
-        return error
-
-
-def strip_yaml_headers(yaml_input):
-    lines = yaml_input.split("\n")
-    stripped_lines = [
-        line for line in lines
-        if not line.startswith("#") and line != "---"
-    ]
-    return "\n".join(stripped_lines)
-
-
-def upload_schema(file):
-    url = st.session_state["infrahub_address"] + "/api/schema/load"
-    api_key = os.environ.get("INFRAHUB_API_TOKEN")
-    headers = {
-        "Content-Type": "application/json",
-        "X-INFRAHUB-KEY": f"{api_key}"
-    }
-
-    response = requests.post(url, headers=headers, data=json.dumps(file))
-
-    response = 
-
-    if response.status_code == 201:
-        return None
-    else:
-        return response.text
-        # print("Failed to upload schema")
-        # print("Status code:", response.status_code)
-        # print("Response:", response.text)
-
-
-if uploaded_file is not None:
-    container = st.container(border=True)
-    file_contents = uploaded_file.read().decode("utf-8")
-    cleaned_yaml = strip_yaml_headers(file_contents)
-    errors = ""
-    try:
-        python_dict=yaml.safe_load(cleaned_yaml)
-    except yaml.YAMLError as errors:
-        container.error(errors.message)
-        # return error
-    # errors = validate_yaml(cleaned_yaml)
-
-    # st.subheader("YAML File Contents:")
-    # st.code(cleaned_yaml, language="yaml")
-
-    # if errors:
-    #     container.error(errors.message)
-
-    json_data = json.dumps(python_dict, indent=2)
-
-    st.subheader("JSON File Contents:")
-    st.code(json_data, language="json")
-
-
-    if json_data:
-        if st.button("Import Schema"):
-            with st.status("Loading schema...", expanded=True) as status:
-
-                upload_error = upload_schema(json_data)
-
-                if upload_error is None:
-                    st.write("Schema loaded successfully!")
-                    # status.update("Schema loading completed", state="complete", expanded=True)
-
+                if response.errors:
+                    result_status.update(
+                        label="Something went wrong", state="error", expanded=True
+                    )
+                    result_status.write(response.errors)
                 else:
-                    container.error(upload_error)
-                    st.write("Schema load error!")
-                    # status.update("Schema load error!", state="error", expanded=True)
+                    result_status.update(
+                        label="🚀 Schema loaded!", state="complete", expanded=True
+                    )
 
+                if response.schema_updated:
+                    result_status.success("Schema loaded successfully!", icon="✅")
+                else:
+                    result_status.success(
+                        "The schema in Infrahub was is already up to date, no changes were required",
+                        icon="✅",
+                    )
+
+        except yaml.YAMLError as exc:
+            result_status.error(
+                f"This file {uploaded_file.name} contains an error!", icon="🚨"
+            )
+            result_status.write(exc)

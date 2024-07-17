@@ -35,9 +35,11 @@ def get_schema(branch: str | None = None):
     client = get_client(branch=branch)
     return client.schema.all(branch=branch)
 
+
 def load_schema(branch: str, schemas: list[dict] | None = None):
     client = get_client(branch=branch)
-    return client.InfrahubSchema.load(schemas, branch)
+    return client.schema.load(schemas, branch)
+
 
 def get_branches():
     client = get_client()
@@ -88,3 +90,9 @@ def add_branch_selector(sidebar: DG):
     if "infrahub_branch" not in st.session_state:
         st.session_state["infrahub_branch"] = "main"
     sidebar.selectbox(label="branch", options=branches.keys(), key="infrahub_branch")
+
+
+def add_infrahub_address(sidebar: DG):
+    if "infrahub_address" not in st.session_state:
+        st.session_state["infrahub_address"] = os.environ.get("INFRAHUB_ADDRESS")
+    sidebar.markdown(f"Infrahub address: :blue-background[{st.session_state["infrahub_address"]}]")
