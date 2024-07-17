@@ -4,7 +4,7 @@ import streamlit as st
 from streamlit.delta_generator import DG
 from streamlit_theme import st_theme
 
-from emma.infrahub import check_reacheability, get_branches, get_client
+from emma.infrahub import check_reachability, get_branches, get_client
 
 
 def get_theme_settings() -> Tuple[str, str]:
@@ -46,13 +46,13 @@ def display_infrahub_address(sidebar: DG):
         disabled=True
     )
 
-def test_reacheability_and_display_sidebar():
+def test_reachability_and_display_sidebar():
     if "infrahub_address" in st.session_state and st.session_state["infrahub_address"]:
         try:
             branch = st.session_state.get("infrahub_branch", "main")
             address = st.session_state.get("infrahub_address")
             client = get_client(address=address, branch=branch)
-            is_reacheable = check_reacheability(client=client)
+            is_reacheable = check_reachability(client=client)
 
             # If reachable, fetch schema data based on the branch
             if is_reacheable:

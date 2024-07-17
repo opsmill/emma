@@ -58,7 +58,7 @@ def get_version(client: InfrahubClientSync) -> str:
     response = client.execute_graphql(query=query, raise_for_error=True)
     return response["InfrahubInfo"]["version"]
 
-def check_reacheability(client: InfrahubClientSync) -> bool:
+def check_reachability(client: InfrahubClientSync) -> bool:
     try:
         get_version(client=client)
         st.session_state["infrahub_status"] = InfrahubStatus.OK

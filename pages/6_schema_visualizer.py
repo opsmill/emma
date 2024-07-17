@@ -7,13 +7,13 @@ from streamlit_flow.elements import StreamlitFlowEdge, StreamlitFlowNode
 from streamlit_flow.layouts import LayeredLayout
 
 from emma.infrahub import (
-    check_reacheability,
+    check_reachability,
     convert_schema_to_dict,
     dict_to_df,
     get_client,
     get_schema,
 )
-from emma.streamlit_helper import display_expander, test_reacheability_and_display_sidebar
+from emma.streamlit_helper import display_expander, test_reachability_and_display_sidebar
 
 
 def visualize_schema_flow(generics: List[GenericSchema], nodes: List[NodeSchema], key: str) -> str:
@@ -148,14 +148,14 @@ def display_node_info(selected_id: str, generics: List[GenericSchema], nodes: Li
     st.set_page_config(page_title="Schema Visualizer", layout="wide")
 
 
-test_reacheability_and_display_sidebar()
+test_reachability_and_display_sidebar()
 
 # Initialize reachable status
 is_reacheable = False
 
 # Check if infrahub_address is set and get the client
 client = get_client(branch=st.session_state.get("infrahub_branch", "main"))
-is_reacheable = check_reacheability(client=client)
+is_reacheable = check_reachability(client=client)
 
 # If reachable, fetch schema data based on the branch
 if is_reacheable:

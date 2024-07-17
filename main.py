@@ -1,7 +1,7 @@
 import streamlit as st
 
 from emma.infrahub import (  # noqa: E402
-    check_reacheability,
+    check_reachability,
     get_client,
     get_instance_address,
     get_version,
@@ -40,7 +40,7 @@ if "infrahub_address" in st.session_state and st.session_state["infrahub_address
         branch = st.session_state.get("infrahub_branch", "main")
         address = st.session_state.get("infrahub_address")
         client = get_client(address=address, branch=branch)
-        is_reacheable = check_reacheability(client=client)
+        is_reacheable = check_reachability(client=client)
 
         # If reachable, fetch schema data based on the branch
         if is_reacheable:

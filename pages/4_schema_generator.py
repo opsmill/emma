@@ -3,11 +3,11 @@ import os
 import streamlit as st
 from langchain_community.agents.openai_assistant import OpenAIAssistantV2Runnable
 
-from emma.streamlit_helper import test_reacheability_and_display_sidebar
+from emma.streamlit_helper import test_reachability_and_display_sidebar
 
 st.set_page_config(page_title="Schema Generator")
 
-test_reacheability_and_display_sidebar()
+test_reachability_and_display_sidebar()
 
 st.markdown("# Schema Generator")
 

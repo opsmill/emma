@@ -8,11 +8,11 @@ from infrahub_sdk.utils import compare_lists
 from pydantic import BaseModel
 
 from emma.infrahub import get_client, get_schema
-from emma.streamlit_helper import test_reacheability_and_display_sidebar
+from emma.streamlit_helper import test_reachability_and_display_sidebar
 
 st.set_page_config(page_title="Import Data")
 
-test_reacheability_and_display_sidebar()
+test_reachability_and_display_sidebar()
 
 st.markdown("# Import Data from CSV file")
 
