@@ -7,11 +7,12 @@ from infrahub_sdk.schema import NodeSchema
 from infrahub_sdk.utils import compare_lists
 from pydantic import BaseModel
 
-from emma.infrahub import add_branch_selector, get_client, get_schema
+from emma.infrahub import get_client, get_schema
+from emma.streamlit_helper import test_reacheability_and_display_sidebar
 
 st.set_page_config(page_title="Import Data")
 
-add_branch_selector(st.sidebar)
+test_reacheability_and_display_sidebar()
 
 st.markdown("# Import Data from CSV file")
 
@@ -71,7 +72,6 @@ if uploaded_file is not None:
         if st.button("Import Data"):
             nbr_errors = 0
             with st.status("Loading data...", expanded=True) as status:
-
                 for index, row in edited_df.iterrows():
                     node = client.create(kind=option, **dict(row), branch=st.session_state["infrahub_branch"])
                     node.save(allow_upsert=True)

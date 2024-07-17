@@ -9,11 +9,11 @@ from infrahub_sdk import InfrahubClientSync, InfrahubNodeSync
 from infrahub_sdk.exceptions import (
     AuthenticationError,
     GraphQLError,
+    JsonDecodeError,
     ServerNotReachableError,
     ServerNotResponsiveError,
 )
 from infrahub_sdk.schema import GenericSchema, NodeSchema
-from streamlit.delta_generator import DG
 
 if TYPE_CHECKING:
     from infrahub_sdk.node import Attribute
@@ -24,40 +24,56 @@ class InfrahubStatus(str, Enum):
     OK = "ok"
     ERROR = "error"
 
+def get_instance_address() -> str:
+    if "infrahub_address" not in st.session_state:
+        st.session_state["infrahub_address"] = os.environ.get("INFRAHUB_ADDRESS", "")
+    return st.session_state["infrahub_address"]
 
 @st.cache_resource
-def get_client(branch: str | None = None) -> InfrahubClientSync:
-    st.session_state["infrahub_address"] = os.environ.get("INFRAHUB_ADDRESS")
-    return InfrahubClientSync(address=st.session_state["infrahub_address"])
+def get_client(address: str | None = None, branch: str | None = None) -> InfrahubClientSync:
+    return InfrahubClientSync(address=address)
 
+def input_infrahub_address():
+    with st.sidebar.form(key="input_address_form"):
+        new_address = st.text_input(
+            label="Enter Infrahub Address",
+            value=st.session_state.get("infrahub_address", "")
+        )
+        submit_address = st.form_submit_button(label="Set Address")
+        if submit_address and new_address:
+            st.session_state["infrahub_address"] = new_address
+            st.rerun()
 
 @st.cache_data
 def get_schema(branch: str | None = None):
     client = get_client(branch=branch)
     return client.schema.all(branch=branch)
 
-
 def get_branches():
     client = get_client()
     return client.branch.all()
-
-
-def check_reacheability(client: InfrahubClientSync) -> bool:
-    try:
-        get_version(client=client)
-        st.session_state["infrahub_status"] = InfrahubStatus.OK
-        return True
-    except (AuthenticationError, GraphQLError, HTTPError, ServerNotReachableError, ServerNotResponsiveError) as exc:
-        st.session_state["infrahub_error_message"] = str(exc)
-        st.session_state["infrahub_status"] = InfrahubStatus.ERROR
-        return False
-
 
 def get_version(client: InfrahubClientSync) -> str:
     query = "query { InfrahubInfo { version }}"
     response = client.execute_graphql(query=query, raise_for_error=True)
     return response["InfrahubInfo"]["version"]
 
+def check_reacheability(client: InfrahubClientSync) -> bool:
+    try:
+        get_version(client=client)
+        st.session_state["infrahub_status"] = InfrahubStatus.OK
+        return True
+    except (
+        AuthenticationError,
+        GraphQLError,
+        HTTPError,
+        JsonDecodeError,
+        ServerNotReachableError,
+        ServerNotResponsiveError
+    ) as exc:
+        st.session_state["infrahub_error_message"] = str(exc)
+        st.session_state["infrahub_status"] = InfrahubStatus.ERROR
+        return False
 
 def get_objects_as_df(kind: str, page=1, page_size=20, include_id: bool = True, branch: str | None = None):
     client = get_client()
@@ -66,7 +82,6 @@ def get_objects_as_df(kind: str, page=1, page_size=20, include_id: bool = True, 
 
     df = pd.DataFrame([convert_node_to_dict(obj, include_id=include_id) for obj in objs])
     return df
-
 
 def convert_node_to_dict(obj: InfrahubNodeSync, include_id: bool = True) -> dict[str, Any]:
     data = {}
@@ -81,8 +96,8 @@ def convert_node_to_dict(obj: InfrahubNodeSync, include_id: bool = True) -> dict
     return data
 
 def convert_schema_to_dict(
-        node: GenericSchema | NodeSchema,
-        )-> dict[str, Any]:
+    node: GenericSchema | NodeSchema,
+) -> dict[str, Any]:
     """
     Convert a schema item (GenericSchema or NodeSchema) to a dictionary.
 
@@ -101,7 +116,7 @@ def convert_schema_to_dict(
         "used_by": ", ".join(node.used_by) if hasattr(node, "used_by") else None,
         "inherit_from": ", ".join(node.inherit_from) if hasattr(node, "inherit_from") else None,
         "attributes": [],
-        "relationships": []
+        "relationships": [],
     }
 
     for attr in node.attributes:
@@ -124,7 +139,7 @@ def convert_schema_to_dict(
             "description": rel.description,
             "kind": rel.kind,
             "cardinality": rel.cardinality,
-            "branch": rel.branch
+            "branch": rel.branch,
         }
         data["relationships"].append(rel_dict)
 
@@ -138,7 +153,8 @@ def dict_to_df(data: dict[str, Any]) -> Tuple[pd.DataFrame, pd.DataFrame, pd.Dat
         data (dict[str, Any]): The schema data as a dictionary.
 
     Returns:
-        Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]: A tuple containing the main information, attributes, and relationships dataframes.
+        Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]: A tuple containing the main information, attributes,
+        and relationships dataframes.
     """
     inherit_or_use_label = "Inherit from" if data["inherit_from"] else "Used by"
     inherit_or_use_value = data["inherit_from"] if data["inherit_from"] else data["used_by"]
@@ -148,7 +164,7 @@ def dict_to_df(data: dict[str, Any]) -> Tuple[pd.DataFrame, pd.DataFrame, pd.Dat
         "Namespace": [data["namespace"]],
         "Label": [data["label"]],
         "Description": [data["description"]],
-        inherit_or_use_label: [inherit_or_use_value]
+        inherit_or_use_label: [inherit_or_use_value],
     }
 
     attributes_df = pd.DataFrame(data["attributes"])
@@ -157,10 +173,3 @@ def dict_to_df(data: dict[str, Any]) -> Tuple[pd.DataFrame, pd.DataFrame, pd.Dat
     main_info_df = pd.DataFrame(main_info)
 
     return main_info_df, attributes_df, relationships_df
-
-def add_branch_selector(sidebar: DG):
-    branches = get_branches()
-    if "infrahub_branch" not in st.session_state:
-        st.session_state["infrahub_branch"] = "main"
-    sidebar.selectbox(label="branch", options=branches.keys(), key="infrahub_branch")
-

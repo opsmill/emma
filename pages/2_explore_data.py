@@ -1,11 +1,11 @@
 import streamlit as st
 
-from emma.infrahub import add_branch_selector, get_client, get_objects_as_df, get_schema
+from emma.infrahub import get_client, get_objects_as_df, get_schema
+from emma.streamlit_helper import test_reacheability_and_display_sidebar
 
 st.set_page_config(page_title="Data Explorer")
 
-add_branch_selector(st.sidebar)
-
+test_reacheability_and_display_sidebar()
 
 @st.cache_data
 def convert_df(df):
