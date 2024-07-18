@@ -1,6 +1,6 @@
 import os
 from enum import Enum
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Tuple
 
 import pandas as pd
 import streamlit as st
@@ -12,6 +12,7 @@ from infrahub_sdk.exceptions import (
     ServerNotReachableError,
     ServerNotResponsiveError,
 )
+from infrahub_sdk.schema import GenericSchema, NodeSchema
 from streamlit.delta_generator import DG
 
 if TYPE_CHECKING:
@@ -90,6 +91,83 @@ def convert_node_to_dict(obj: InfrahubNodeSync, include_id: bool = True) -> dict
 
     return data
 
+def convert_schema_to_dict(
+        node: GenericSchema | NodeSchema,
+        )-> dict[str, Any]:
+    """
+    Convert a schema item (GenericSchema or NodeSchema) to a dictionary.
+
+    Parameters:
+        item (GenericSchema | NodeSchema): The schema item to convert.
+        include_id (bool): Whether to include the ID of the item.
+
+    Returns:
+        Dict[str, Any]: The converted dictionary.
+    """
+    data = {
+        "name": node.name,
+        "namespace": node.namespace,
+        "label": node.label,
+        "description": node.description,
+        "used_by": ", ".join(node.used_by) if hasattr(node, "used_by") else None,
+        "inherit_from": ", ".join(node.inherit_from) if hasattr(node, "inherit_from") else None,
+        "attributes": [],
+        "relationships": []
+    }
+
+    for attr in node.attributes:
+        attr_dict = {
+            "name": attr.name,
+            "label": attr.label,
+            "kind": attr.kind,
+            "description": attr.description,
+            "default_value": str(attr.default_value),
+            "optional": attr.optional,
+            "unique": attr.unique,
+            "branch": attr.branch,
+        }
+        data["attributes"].append(attr_dict)
+
+    for rel in node.relationships:
+        rel_dict = {
+            "name": rel.name,
+            "peer": rel.peer,
+            "description": rel.description,
+            "kind": rel.kind,
+            "cardinality": rel.cardinality,
+            "branch": rel.branch
+        }
+        data["relationships"].append(rel_dict)
+
+    return data
+
+def dict_to_df(data: dict[str, Any]) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    """
+    Convert a dictionary of schema data to Pandas DataFrames for main information, attributes, and relationships.
+
+    Parameters:
+        data (dict[str, Any]): The schema data as a dictionary.
+
+    Returns:
+        Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]: A tuple containing the main information, attributes, and relationships dataframes.
+    """
+    inherit_or_use_label = "Inherit from" if data["inherit_from"] else "Used by"
+    inherit_or_use_value = data["inherit_from"] if data["inherit_from"] else data["used_by"]
+
+    main_info = {
+        "Name": [data["name"]],
+        "Namespace": [data["namespace"]],
+        "Label": [data["label"]],
+        "Description": [data["description"]],
+        inherit_or_use_label: [inherit_or_use_value]
+    }
+
+    attributes_df = pd.DataFrame(data["attributes"])
+    relationships_df = pd.DataFrame(data["relationships"])
+
+    main_info_df = pd.DataFrame(main_info)
+
+    return main_info_df, attributes_df, relationships_df
 
 def add_branch_selector(sidebar: DG):
     branches = get_branches()
