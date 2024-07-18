@@ -69,25 +69,35 @@ if (
         with preview_container.status("Checking YAML ...") as preview_status:
             # Check if the provided file contains a valid YAML
             try:
-                python_dict = yaml.safe_load(uploaded_file.read())
-                preview_status.success("This file is valid!", icon="✅")
+                # First load the yaml and make sure it's valid
+                schema_content = yaml.safe_load(uploaded_file.read())
+                preview_status.success("This YAML file is valid!", icon="✅")
                 preview_status.code(
-                    yaml.safe_dump(python_dict), language="yaml", line_numbers=True
+                    yaml.safe_dump(schema_content), language="yaml", line_numbers=True
                 )
+
+                # Then check schema over Infrahub instance
                 success, response = check_schema(
-                    branch=st.session_state.infrahub_branch, schemas=[python_dict]
+                    branch=st.session_state.infrahub_branch, schemas=[schema_content]
                 )
+
+                # If something went wrong
                 if not success:
-                    preview_status.error("This file contains an error!", icon="🚨")
+                    preview_status.error("Infrahub doesn't like it!", icon="🚨")
+                    preview_status.write(response)
+                    preview_status.update(
+                        label=uploaded_file.name, state="error", expanded=True
+                    )
                 else:
+                    # Otherwise we load the diff
                     preview_status.code(yaml.safe_dump(response), language="yaml")
                     preview_status.update(
                         label=uploaded_file.name, state="complete", expanded=True
                     )
 
-            # Something wrong happened
+            # Something wrong happened with YAML
             except yaml.YAMLError as exc:
-                preview_status.error("This file contains an error!", icon="🚨")
+                preview_status.error("This file contains a YAML error!", icon="🚨")
                 preview_status.write(exc)  # TODO: Improve that?
                 preview_status.update(
                     label=uploaded_file.name, state="error", expanded=True
@@ -102,11 +112,11 @@ if apply_button:
                 result_status.update(expanded=True)
 
                 st.write("Loading YAML files...")
-                python_dict = yaml.safe_load(uploaded_file.read())
+                schema_content = yaml.safe_load(uploaded_file.read())
 
                 st.write("Calling Infrahub API...")
                 response = load_schema(
-                    branch=st.session_state.infrahub_branch, schemas=[python_dict]
+                    branch=st.session_state.infrahub_branch, schemas=[schema_content]
                 )
 
                 if response.errors:
