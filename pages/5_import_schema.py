@@ -50,7 +50,7 @@ if not apply_button and len(uploaded_files) > 0:
     # Loop over all uploaded files
     for uploaded_file in uploaded_files:
         # Prep a preview expander for each file
-        with preview_container.status("Checking YAML ...") as preview_status:
+        with preview_container.status("Checking schema ...") as preview_status:
             # Check if the provided file contains a valid YAML
             try:
                 # First load the yaml and make sure it's valid
@@ -95,43 +95,50 @@ if not apply_button and len(uploaded_files) > 0:
 # If someone clicks the button and upload is ok
 if apply_button and st.session_state.is_upload_valid:
     # Loop over all uploaded files
-    for uploaded_file in uploaded_files:
-        try:
-            with result_container.status("Loading schema ...") as result_status:
-                result_status.update(expanded=True)
+    with result_container.status("Loading schema ...") as result_status:
+        # List with all schema dict
+        schemas_data = []
+        result_status.update(expanded=True)
 
-                st.write("Loading YAML files...")
-                schema_content = yaml.safe_load(uploaded_file.read())
+        # Loop over all files to build schema list
+        for uploaded_file in uploaded_files:
+            try:
+                st.write(f"Loading `{uploaded_file.name}` ...")
+                schemas_data.append(yaml.safe_load(uploaded_file.read()))
 
-                st.write("Calling Infrahub API...")
-                response = load_schema(
-                    branch=st.session_state.infrahub_branch, schemas=[schema_content]
+            except yaml.YAMLError as exc:
+                result_status.error(
+                    f"This file {uploaded_file.name} contains an error!", icon="🚨"
+                )
+                result_status.write(exc)
+
+        # Call Infrahub API
+        st.write("Calling Infrahub API...")
+        response = load_schema(
+            branch=st.session_state.infrahub_branch, schemas=schemas_data
+        )
+        st.write("Computing results...")
+
+        # Compute response
+        if response.errors:
+            result_status.update(label="Load failed ...", state="error", expanded=True)
+            result_status.error("Infrahub doesn't like it!", icon="🚨")
+            result_status.exception(response.errors)
+        else:
+            result_status.update(
+                label="🚀 Schema loaded!", state="complete", expanded=True
+            )
+
+            if response.schema_updated:
+                # TODO: Add an actual diff section ...
+                result_container.success("Schema loaded successfully!", icon="✅")
+                st.balloons()  # 🎉
+            else:
+                result_container.info(
+                    "The schema in Infrahub was already up to date, no changes were required!",
+                    icon="ℹ️",
                 )
 
-                if response.errors:
-                    result_status.update(
-                        label="Something went wrong", state="error", expanded=True
-                    )
-                    result_status.exception(response.errors)
-                else:
-                    st.balloons()  # 🎉
-                    result_status.update(
-                        label="🚀 Schema loaded!", state="complete", expanded=True
-                    )
-
-                if response.schema_updated:
-                    result_status.success("Schema loaded successfully!", icon="✅")
-                else:
-                    result_status.success(
-                        "The schema in Infrahub was already up to date, no changes were required",
-                        icon="✅",
-                    )
-
-        except yaml.YAMLError as exc:
-            result_status.error(
-                f"This file {uploaded_file.name} contains an error!", icon="🚨"
-            )
-            result_status.write(exc)
 # If someome clicks even tho upload is faulty
 elif apply_button and not st.session_state.is_upload_valid:
     st.toast("One uploaded file looks fishy...", icon="🚨")
