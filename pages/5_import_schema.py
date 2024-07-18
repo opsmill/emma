@@ -9,23 +9,13 @@ from emma.infrahub import (
 )
 
 # Initialization
-if "is_smth_uploaded" not in st.session_state:
-    st.session_state["is_smth_uploaded"] = False
-if "is_schema_applied" not in st.session_state:
-    st.session_state["is_schema_applied"] = False
-
-
-def click_apply_schema():
-    st.session_state["is_schema_applied"] = True
-
-
-def preview_upload_files():
-    st.session_state["is_smth_uploaded"] = True
+if "is_upload_valid" not in st.session_state:
+    st.session_state["is_upload_valid"] = False
 
 
 # Page layout
 # TODO: Add icon to that page page_icon=":material/upload_file:"
-st.markdown("# Schema Importer")
+st.markdown("# Schema Loader")
 # st.set_page_config(page_title="Schema Importer")
 add_infrahub_address(st.sidebar)
 add_branch_selector(st.sidebar)
@@ -36,33 +26,27 @@ uploaded_files = st.file_uploader(
     accept_multiple_files=True,
     type=["yaml", "yml"],
     help="If you need help building your schema, feel free to reach out to Opsmill team!",
-    on_change=preview_upload_files,
 )
 
 preview_container = st.container(border=False)
 
 apply_button = st.button(
-    label="🚀 Apply to Infrahub",
+    label="🚀 Load to Infrahub",
     type="primary",
-    # help="You first need to upload valid YAML files...", #TODO: Make this dynamic somehow?
-    disabled=not st.session_state.is_smth_uploaded,
-    on_click=click_apply_schema,
     use_container_width=True,
 )
 
 result_container = st.container(border=False)
 
 # TODO: Handle reupload and so on ...
-# TODO: Schema validation?
 # TODO: Add session storage and so on
 # TODO: Handle states so if non valid or empty files button remains disabled
 # TODO: Somehow the button is updated before the end of the upload ...
-# If someone uploads something
-if (
-    st.session_state.is_smth_uploaded is True
-    and len(uploaded_files) > 0
-    and st.session_state.is_schema_applied is False
-):
+# If something is uploaded ...
+if not apply_button and len(uploaded_files) > 0:
+    # Set upload as valid
+    st.session_state["is_upload_valid"] = True
+
     # Loop over all uploaded files
     for uploaded_file in uploaded_files:
         # Prep a preview expander for each file
@@ -71,7 +55,7 @@ if (
             try:
                 # First load the yaml and make sure it's valid
                 schema_content = yaml.safe_load(uploaded_file.read())
-                preview_status.success("This YAML file is valid!", icon="✅")
+                preview_status.success("This YAML file is valid", icon="✅")
                 preview_status.code(
                     yaml.safe_dump(schema_content), language="yaml", line_numbers=True
                 )
@@ -83,13 +67,17 @@ if (
 
                 # If something went wrong
                 if not success:
+                    st.session_state["is_upload_valid"] = False
                     preview_status.error("Infrahub doesn't like it!", icon="🚨")
-                    preview_status.write(response)
+                    preview_status.exception(response)  # TODO: Improve error message
                     preview_status.update(
                         label=uploaded_file.name, state="error", expanded=True
                     )
                 else:
                     # Otherwise we load the diff
+                    preview_status.success(
+                        "This is the diff against current schema", icon="👇"
+                    )
                     preview_status.code(yaml.safe_dump(response), language="yaml")
                     preview_status.update(
                         label=uploaded_file.name, state="complete", expanded=True
@@ -97,14 +85,15 @@ if (
 
             # Something wrong happened with YAML
             except yaml.YAMLError as exc:
+                st.session_state["is_upload_valid"] = False
                 preview_status.error("This file contains a YAML error!", icon="🚨")
-                preview_status.write(exc)  # TODO: Improve that?
+                preview_status.exception(exc)  # TODO: Improve that?
                 preview_status.update(
                     label=uploaded_file.name, state="error", expanded=True
                 )
 
-# If someone clicks the button
-if apply_button:
+# If someone clicks the button and upload is ok
+if apply_button and st.session_state.is_upload_valid:
     # Loop over all uploaded files
     for uploaded_file in uploaded_files:
         try:
@@ -123,8 +112,9 @@ if apply_button:
                     result_status.update(
                         label="Something went wrong", state="error", expanded=True
                     )
-                    result_status.write(response.errors)
+                    result_status.exception(response.errors)
                 else:
+                    st.balloons()  # 🎉
                     result_status.update(
                         label="🚀 Schema loaded!", state="complete", expanded=True
                     )
@@ -133,7 +123,7 @@ if apply_button:
                     result_status.success("Schema loaded successfully!", icon="✅")
                 else:
                     result_status.success(
-                        "The schema in Infrahub was is already up to date, no changes were required",
+                        "The schema in Infrahub was already up to date, no changes were required",
                         icon="✅",
                     )
 
@@ -142,3 +132,6 @@ if apply_button:
                 f"This file {uploaded_file.name} contains an error!", icon="🚨"
             )
             result_status.write(exc)
+# If someome clicks even tho upload is faulty
+elif apply_button and not st.session_state.is_upload_valid:
+    st.toast("One uploaded file looks fishy...", icon="🚨")
