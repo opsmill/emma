@@ -40,6 +40,9 @@ def load_schema(branch: str, schemas: list[dict] | None = None):
     client = get_client(branch=branch)
     return client.schema.load(schemas, branch)
 
+def check_schema(branch: str, schemas: list[dict] | None = None):
+    client = get_client(branch=branch)
+    return client.schema.check(schemas, branch)
 
 def get_branches():
     client = get_client()

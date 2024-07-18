@@ -1,7 +1,12 @@
 import streamlit as st
 import yaml
 
-from emma.infrahub import add_branch_selector, add_infrahub_address, load_schema
+from emma.infrahub import (
+    add_branch_selector,
+    add_infrahub_address,
+    check_schema,
+    load_schema,
+)
 
 # Initialization
 if "is_smth_uploaded" not in st.session_state:
@@ -21,7 +26,7 @@ def preview_upload_files():
 # Page layout
 # TODO: Add icon to that page page_icon=":material/upload_file:"
 st.markdown("# Schema Importer")
-st.set_page_config(page_title="Schema Importer")
+# st.set_page_config(page_title="Schema Importer")
 add_infrahub_address(st.sidebar)
 add_branch_selector(st.sidebar)
 
@@ -67,11 +72,18 @@ if (
                 python_dict = yaml.safe_load(uploaded_file.read())
                 preview_status.success("This file is valid!", icon="✅")
                 preview_status.code(
-                    yaml.dump(python_dict), language="yaml", line_numbers=True
+                    yaml.safe_dump(python_dict), language="yaml", line_numbers=True
                 )
-                preview_status.update(
-                    label=uploaded_file.name, state="complete", expanded=True
+                success, response = check_schema(
+                    branch=st.session_state.infrahub_branch, schemas=[python_dict]
                 )
+                if not success:
+                    preview_status.error("This file contains an error!", icon="🚨")
+                else:
+                    preview_status.code(yaml.safe_dump(response), language="yaml")
+                    preview_status.update(
+                        label=uploaded_file.name, state="complete", expanded=True
+                    )
 
             # Something wrong happened
             except yaml.YAMLError as exc:
