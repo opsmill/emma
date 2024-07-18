@@ -3,6 +3,7 @@ import yaml
 
 from emma.infrahub import (
     add_branch_selector,
+    add_create_branch_button,
     add_infrahub_address,
     check_schema,
     load_schema,
@@ -19,6 +20,7 @@ st.markdown("# Schema Loader")
 # st.set_page_config(page_title="Schema Importer")
 add_infrahub_address(st.sidebar)
 add_branch_selector(st.sidebar)
+add_create_branch_button(st.sidebar)
 
 uploaded_files = st.file_uploader(
     "Uploader",
@@ -31,17 +33,15 @@ uploaded_files = st.file_uploader(
 preview_container = st.container(border=False)
 
 apply_button = st.button(
-    label="🚀 Load to Infrahub",
+    label=f"🚀 Load to :blue[__*{st.session_state.infrahub_branch}*__] branch in Infrahub",
     type="primary",
     use_container_width=True,
 )
 
 result_container = st.container(border=False)
 
-# TODO: Handle reupload and so on ...
 # TODO: Add session storage and so on
 # TODO: Handle states so if non valid or empty files button remains disabled
-# TODO: Somehow the button is updated before the end of the upload ...
 # If something is uploaded ...
 if not apply_button and len(uploaded_files) > 0:
     # Set upload as valid
