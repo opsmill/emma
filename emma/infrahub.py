@@ -29,28 +29,22 @@ def get_instance_address() -> str:
         st.session_state["infrahub_address"] = os.environ.get("INFRAHUB_ADDRESS", "")
     return st.session_state["infrahub_address"]
 
+def get_instance_branch() -> str:
+    if "infrahub_branch" not in st.session_state:
+        st.session_state["infrahub_branch"] = None
+    return st.session_state["infrahub_address"]
+
 @st.cache_resource
 def get_client(address: str | None = None, branch: str | None = None) -> InfrahubClientSync:
     return InfrahubClientSync(address=address)
-
-def input_infrahub_address():
-    with st.sidebar.form(key="input_address_form"):
-        new_address = st.text_input(
-            label="Enter Infrahub Address",
-            value=st.session_state.get("infrahub_address", "")
-        )
-        submit_address = st.form_submit_button(label="Set Address")
-        if submit_address and new_address:
-            st.session_state["infrahub_address"] = new_address
-            st.rerun()
 
 @st.cache_data
 def get_schema(branch: str | None = None):
     client = get_client(branch=branch)
     return client.schema.all(branch=branch)
 
-def get_branches():
-    client = get_client()
+def get_branches(address: str | None = None):
+    client = get_client(address=address)
     return client.branch.all()
 
 def get_version(client: InfrahubClientSync) -> str:

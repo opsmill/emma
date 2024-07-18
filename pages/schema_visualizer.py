@@ -7,14 +7,17 @@ from streamlit_flow.elements import StreamlitFlowEdge, StreamlitFlowNode
 from streamlit_flow.layouts import LayeredLayout
 
 from emma.infrahub import (
-    check_reachability,
     convert_schema_to_dict,
     dict_to_df,
     get_client,
     get_schema,
 )
-from emma.streamlit_helper import display_expander, test_reachability_and_display_sidebar
+from emma.streamlit_utils import display_expander, set_page_config
+from menu import menu_with_redirect
 
+set_page_config(title="Schema Visualizer")
+st.markdown("# Schema Visualizer")
+menu_with_redirect()
 
 def visualize_schema_flow(generics: List[GenericSchema], nodes: List[NodeSchema], key: str) -> str:
     """
@@ -103,7 +106,6 @@ def visualize_schema_flow(generics: List[GenericSchema], nodes: List[NodeSchema]
 
     return selected_id
 
-
 def display_node_info(selected_id: str, generics: List[GenericSchema], nodes: List[NodeSchema]) -> None:
     """
     Display detailed information about the selected node.
@@ -144,52 +146,38 @@ def display_node_info(selected_id: str, generics: List[GenericSchema], nodes: Li
     else:
         st.markdown("No additional information available for this ID.")
 
-# Force wide mode
-    st.set_page_config(page_title="Schema Visualizer", layout="wide")
-
-
-test_reachability_and_display_sidebar()
-
-# Initialize reachable status
-is_reacheable = False
-
 # Check if infrahub_address is set and get the client
-client = get_client(branch=st.session_state.get("infrahub_branch", "main"))
-is_reacheable = check_reachability(client=client)
+client = get_client(branch=st.session_state.infrahub_branch)
 
-# If reachable, fetch schema data based on the branch
-if is_reacheable:
-    # Fetch schema data based on the branch
-    schema_data = get_schema(branch=st.session_state["infrahub_branch"])
+# Fetch schema data based on the branch
+schema_data = get_schema(branch=st.session_state.infrahub_branch)
 
-    # Process schema data to separate Generics and Nodes
-    generics = [item for item in schema_data.values() if isinstance(item, GenericSchema)]
-    nodes = [item for item in schema_data.values() if isinstance(item, NodeSchema)]
+# Process schema data to separate Generics and Nodes
+generics = [item for item in schema_data.values() if isinstance(item, GenericSchema)]
+nodes = [item for item in schema_data.values() if isinstance(item, NodeSchema)]
 
 
-    # Create a Tab for "All Nodes" So if we want more Tab (i.e per Namespace) we could
-    tabs = st.tabs(["All Nodes"])
+# Create a Tab for "All Nodes" So if we want more Tab (i.e per Namespace) we could
+tabs = st.tabs(["All Nodes"])
 
-    with tabs[0]:
-        st.markdown("## Schema Visualization")
+with tabs[0]:
+    col1, col2 = st.columns([3, 1])
 
-        col1, col2 = st.columns([5, 3])
+    with col1:
+        selected_id = visualize_schema_flow(generics=generics, nodes=nodes, key="schema_flow_all")
 
-        with col1:
-            selected_id = visualize_schema_flow(generics=generics, nodes=nodes, key="schema_flow_all")
-
-        with col2:
-            # Display Tips
-            display_expander(
-                name="Interaction Tips",
-                content="""
-                - **Click on nodes** to view detailed information.
-                - **Drag nodes** to reposition them in the graph.
-                - **Use the controls** on the graph to zoom and pan.
-                - **Hover over edges** to see relationship labels.
-                - **Toggle the minimap** for an overview of the graph.
-                """,
-            )
-            if selected_id:
-                st.markdown(f"### {selected_id}")
-                display_node_info(selected_id, generics, nodes)
+    with col2:
+        # Display Tips
+        display_expander(
+            name="Interaction Tips",
+            content="""
+            - **Click on nodes** to view detailed information.
+            - **Drag nodes** to reposition them in the graph.
+            - **Use the controls** on the graph to zoom and pan.
+            - **Hover over edges** to see relationship labels.
+            - **Toggle the minimap** for an overview of the graph.
+            """,
+        )
+        if selected_id:
+            st.markdown(f"### {selected_id}")
+            display_node_info(selected_id, generics, nodes)

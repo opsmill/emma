@@ -1,56 +1,31 @@
 import streamlit as st
 
-from emma.infrahub import (  # noqa: E402
-    check_reachability,
-    get_client,
-    get_instance_address,
-    get_version,
-    input_infrahub_address,
-)
-from emma.streamlit_helper import display_branch_selector, display_expander, display_infrahub_address
+from emma.infrahub import InfrahubStatus
+from emma.streamlit_utils import ensure_infrahub_address_and_branch, set_page_config
+from menu import menu
 
-st.set_page_config(
-    page_title="Home",
-    page_icon="👋",
-)
+set_page_config(title="Home", icon=":wave:")
 
-st.write("# Welcome to Emma! 👋")
+st.write("# Welcome to Emma! :wave:")
 
 st.markdown(
     """
     Emma is an agent designed to help you interact with Infrahub.
+
+    Emma will look for the **INFRAHUB_ADDRESS** environment variable to connect to your Infrahub instance.
+    However, you can also set or update the address directly in the UI if needed.
+
+    Use the sidebar to navigate between different functionalities, such as exploring data, importing data,
+    generating schemas, and visualizing schemas.
     """
 )
 
-# Initialize reachable status
-is_reacheable = False
+if "infrahub_address" not in st.session_state:
+    st.session_state.infrahub_address = None
 
-# Input Infrahub address via UI if not set
-if not get_instance_address():
-    st.info("""
-            No INFRAHUB_ADDRESS found in your environment variable.
+if "infrahub_branch" not in st.session_state:
+    st.session_state.infrahub_branch = None
+    st.session_state._infrahub_branch = st.session_state.infrahub_branch
 
-            Please set the Infrahub Address.
-            """)
-    input_infrahub_address()
-
-# Check if infrahub_address is set and get the client
-if "infrahub_address" in st.session_state and st.session_state["infrahub_address"]:
-    try:
-        branch = st.session_state.get("infrahub_branch", "main")
-        address = st.session_state.get("infrahub_address")
-        client = get_client(address=address, branch=branch)
-        is_reacheable = check_reachability(client=client)
-
-        # If reachable, fetch schema data based on the branch
-        if is_reacheable:
-            st.success(f"Server {address} is reacheable.")
-            st.info(f"**Version**: {get_version(client=client)}")
-            display_infrahub_address(st.sidebar)
-            display_branch_selector(st.sidebar)
-        else:
-            st.error(f"Server {address} is unreacheable.")
-            display_expander(name="Detail", content=st.session_state["infrahub_error_message"])
-
-    except ValueError as e:
-        st.error(str(e))
+ensure_infrahub_address_and_branch()
+menu()
