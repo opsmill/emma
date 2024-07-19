@@ -64,6 +64,7 @@ def transform_schema(schema_dict):
 
     return transformed
 
+
 def transform_schema_overview(schema_dict):
     overview = {}
     namespace = schema_dict["namespace"]
@@ -80,6 +81,7 @@ def transform_schema_overview(schema_dict):
 
     return overview
 
+
 def merge_overviews(overviews):
     merged = {}
     for overview in overviews:
@@ -92,6 +94,7 @@ def merge_overviews(overviews):
                 merged[namespace][node_name].update(attrs)
     return merged
 
+
 def generate_markdown(chat_log):
     buffer = io.BytesIO()
     for message in chat_log:
@@ -99,7 +102,7 @@ def generate_markdown(chat_log):
             out = f"## User\n\n{message['content']}\n\n"
         else:
             out = f"## Assistant\n\n{message['content']}\n\n"
-        buffer.write(out.encode('utf-8'))
+        buffer.write(out.encode("utf-8"))
     buffer.seek(0)
     return buffer
 
@@ -109,13 +112,9 @@ st.markdown("# Schema Builder")
 menu_with_redirect()
 
 if not os.environ.get("OPENAI_API_KEY"):
-    st.error(
-        "You must provide a valid OpenAI API Key to use this application : OPENAI_API_KEY"
-    )
+    st.error("You must provide a valid OpenAI API Key to use this application : OPENAI_API_KEY")
 else:
-    agent = OpenAIAssistantV2Runnable(
-        assistant_id="asst_tQPcGt2OV7fuVgi4JmwsgeHJ", as_agent=True
-    )
+    agent = OpenAIAssistantV2Runnable(assistant_id="asst_tQPcGt2OV7fuVgi4JmwsgeHJ", as_agent=True)
 
     if "openai_model" not in st.session_state:
         st.session_state.openai_model = "gpt-4o"
@@ -147,7 +146,6 @@ else:
         overviews = [transform_schema_overview(schema.model_dump()) for schema in infra_schema.values()]
         st.session_state["schema_overview"] = merge_overviews(overviews)
 
-
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
@@ -158,14 +156,14 @@ else:
             st.markdown(prompt)
 
         with st.chat_message("assistant"):
-            print(st.session_state["infrahub_schema_fid"])
-
             chat_input = {"content": prompt}
 
             if "thread_id" in st.session_state:
                 chat_input["thread_id"] = st.session_state.thread_id
             else:
-                chat_input["content"] = INITIAL_PROMPT_HEADER.format(overview=st.session_state["schema_overview"]) + chat_input["content"]
+                chat_input["content"] = (
+                    INITIAL_PROMPT_HEADER.format(overview=st.session_state["schema_overview"]) + chat_input["content"]
+                )
 
             response = agent.invoke(
                 input=chat_input,
@@ -193,6 +191,6 @@ else:
         st.download_button(
             label="Download Markdown",
             data=markdown_buffer,
-            file_name=f"schema_generator_log_{datetime.datetime.now()}.md",
-            mime="text/markdown"
+            file_name=f"schema_generator_log_{datetime.datetime.now(tz=datetime.timezone.utc)}.md",
+            mime="text/markdown",
         )
