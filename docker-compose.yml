@@ -1,0 +1,9 @@
+---
+# yamllint disable rule:line-length
+name: emma
+services:
+  server:
+    build:
+      dockerfile: Dockerfile
+    image: "registry.opsmill.io/emma:local"
+    pull_policy: always
