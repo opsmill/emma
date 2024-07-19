@@ -45,7 +45,7 @@ def set_branch():
 
 
 def display_branch_selector(sidebar: DG):
-    branches = get_branches()
+    branches = get_branches(address=st.session_state.infrahub_address)
     if st.session_state._infrahub_branch is None:
         st.session_state._infrahub_branch = "main"
     sidebar.selectbox(
