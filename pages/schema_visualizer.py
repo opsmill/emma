@@ -19,6 +19,7 @@ set_page_config(title="Schema Visualizer")
 st.markdown("# Schema Visualizer")
 menu_with_redirect()
 
+
 def visualize_schema_flow(generics: List[GenericSchema], nodes: List[NodeSchema], key: str) -> str:
     """
     Visualize the schema using Streamlit Flow.
@@ -106,6 +107,7 @@ def visualize_schema_flow(generics: List[GenericSchema], nodes: List[NodeSchema]
 
     return selected_id
 
+
 def display_node_info(selected_id: str, generics: List[GenericSchema], nodes: List[NodeSchema]) -> None:
     """
     Display detailed information about the selected node.
@@ -145,6 +147,7 @@ def display_node_info(selected_id: str, generics: List[GenericSchema], nodes: Li
             st.markdown("No Relationships found.")
     else:
         st.markdown("No additional information available for this ID.")
+
 
 # Check if infrahub_address is set and get the client
 client = get_client(branch=st.session_state.infrahub_branch)

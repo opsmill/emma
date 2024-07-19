@@ -13,6 +13,7 @@ def set_page_config(title: str, icon: str | None = None, wide: bool | None = Tru
     else:
         st.set_page_config(page_title=title, page_icon=icon)
 
+
 def get_theme_settings() -> Tuple[str, str]:
     """
     Get theme settings for background and font color.
@@ -25,6 +26,7 @@ def get_theme_settings() -> Tuple[str, str]:
         return theme["backgroundColor"], theme["textColor"]
     return "#FFFFFF", "#000000"  # Default to light mode colors if not set
 
+
 def display_expander(name: str, content: str) -> None:
     """
     Display an expander with the given name and content.
@@ -36,9 +38,11 @@ def display_expander(name: str, content: str) -> None:
     with st.expander(name):
         st.markdown(content)
 
+
 def set_branch():
     # Callback function to save the branch selection to Session State
     st.session_state.infrahub_branch = st.session_state._infrahub_branch
+
 
 def display_branch_selector(sidebar: DG):
     branches = get_branches()
@@ -51,6 +55,7 @@ def display_branch_selector(sidebar: DG):
         on_change=set_branch,
     )
 
+
 def display_infrahub_address(sidebar: DG):
     sidebar.selectbox(
         label="Infrahub Address:",
@@ -59,16 +64,15 @@ def display_infrahub_address(sidebar: DG):
         disabled=True,
     )
 
+
 def input_infrahub_address():
     with st.form(key="input_address_form"):
-        new_address = st.text_input(
-            label="Enter Infrahub Address",
-            value=st.session_state.infrahub_address
-        )
+        new_address = st.text_input(label="Enter Infrahub Address", value=st.session_state.infrahub_address)
         submit_address = st.form_submit_button(label="Submit")
         if submit_address and new_address:
             st.session_state.infrahub_address = new_address
             st.rerun()
+
 
 def ensure_infrahub_address_and_branch():
     # Input Infrahub address via UI if not set
@@ -103,12 +107,14 @@ def ensure_infrahub_address_and_branch():
     else:
         st.stop()
 
+
 @st.experimental_dialog("Set or Update Infrahub Instance")
 def update_infrahub_instance_dialog():
     new_instance = st.text_input("Infrahub Address...")
     if st.button("Submit"):
         st.session_state["infrahub_address"] = new_instance
         st.rerun()
+
 
 @st.experimental_dialog("Create a branch")
 def create_branch_dialog():
@@ -118,6 +124,7 @@ def create_branch_dialog():
         create_branch(new_branch_name)
         st.session_state["infrahub_branch"] = new_branch_name
         st.rerun()
+
 
 # def add_branch_selector(sidebar: DG):
 #     branches = get_branches()
@@ -131,9 +138,11 @@ def create_branch_dialog():
 #         st.session_state["infrahub_address"] = os.environ.get("INFRAHUB_ADDRESS")
 #     sidebar.markdown(f"Infrahub address: :blue-background[{st.session_state["infrahub_address"]}]")
 
+
 def update_infrahub_instance_button(sidebar: DG):
     if sidebar.button("Replace Instance"):
         update_infrahub_instance_dialog()
+
 
 def add_create_branch_button(sidebar: DG):
     if sidebar.button("Create a new branch"):

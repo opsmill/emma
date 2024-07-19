@@ -1,6 +1,5 @@
 import streamlit as st
 
-from emma.infrahub import InfrahubStatus
 from emma.streamlit_utils import ensure_infrahub_address_and_branch, set_page_config
 from menu import menu
 

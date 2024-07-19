@@ -24,45 +24,55 @@ class InfrahubStatus(str, Enum):
     OK = "ok"
     ERROR = "error"
 
+
 def get_instance_address() -> str:
     if "infrahub_address" not in st.session_state:
         st.session_state["infrahub_address"] = os.environ.get("INFRAHUB_ADDRESS", "")
     return st.session_state["infrahub_address"]
+
 
 def get_instance_branch() -> str:
     if "infrahub_branch" not in st.session_state:
         st.session_state["infrahub_branch"] = None
     return st.session_state["infrahub_address"]
 
+
 @st.cache_resource
 def get_client(address: str | None = None, branch: str | None = None) -> InfrahubClientSync:
     return InfrahubClientSync(address=address)
+
 
 @st.cache_data
 def get_schema(branch: str | None = None):
     client = get_client(branch=branch)
     return client.schema.all(branch=branch)
 
+
 def load_schema(branch: str, schemas: list[dict] | None = None):
     client = get_client(branch=branch)
     return client.schema.load(schemas, branch)
+
 
 def check_schema(branch: str, schemas: list[dict] | None = None):
     client = get_client(branch=branch)
     return client.schema.check(schemas, branch)
 
+
 def get_branches(address: str | None = None):
     client = get_client(address=address)
     return client.branch.all()
+
 
 def create_branch(branch_name: str):
     client = get_client()
     return client.branch.create(branch_name)
 
+
 def get_version(client: InfrahubClientSync) -> str:
     query = "query { InfrahubInfo { version }}"
     response = client.execute_graphql(query=query, raise_for_error=True)
     return response["InfrahubInfo"]["version"]
+
 
 def check_reachability(client: InfrahubClientSync) -> bool:
     try:
@@ -75,11 +85,12 @@ def check_reachability(client: InfrahubClientSync) -> bool:
         HTTPError,
         JsonDecodeError,
         ServerNotReachableError,
-        ServerNotResponsiveError
+        ServerNotResponsiveError,
     ) as exc:
         st.session_state["infrahub_error_message"] = str(exc)
         st.session_state["infrahub_status"] = InfrahubStatus.ERROR
         return False
+
 
 def get_objects_as_df(kind: str, page=1, page_size=20, include_id: bool = True, branch: str | None = None):
     client = get_client()
@@ -88,6 +99,7 @@ def get_objects_as_df(kind: str, page=1, page_size=20, include_id: bool = True, 
 
     df = pd.DataFrame([convert_node_to_dict(obj, include_id=include_id) for obj in objs])
     return df
+
 
 def convert_node_to_dict(obj: InfrahubNodeSync, include_id: bool = True) -> dict[str, Any]:
     data = {}
@@ -100,6 +112,7 @@ def convert_node_to_dict(obj: InfrahubNodeSync, include_id: bool = True) -> dict
         data[attr_name] = attr.value
 
     return data
+
 
 def convert_schema_to_dict(
     node: GenericSchema | NodeSchema,
@@ -150,6 +163,7 @@ def convert_schema_to_dict(
         data["relationships"].append(rel_dict)
 
     return data
+
 
 def dict_to_df(data: dict[str, Any]) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """

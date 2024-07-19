@@ -28,6 +28,7 @@ def menu():
     st.sidebar.page_link("pages/schema_visualizer.py", label="👀 Schema Visualizer")
     st.sidebar.divider()
 
+
 def menu_with_redirect():
     # Redirect users to the main page
     if "infrahub_address" not in st.session_state or st.session_state.infrahub_address is None:
