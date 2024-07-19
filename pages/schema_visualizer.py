@@ -136,13 +136,13 @@ def display_node_info(selected_id: str, generics: List[GenericSchema], nodes: Li
 
         st.markdown("##### Attributes")
         if not attributes_df.empty:
-            st.dataframe(attributes_df)
+            st.dataframe(data=attributes_df, hide_index=True)
         else:
             st.markdown("No Attributes found.")
 
         st.markdown("##### Relationships")
         if not relationships_df.empty:
-            st.dataframe(relationships_df)
+            st.dataframe(data=relationships_df, hide_index=True)
         else:
             st.markdown("No Relationships found.")
     else:
