@@ -4,7 +4,7 @@ import streamlit as st
 from streamlit.delta_generator import DG
 from streamlit_theme import st_theme
 
-from emma.infrahub import check_reachability, get_branches, get_client, get_instance_address
+from emma.infrahub import check_reachability, create_branch, get_branches, get_client, get_instance_address
 
 
 def set_page_config(title: str, icon: str | None = None, wide: bool | None = True):
@@ -110,6 +110,31 @@ def update_infrahub_instance_dialog():
         st.session_state["infrahub_address"] = new_instance
         st.rerun()
 
+@st.experimental_dialog("Create a branch")
+def create_branch_dialog():
+    new_branch_name = st.text_input("Branch name...")
+    if st.button("Submit"):
+        # Here create branch in infrahub
+        create_branch(new_branch_name)
+        st.session_state["infrahub_branch"] = new_branch_name
+        st.rerun()
+
+# def add_branch_selector(sidebar: DG):
+#     branches = get_branches()
+#     if "infrahub_branch" not in st.session_state:
+#         st.session_state["infrahub_branch"] = "main"
+#     sidebar.selectbox(label="branch", options=branches.keys(), key="infrahub_branch")
+
+
+# def add_infrahub_address(sidebar: DG):
+#     if "infrahub_address" not in st.session_state:
+#         st.session_state["infrahub_address"] = os.environ.get("INFRAHUB_ADDRESS")
+#     sidebar.markdown(f"Infrahub address: :blue-background[{st.session_state["infrahub_address"]}]")
+
 def update_infrahub_instance_button(sidebar: DG):
     if sidebar.button("Replace Instance"):
         update_infrahub_instance_dialog()
+
+def add_create_branch_button(sidebar: DG):
+    if sidebar.button("Create a new branch"):
+        create_branch_dialog()

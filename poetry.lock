@@ -708,13 +708,13 @@ socks = ["socksio (==1.*)"]
 
 [[package]]
 name = "huggingface-hub"
-version = "0.23.5"
+version = "0.24.0"
 description = "Client library to download and publish models, datasets and other repos on the huggingface.co hub"
 optional = false
 python-versions = ">=3.8.0"
 files = [
-    {file = "huggingface_hub-0.23.5-py3-none-any.whl", hash = "sha256:d7a7d337615e11a45cc14a0ce5a605db6b038dc24af42866f731684825226e90"},
-    {file = "huggingface_hub-0.23.5.tar.gz", hash = "sha256:67a9caba79b71235be3752852ca27da86bd54311d2424ca8afdb8dda056edf98"},
+    {file = "huggingface_hub-0.24.0-py3-none-any.whl", hash = "sha256:7ad92edefb93d8145c061f6df8d99df2ff85f8379ba5fac8a95aca0642afa5d7"},
+    {file = "huggingface_hub-0.24.0.tar.gz", hash = "sha256:6c7092736b577d89d57b3cdfea026f1b0dc2234ae783fa0d59caf1bf7d52dfa7"},
 ]
 
 [package.dependencies]
@@ -727,17 +727,17 @@ tqdm = ">=4.42.1"
 typing-extensions = ">=3.7.4.3"
 
 [package.extras]
-all = ["InquirerPy (==0.3.4)", "Jinja2", "Pillow", "aiohttp", "fastapi", "gradio", "jedi", "minijinja (>=1.0)", "mypy (==1.5.1)", "numpy", "pytest", "pytest-asyncio", "pytest-cov", "pytest-env", "pytest-rerunfailures", "pytest-vcr", "pytest-xdist", "ruff (>=0.3.0)", "soundfile", "types-PyYAML", "types-requests", "types-simplejson", "types-toml", "types-tqdm", "types-urllib3", "typing-extensions (>=4.8.0)", "urllib3 (<2.0)"]
+all = ["InquirerPy (==0.3.4)", "Jinja2", "Pillow", "aiohttp", "fastapi", "gradio", "jedi", "minijinja (>=1.0)", "mypy (==1.5.1)", "numpy", "pytest (>=8.1.1,<8.2.2)", "pytest-asyncio", "pytest-cov", "pytest-env", "pytest-mock", "pytest-rerunfailures", "pytest-vcr", "pytest-xdist", "ruff (>=0.5.0)", "soundfile", "types-PyYAML", "types-requests", "types-simplejson", "types-toml", "types-tqdm", "types-urllib3", "typing-extensions (>=4.8.0)", "urllib3 (<2.0)"]
 cli = ["InquirerPy (==0.3.4)"]
-dev = ["InquirerPy (==0.3.4)", "Jinja2", "Pillow", "aiohttp", "fastapi", "gradio", "jedi", "minijinja (>=1.0)", "mypy (==1.5.1)", "numpy", "pytest", "pytest-asyncio", "pytest-cov", "pytest-env", "pytest-rerunfailures", "pytest-vcr", "pytest-xdist", "ruff (>=0.3.0)", "soundfile", "types-PyYAML", "types-requests", "types-simplejson", "types-toml", "types-tqdm", "types-urllib3", "typing-extensions (>=4.8.0)", "urllib3 (<2.0)"]
+dev = ["InquirerPy (==0.3.4)", "Jinja2", "Pillow", "aiohttp", "fastapi", "gradio", "jedi", "minijinja (>=1.0)", "mypy (==1.5.1)", "numpy", "pytest (>=8.1.1,<8.2.2)", "pytest-asyncio", "pytest-cov", "pytest-env", "pytest-mock", "pytest-rerunfailures", "pytest-vcr", "pytest-xdist", "ruff (>=0.5.0)", "soundfile", "types-PyYAML", "types-requests", "types-simplejson", "types-toml", "types-tqdm", "types-urllib3", "typing-extensions (>=4.8.0)", "urllib3 (<2.0)"]
 fastai = ["fastai (>=2.4)", "fastcore (>=1.3.27)", "toml"]
 hf-transfer = ["hf-transfer (>=0.1.4)"]
 inference = ["aiohttp", "minijinja (>=1.0)"]
-quality = ["mypy (==1.5.1)", "ruff (>=0.3.0)"]
+quality = ["mypy (==1.5.1)", "ruff (>=0.5.0)"]
 tensorflow = ["graphviz", "pydot", "tensorflow"]
 tensorflow-testing = ["keras (<3.0)", "tensorflow"]
-testing = ["InquirerPy (==0.3.4)", "Jinja2", "Pillow", "aiohttp", "fastapi", "gradio", "jedi", "minijinja (>=1.0)", "numpy", "pytest", "pytest-asyncio", "pytest-cov", "pytest-env", "pytest-rerunfailures", "pytest-vcr", "pytest-xdist", "soundfile", "urllib3 (<2.0)"]
-torch = ["safetensors", "torch"]
+testing = ["InquirerPy (==0.3.4)", "Jinja2", "Pillow", "aiohttp", "fastapi", "gradio", "jedi", "minijinja (>=1.0)", "numpy", "pytest (>=8.1.1,<8.2.2)", "pytest-asyncio", "pytest-cov", "pytest-env", "pytest-mock", "pytest-rerunfailures", "pytest-vcr", "pytest-xdist", "soundfile", "urllib3 (<2.0)"]
+torch = ["safetensors[torch]", "torch"]
 typing = ["types-PyYAML", "types-requests", "types-simplejson", "types-toml", "types-tqdm", "types-urllib3", "typing-extensions (>=4.8.0)"]
 
 [[package]]
@@ -750,6 +750,21 @@ files = [
     {file = "idna-3.7-py3-none-any.whl", hash = "sha256:82fee1fc78add43492d3a1898bfa6d8a904cc97d8427f683ed8e798d07761aa0"},
     {file = "idna-3.7.tar.gz", hash = "sha256:028ff3aadf0609c1fd278d8ea3089299412a7a8b9bd005dd08b9f8285bcb5cfc"},
 ]
+
+[[package]]
+name = "incremental"
+version = "22.10.0"
+description = "\"A small library that versions your Python projects.\""
+optional = false
+python-versions = "*"
+files = [
+    {file = "incremental-22.10.0-py2.py3-none-any.whl", hash = "sha256:b864a1f30885ee72c5ac2835a761b8fe8aa9c28b9395cacf27286602688d3e51"},
+    {file = "incremental-22.10.0.tar.gz", hash = "sha256:912feeb5e0f7e0188e6f42241d2f450002e11bbc0937c65865045854c24c0bd0"},
+]
+
+[package.extras]
+mypy = ["click (>=6.0)", "mypy (==0.812)", "twisted (>=16.4.0)"]
+scripts = ["click (>=6.0)", "twisted (>=16.4.0)"]
 
 [[package]]
 name = "infrahub-sdk"
@@ -907,19 +922,19 @@ referencing = ">=0.31.0"
 
 [[package]]
 name = "langchain"
-version = "0.2.8"
+version = "0.2.9"
 description = "Building applications with LLMs through composability"
 optional = false
 python-versions = "<4.0,>=3.8.1"
 files = [
-    {file = "langchain-0.2.8-py3-none-any.whl", hash = "sha256:53e7dfe50294a14200f33bec22b4e14cb63857ccf0a5500b0d18b0fd51285d58"},
-    {file = "langchain-0.2.8.tar.gz", hash = "sha256:7fecb309e3558cde4e5cf7e9ffb7c1ab3f07121c40a7ff3b0c27135f8120c296"},
+    {file = "langchain-0.2.9-py3-none-any.whl", hash = "sha256:be23fcb29adbd5059944f1fed08fa575f0739d420b1c4127531e0fbf5663fcca"},
+    {file = "langchain-0.2.9.tar.gz", hash = "sha256:cc326a7f6347787a19882928c324433b1a79df629bba45604b2d26495ee5d69c"},
 ]
 
 [package.dependencies]
 aiohttp = ">=3.8.3,<4.0.0"
 async-timeout = {version = ">=4.0.0,<5.0.0", markers = "python_version < \"3.11\""}
-langchain-core = ">=0.2.19,<0.3.0"
+langchain-core = ">=0.2.20,<0.3.0"
 langchain-text-splitters = ">=0.2.0,<0.3.0"
 langsmith = ">=0.1.17,<0.2.0"
 numpy = [
@@ -960,13 +975,13 @@ tenacity = ">=8.1.0,<8.4.0 || >8.4.0,<9.0.0"
 
 [[package]]
 name = "langchain-core"
-version = "0.2.20"
+version = "0.2.21"
 description = "Building applications with LLMs through composability"
 optional = false
 python-versions = "<4.0,>=3.8.1"
 files = [
-    {file = "langchain_core-0.2.20-py3-none-any.whl", hash = "sha256:16cc4da6f7ebf33accea7af45a70480733dc852ab291030fb6924865bd7caf76"},
-    {file = "langchain_core-0.2.20.tar.gz", hash = "sha256:a66c439e085d8c75f822f7650a5551d17bada4003521173c763d875d949e4ed5"},
+    {file = "langchain_core-0.2.21-py3-none-any.whl", hash = "sha256:805b1f53e0e2424b83e3673cba1c9354105c5a5e4a1d0d768b1e70d8ac0d604d"},
+    {file = "langchain_core-0.2.21.tar.gz", hash = "sha256:3d1e28179a5d496b900ebef45e1471eaae9fb63fc570f89ded78b026fd08ba84"},
 ]
 
 [package.dependencies]
@@ -1000,17 +1015,17 @@ transformers = ">=4.39.0"
 
 [[package]]
 name = "langchain-openai"
-version = "0.1.16"
+version = "0.1.17"
 description = "An integration package connecting OpenAI and LangChain"
 optional = false
 python-versions = "<4.0,>=3.8.1"
 files = [
-    {file = "langchain_openai-0.1.16-py3-none-any.whl", hash = "sha256:bff90e9d0be786495920a7851ae4d55247fb084d3a11d1b15bfe91904ce1cb0f"},
-    {file = "langchain_openai-0.1.16.tar.gz", hash = "sha256:3dedcc785a64a488ad6a313cc59b0dccea025d27413b55cec73a20dcf3ded4da"},
+    {file = "langchain_openai-0.1.17-py3-none-any.whl", hash = "sha256:30bef5574ecbbbb91b8025b2dc5a1bd81fd62157d3ad1a35d820141f31c5b443"},
+    {file = "langchain_openai-0.1.17.tar.gz", hash = "sha256:c5d70ddecdcb93e146f376bdbadbb6ec69de9ac0f402cd5b83de50b655ba85ee"},
 ]
 
 [package.dependencies]
-langchain-core = ">=0.2.17,<0.3.0"
+langchain-core = ">=0.2.20,<0.3.0"
 openai = ">=1.32.0,<2.0.0"
 tiktoken = ">=0.7,<1"
 
@@ -1030,13 +1045,13 @@ langchain-core = ">=0.2.10,<0.3.0"
 
 [[package]]
 name = "langsmith"
-version = "0.1.88"
+version = "0.1.90"
 description = "Client library to connect to the LangSmith LLM Tracing and Evaluation Platform."
 optional = false
 python-versions = "<4.0,>=3.8.1"
 files = [
-    {file = "langsmith-0.1.88-py3-none-any.whl", hash = "sha256:460ebb7de440afd150fcea8f54ca8779821f2228cd59e149e5845c9dbe06db16"},
-    {file = "langsmith-0.1.88.tar.gz", hash = "sha256:28a07dec19197f4808aa2628d5a3ccafcbe14cc137aef0e607bbd128e7907821"},
+    {file = "langsmith-0.1.90-py3-none-any.whl", hash = "sha256:40b43d908ae0ff061a7ef6f4e7eabf2624db54359210b6bc784ddfa32484e524"},
+    {file = "langsmith-0.1.90.tar.gz", hash = "sha256:f7032acf3736a3db52698126b60da0d909aba20b20ad8a70b678e64bf878c17d"},
 ]
 
 [package.dependencies]
@@ -3327,6 +3342,26 @@ files = [
 ]
 
 [[package]]
+name = "towncrier"
+version = "23.11.0"
+description = "Building newsfiles for your project."
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "towncrier-23.11.0-py3-none-any.whl", hash = "sha256:2e519ca619426d189e3c98c99558fe8be50c9ced13ea1fc20a4a353a95d2ded7"},
+    {file = "towncrier-23.11.0.tar.gz", hash = "sha256:13937c247e3f8ae20ac44d895cf5f96a60ad46cfdcc1671759530d7837d9ee5d"},
+]
+
+[package.dependencies]
+click = "*"
+incremental = "*"
+jinja2 = "*"
+tomli = {version = "*", markers = "python_version < \"3.11\""}
+
+[package.extras]
+dev = ["furo", "packaging", "sphinx (>=5)", "twisted"]
+
+[[package]]
 name = "tqdm"
 version = "4.66.4"
 description = "Fast, Extensible Progress Meter"
@@ -3763,4 +3798,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "2b4911cc96bda3dedac9c8055f9c6310e787920f8e5c7675c5a1cfc916770dd1"
+content-hash = "0eeffc54bc8c7b8363e7b59fb4625e2feb95419f8f2c35049bb34d74fa1999a8"

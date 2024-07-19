@@ -17,8 +17,9 @@ def menu():
     st.sidebar.page_link("main.py", label="🏠 Homepage")
     st.sidebar.page_link("pages/explore_data.py", label="🔭 Data Explorer")
     st.sidebar.page_link("pages/import_data.py", label="📥 Data Importer")
+    st.sidebar.page_link("pages/import_schema.py", label="📦 Schema Importer")
     st.sidebar.page_link("pages/schema_builder.py", label="👷 Schema Builder")
-    st.sidebar.page_link("pages/schema_visualizer.py", label="🤩 Schema Visualizer")
+    st.sidebar.page_link("pages/schema_visualizer.py", label="👀 Schema Visualizer")
     st.sidebar.divider()
 
 def menu_with_redirect():
