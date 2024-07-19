@@ -1,27 +1,27 @@
 import streamlit as st
+from pandas import DataFrame
 
-from emma.infrahub import add_branch_selector, get_client, get_objects_as_df, get_schema
+from emma.infrahub import get_client, get_objects_as_df, get_schema
+from emma.streamlit_utils import set_page_config
+from menu import menu_with_redirect
 
-st.set_page_config(page_title="Data Explorer")
-
-add_branch_selector(st.sidebar)
+set_page_config(title="Data Explorer")
+st.markdown("# Data Explorer")
+menu_with_redirect()
 
 
 @st.cache_data
-def convert_df(df):
+def convert_df_to_csv(df: DataFrame):
     return df.to_csv(index=False).encode("utf-8")
 
 
-st.markdown("# Data Explorer")
-
-client = get_client(branch=st.session_state["infrahub_branch"])
-schema = get_schema(branch=st.session_state["infrahub_branch"])
+client = get_client(branch=st.session_state.infrahub_branch)
+schema = get_schema(branch=st.session_state.infrahub_branch)
 
 option = st.selectbox("Select which models you want to explore ?", schema.keys())
-
-df = get_objects_as_df(kind=option, include_id=False, branch=st.session_state["infrahub_branch"])
-
 selected_schema = schema[option]
+
+df = get_objects_as_df(kind=option, include_id=False, branch=st.session_state.infrahub_branch)
 
 # Set the configuration of the column based on the schema
 # TODO need to move that out of the page into the shared library
@@ -40,6 +40,6 @@ for attr in selected_schema.attributes:
 
 st.dataframe(df, column_config=column_config, hide_index=True, selection_mode="single-row")
 
-csv = convert_df(df)
+csv = convert_df_to_csv(df)
 
 st.download_button("Download CSV File", csv, f"{option}.csv", "text/csv", key="download-csv")

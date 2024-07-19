@@ -2,25 +2,20 @@ import streamlit as st
 import yaml
 
 from emma.infrahub import (
-    add_branch_selector,
-    add_create_branch_button,
-    add_infrahub_address,
     check_schema,
     load_schema,
 )
+from emma.streamlit_utils import set_page_config
+from menu import menu_with_redirect
+
+set_page_config(title="Schema Loader")
+st.markdown("# Schema Loader")
+menu_with_redirect()
 
 # Initialization
 if "is_upload_valid" not in st.session_state:
     st.session_state["is_upload_valid"] = False
 
-
-# Page layout
-# TODO: Add icon to that page page_icon=":material/upload_file:"
-st.markdown("# Schema Loader")
-# st.set_page_config(page_title="Schema Importer")
-add_infrahub_address(st.sidebar)
-add_branch_selector(st.sidebar)
-add_create_branch_button(st.sidebar)
 
 uploaded_files = st.file_uploader(
     "Uploader",
@@ -56,41 +51,29 @@ if not apply_button and len(uploaded_files) > 0:
                 # First load the yaml and make sure it's valid
                 schema_content = yaml.safe_load(uploaded_file.read())
                 preview_status.success("This YAML file is valid", icon="✅")
-                preview_status.code(
-                    yaml.safe_dump(schema_content), language="yaml", line_numbers=True
-                )
+                preview_status.code(yaml.safe_dump(schema_content), language="yaml", line_numbers=True)
 
                 # Then check schema over Infrahub instance
-                success, response = check_schema(
-                    branch=st.session_state.infrahub_branch, schemas=[schema_content]
-                )
+                success, response = check_schema(branch=st.session_state.infrahub_branch, schemas=[schema_content])
 
                 # If something went wrong
                 if not success:
                     st.session_state["is_upload_valid"] = False
                     preview_status.error("Infrahub doesn't like it!", icon="🚨")
                     preview_status.exception(response)  # TODO: Improve error message
-                    preview_status.update(
-                        label=uploaded_file.name, state="error", expanded=True
-                    )
+                    preview_status.update(label=uploaded_file.name, state="error", expanded=True)
                 else:
                     # Otherwise we load the diff
-                    preview_status.success(
-                        "This is the diff against current schema", icon="👇"
-                    )
+                    preview_status.success("This is the diff against current schema", icon="👇")
                     preview_status.code(yaml.safe_dump(response), language="yaml")
-                    preview_status.update(
-                        label=uploaded_file.name, state="complete", expanded=True
-                    )
+                    preview_status.update(label=uploaded_file.name, state="complete", expanded=True)
 
             # Something wrong happened with YAML
             except yaml.YAMLError as exc:
                 st.session_state["is_upload_valid"] = False
                 preview_status.error("This file contains a YAML error!", icon="🚨")
                 preview_status.exception(exc)  # TODO: Improve that?
-                preview_status.update(
-                    label=uploaded_file.name, state="error", expanded=True
-                )
+                preview_status.update(label=uploaded_file.name, state="error", expanded=True)
 
 # If someone clicks the button and upload is ok
 if apply_button and st.session_state.is_upload_valid:
@@ -107,16 +90,12 @@ if apply_button and st.session_state.is_upload_valid:
                 schemas_data.append(yaml.safe_load(uploaded_file.read()))
 
             except yaml.YAMLError as exc:
-                result_status.error(
-                    f"This file {uploaded_file.name} contains an error!", icon="🚨"
-                )
+                result_status.error(f"This file {uploaded_file.name} contains an error!", icon="🚨")
                 result_status.write(exc)
 
         # Call Infrahub API
         st.write("Calling Infrahub API...")
-        response = load_schema(
-            branch=st.session_state.infrahub_branch, schemas=schemas_data
-        )
+        response = load_schema(branch=st.session_state.infrahub_branch, schemas=schemas_data)
         st.write("Computing results...")
 
         # Compute response
@@ -125,9 +104,7 @@ if apply_button and st.session_state.is_upload_valid:
             result_status.error("Infrahub doesn't like it!", icon="🚨")
             result_status.exception(response.errors)
         else:
-            result_status.update(
-                label="🚀 Schema loaded!", state="complete", expanded=True
-            )
+            result_status.update(label="🚀 Schema loaded!", state="complete", expanded=True)
 
             if response.schema_updated:
                 # TODO: Add an actual diff section ...

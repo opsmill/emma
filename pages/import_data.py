@@ -7,16 +7,16 @@ from infrahub_sdk.schema import NodeSchema
 from infrahub_sdk.utils import compare_lists
 from pydantic import BaseModel
 
-from emma.infrahub import add_branch_selector, get_client, get_schema
+from emma.infrahub import get_client, get_schema
+from emma.streamlit_utils import set_page_config
+from menu import menu_with_redirect
 
-st.set_page_config(page_title="Import Data")
-
-add_branch_selector(st.sidebar)
-
+set_page_config(title="Import Data")
 st.markdown("# Import Data from CSV file")
+menu_with_redirect()
 
-client = get_client(branch=st.session_state["infrahub_branch"])
-schema = get_schema(branch=st.session_state["infrahub_branch"])
+client = get_client(branch=st.session_state.infrahub_branch)
+schema = get_schema(branch=st.session_state.infrahub_branch)
 
 option = st.selectbox("Select which type of data you want to import?", options=schema.keys())
 
@@ -71,9 +71,8 @@ if uploaded_file is not None:
         if st.button("Import Data"):
             nbr_errors = 0
             with st.status("Loading data...", expanded=True) as status:
-
                 for index, row in edited_df.iterrows():
-                    node = client.create(kind=option, **dict(row), branch=st.session_state["infrahub_branch"])
+                    node = client.create(kind=option, **dict(row), branch=st.session_state.infrahub_branch)
                     node.save(allow_upsert=True)
                     edited_df.at[index, "Status"] = "ONGOING"
                     st.write(f"Item {index} CREATED id:{node.id}\n")

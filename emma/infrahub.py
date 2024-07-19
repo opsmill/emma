@@ -9,11 +9,11 @@ from infrahub_sdk import InfrahubClientSync, InfrahubNodeSync
 from infrahub_sdk.exceptions import (
     AuthenticationError,
     GraphQLError,
+    JsonDecodeError,
     ServerNotReachableError,
     ServerNotResponsiveError,
 )
 from infrahub_sdk.schema import GenericSchema, NodeSchema
-from streamlit.delta_generator import DG
 
 if TYPE_CHECKING:
     from infrahub_sdk.node import Attribute
@@ -25,10 +25,21 @@ class InfrahubStatus(str, Enum):
     ERROR = "error"
 
 
+def get_instance_address() -> str:
+    if "infrahub_address" not in st.session_state:
+        st.session_state["infrahub_address"] = os.environ.get("INFRAHUB_ADDRESS", "")
+    return st.session_state["infrahub_address"]
+
+
+def get_instance_branch() -> str:
+    if "infrahub_branch" not in st.session_state:
+        st.session_state["infrahub_branch"] = None
+    return st.session_state["infrahub_address"]
+
+
 @st.cache_resource
-def get_client(branch: str | None = None) -> InfrahubClientSync:
-    st.session_state["infrahub_address"] = os.environ.get("INFRAHUB_ADDRESS")
-    return InfrahubClientSync(address=st.session_state["infrahub_address"])
+def get_client(address: str | None = None, branch: str | None = None) -> InfrahubClientSync:
+    return InfrahubClientSync(address=address)
 
 
 @st.cache_data
@@ -41,33 +52,44 @@ def load_schema(branch: str, schemas: list[dict] | None = None):
     client = get_client(branch=branch)
     return client.schema.load(schemas, branch)
 
+
 def check_schema(branch: str, schemas: list[dict] | None = None):
     client = get_client(branch=branch)
     return client.schema.check(schemas, branch)
 
-def get_branches():
-    client = get_client()
+
+def get_branches(address: str | None = None):
+    client = get_client(address=address)
     return client.branch.all()
+
 
 def create_branch(branch_name: str):
     client = get_client()
     return client.branch.create(branch_name)
-
-def check_reachability(client: InfrahubClientSync) -> bool:
-    try:
-        get_version(client=client)
-        st.session_state["infrahub_status"] = InfrahubStatus.OK
-        return True
-    except (AuthenticationError, GraphQLError, HTTPError, ServerNotReachableError, ServerNotResponsiveError) as exc:
-        st.session_state["infrahub_error_message"] = str(exc)
-        st.session_state["infrahub_status"] = InfrahubStatus.ERROR
-        return False
 
 
 def get_version(client: InfrahubClientSync) -> str:
     query = "query { InfrahubInfo { version }}"
     response = client.execute_graphql(query=query, raise_for_error=True)
     return response["InfrahubInfo"]["version"]
+
+
+def check_reachability(client: InfrahubClientSync) -> bool:
+    try:
+        get_version(client=client)
+        st.session_state["infrahub_status"] = InfrahubStatus.OK
+        return True
+    except (
+        AuthenticationError,
+        GraphQLError,
+        HTTPError,
+        JsonDecodeError,
+        ServerNotReachableError,
+        ServerNotResponsiveError,
+    ) as exc:
+        st.session_state["infrahub_error_message"] = str(exc)
+        st.session_state["infrahub_status"] = InfrahubStatus.ERROR
+        return False
 
 
 def get_objects_as_df(kind: str, page=1, page_size=20, include_id: bool = True, branch: str | None = None):
@@ -91,9 +113,10 @@ def convert_node_to_dict(obj: InfrahubNodeSync, include_id: bool = True) -> dict
 
     return data
 
+
 def convert_schema_to_dict(
-        node: GenericSchema | NodeSchema,
-        )-> dict[str, Any]:
+    node: GenericSchema | NodeSchema,
+) -> dict[str, Any]:
     """
     Convert a schema item (GenericSchema or NodeSchema) to a dictionary.
 
@@ -112,7 +135,7 @@ def convert_schema_to_dict(
         "used_by": ", ".join(node.used_by) if hasattr(node, "used_by") else None,
         "inherit_from": ", ".join(node.inherit_from) if hasattr(node, "inherit_from") else None,
         "attributes": [],
-        "relationships": []
+        "relationships": [],
     }
 
     for attr in node.attributes:
@@ -135,11 +158,12 @@ def convert_schema_to_dict(
             "description": rel.description,
             "kind": rel.kind,
             "cardinality": rel.cardinality,
-            "branch": rel.branch
+            "branch": rel.branch,
         }
         data["relationships"].append(rel_dict)
 
     return data
+
 
 def dict_to_df(data: dict[str, Any]) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """
@@ -149,7 +173,8 @@ def dict_to_df(data: dict[str, Any]) -> Tuple[pd.DataFrame, pd.DataFrame, pd.Dat
         data (dict[str, Any]): The schema data as a dictionary.
 
     Returns:
-        Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]: A tuple containing the main information, attributes, and relationships dataframes.
+        Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]: A tuple containing the main information, attributes,
+        and relationships dataframes.
     """
     inherit_or_use_label = "Inherit from" if data["inherit_from"] else "Used by"
     inherit_or_use_value = data["inherit_from"] if data["inherit_from"] else data["used_by"]
@@ -159,7 +184,7 @@ def dict_to_df(data: dict[str, Any]) -> Tuple[pd.DataFrame, pd.DataFrame, pd.Dat
         "Namespace": [data["namespace"]],
         "Label": [data["label"]],
         "Description": [data["description"]],
-        inherit_or_use_label: [inherit_or_use_value]
+        inherit_or_use_label: [inherit_or_use_value],
     }
 
     attributes_df = pd.DataFrame(data["attributes"])
@@ -168,30 +193,3 @@ def dict_to_df(data: dict[str, Any]) -> Tuple[pd.DataFrame, pd.DataFrame, pd.Dat
     main_info_df = pd.DataFrame(main_info)
 
     return main_info_df, attributes_df, relationships_df
-
-def add_branch_selector(sidebar: DG):
-    branches = get_branches()
-    if "infrahub_branch" not in st.session_state:
-        st.session_state["infrahub_branch"] = "main"
-    sidebar.selectbox(label="branch", options=branches.keys(), key="infrahub_branch")
-
-
-def add_infrahub_address(sidebar: DG):
-    if "infrahub_address" not in st.session_state:
-        st.session_state["infrahub_address"] = os.environ.get("INFRAHUB_ADDRESS")
-    sidebar.markdown(f"Infrahub address: :blue-background[{st.session_state["infrahub_address"]}]")
-
-
-@st.experimental_dialog("Create a branch")
-def create_branch_dialog():
-    new_branch_name = st.text_input("Branch name...")
-    if st.button("Submit"):
-        # Here create branch in infrahub
-        create_branch(new_branch_name)
-        st.session_state["infrahub_branch"] = new_branch_name
-        st.rerun()
-
-
-def add_create_branch_button(sidebar: DG):
-    if sidebar.button("Create a new branch"):
-        create_branch_dialog()
