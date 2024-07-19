@@ -120,23 +120,9 @@ def update_infrahub_instance_dialog():
 def create_branch_dialog():
     new_branch_name = st.text_input("Branch name...")
     if st.button("Submit"):
-        # Here create branch in infrahub
         create_branch(new_branch_name)
         st.session_state["infrahub_branch"] = new_branch_name
         st.rerun()
-
-
-# def add_branch_selector(sidebar: DG):
-#     branches = get_branches()
-#     if "infrahub_branch" not in st.session_state:
-#         st.session_state["infrahub_branch"] = "main"
-#     sidebar.selectbox(label="branch", options=branches.keys(), key="infrahub_branch")
-
-
-# def add_infrahub_address(sidebar: DG):
-#     if "infrahub_address" not in st.session_state:
-#         st.session_state["infrahub_address"] = os.environ.get("INFRAHUB_ADDRESS")
-#     sidebar.markdown(f"Infrahub address: :blue-background[{st.session_state["infrahub_address"]}]")
 
 
 def update_infrahub_instance_button(sidebar: DG):
