@@ -1,6 +1,11 @@
 import streamlit as st
 
-from emma.streamlit_utils import display_branch_selector, display_infrahub_address, update_infrahub_instance_button
+from emma.streamlit_utils import (
+    add_create_branch_button,
+    display_branch_selector,
+    display_infrahub_address,
+    update_infrahub_instance_button,
+)
 
 
 def menu():
@@ -12,6 +17,7 @@ def menu():
     update_infrahub_instance_button(st.sidebar)
     # Display Branch Selector
     display_branch_selector(st.sidebar)  # Always display the branch selector
+    add_create_branch_button(st.sidebar)
     st.sidebar.divider()
     # Pages Goes there
     st.sidebar.page_link("main.py", label="🏠 Homepage")
