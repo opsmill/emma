@@ -82,9 +82,9 @@ def transform_schema_overview(schema_dict):
     return overview
 
 
-def merge_overviews(overviews):
+def merge_overviews(overview_list):
     merged = {}
-    for overview in overviews:
+    for overview in overview_list:
         for namespace, nodes in overview.items():
             if namespace not in merged:
                 merged[namespace] = {}
@@ -97,11 +97,11 @@ def merge_overviews(overviews):
 
 def generate_markdown(chat_log):
     buffer = io.BytesIO()
-    for message in chat_log:
-        if message["role"] == "user":
-            out = f"## User\n\n{message['content']}\n\n"
+    for entry in chat_log:
+        if entry["role"] == "user":
+            out = f"## User\n\n{entry['content']}\n\n"
         else:
-            out = f"## Assistant\n\n{message['content']}\n\n"
+            out = f"## Assistant\n\n{entry['content']}\n\n"
         buffer.write(out.encode("utf-8"))
     buffer.seek(0)
     return buffer
