@@ -179,7 +179,7 @@ def add_branch_selector(sidebar: DG):
 def add_infrahub_address(sidebar: DG):
     if "infrahub_address" not in st.session_state:
         st.session_state["infrahub_address"] = os.environ.get("INFRAHUB_ADDRESS")
-    sidebar.markdown(f"Infrahub address: :blue-background[{st.session_state["infrahub_address"]}]")
+    sidebar.markdown(f"Infrahub address: :blue-background[{st.session_state['infrahub_address']}]")
 
 
 @st.experimental_dialog("Create a branch")
