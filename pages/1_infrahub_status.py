@@ -2,7 +2,7 @@ import os
 
 import streamlit as st
 
-from emma.infrahub import check_reacheability, get_client, get_schema
+from emma.infrahub import check_reachability, get_client, get_schema
 
 st.set_page_config(page_title="Infrahub")
 
@@ -15,13 +15,13 @@ if "infrahub_address" not in st.session_state:
 
 infrahub_address = st.session_state["infrahub_address"]
 
-is_reacheable = check_reacheability(client=client)
+is_reachable = check_reachability(client=client)
 
 # st.sidebar.header("Plotting Demo")
 st.write(f"Infrahub : {infrahub_address}")
-st.write(f"Reacheable : {is_reacheable}")
+st.write(f"reachable : {is_reachable}")
 
-if is_reacheable:
+if is_reachable:
     schemas = get_schema()
     st.write(f"Schemas : {len(schemas)}")
 

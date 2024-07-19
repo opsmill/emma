@@ -37,12 +37,23 @@ def get_schema(branch: str | None = None):
     return client.schema.all(branch=branch)
 
 
+def load_schema(branch: str, schemas: list[dict] | None = None):
+    client = get_client(branch=branch)
+    return client.schema.load(schemas, branch)
+
+def check_schema(branch: str, schemas: list[dict] | None = None):
+    client = get_client(branch=branch)
+    return client.schema.check(schemas, branch)
+
 def get_branches():
     client = get_client()
     return client.branch.all()
 
+def create_branch(branch_name: str):
+    client = get_client()
+    return client.branch.create(branch_name)
 
-def check_reacheability(client: InfrahubClientSync) -> bool:
+def check_reachability(client: InfrahubClientSync) -> bool:
     try:
         get_version(client=client)
         st.session_state["infrahub_status"] = InfrahubStatus.OK
@@ -164,3 +175,23 @@ def add_branch_selector(sidebar: DG):
         st.session_state["infrahub_branch"] = "main"
     sidebar.selectbox(label="branch", options=branches.keys(), key="infrahub_branch")
 
+
+def add_infrahub_address(sidebar: DG):
+    if "infrahub_address" not in st.session_state:
+        st.session_state["infrahub_address"] = os.environ.get("INFRAHUB_ADDRESS")
+    sidebar.markdown(f"Infrahub address: :blue-background[{st.session_state["infrahub_address"]}]")
+
+
+@st.experimental_dialog("Create a branch")
+def create_branch_dialog():
+    new_branch_name = st.text_input("Branch name...")
+    if st.button("Submit"):
+        # Here create branch in infrahub
+        create_branch(new_branch_name)
+        st.session_state["infrahub_branch"] = new_branch_name
+        st.rerun()
+
+
+def add_create_branch_button(sidebar: DG):
+    if sidebar.button("Create a new branch"):
+        create_branch_dialog()
