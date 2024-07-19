@@ -5,6 +5,10 @@ description = "Emma is an agent designed to help you interact with Infrahub."
 authors = ["OpsMill <info@opsmill.com>"]
 readme = "README.md"
 
+packages = [
+    { include = "emma" }
+]
+
 [tool.poetry.dependencies]
 python = "^3.10"
 streamlit = "^1.36.0"
