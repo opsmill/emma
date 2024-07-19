@@ -36,18 +36,20 @@ class Message(BaseModel):
     message: str
 
 
-def validate_if_df_is_compatible_with_schema(df: pd.DataFrame, schema: NodeSchema) -> list[Message]:
+def validate_if_df_is_compatible_with_schema(df: pd.DataFrame, target_schema: NodeSchema) -> list[Message]:
     errors = []
     df_columns = list(df.columns.values)
 
-    _, _, missing_mandatory = compare_lists(list1=df_columns, list2=schema.mandatory_input_names)
+    _, _, missing_mandatory = compare_lists(list1=df_columns, list2=target_schema.mandatory_input_names)
     for item in missing_mandatory:
         errors.append(
             Message(severity=MessageSeverity.ERROR, message=f"mandatory column for {option!r} missing : {item!r}")
         )
         # errors.append(f"**ERROR**: mandatory column for {option!r} missing : {item!r}\n")
 
-    _, additional, _ = compare_lists(list1=df_columns, list2=schema.relationship_names + schema.attribute_names)
+    _, additional, _ = compare_lists(
+        list1=df_columns, list2=target_schema.relationship_names + target_schema.attribute_names
+    )
 
     for item in additional:
         errors.append(Message(severity=MessageSeverity.WARNING, message=f"unable to map {item} for {option!r}"))
@@ -60,12 +62,12 @@ if uploaded_file is not None:
 
     container = st.container(border=True)
 
-    errors = validate_if_df_is_compatible_with_schema(df=dataframe, schema=selected_schema)
-    if errors:
-        for error in errors:
+    _errors = validate_if_df_is_compatible_with_schema(df=dataframe, target_schema=selected_schema)
+    if _errors:
+        for error in _errors:
             container.error(error.message)
 
-    if not errors:
+    if not _errors:
         edited_df = st.data_editor(dataframe)
 
         if st.button("Import Data"):

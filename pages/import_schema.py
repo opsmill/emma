@@ -38,7 +38,7 @@ result_container = st.container(border=False)
 # TODO: Add session storage and so on
 # TODO: Handle states so if non valid or empty files button remains disabled
 # If something is uploaded ...
-if not apply_button and len(uploaded_files) > 0:
+if not apply_button and uploaded_files and len(uploaded_files) > 0:
     # Set upload as valid
     st.session_state["is_upload_valid"] = True
 
@@ -84,14 +84,15 @@ if apply_button and st.session_state.is_upload_valid:
         result_status.update(expanded=True)
 
         # Loop over all files to build schema list
-        for uploaded_file in uploaded_files:
-            try:
-                st.write(f"Loading `{uploaded_file.name}` ...")
-                schemas_data.append(yaml.safe_load(uploaded_file.read()))
+        if uploaded_files:
+            for uploaded_file in uploaded_files:
+                try:
+                    st.write(f"Loading `{uploaded_file.name}` ...")
+                    schemas_data.append(yaml.safe_load(uploaded_file.read()))
 
-            except yaml.YAMLError as exc:
-                result_status.error(f"This file {uploaded_file.name} contains an error!", icon="🚨")
-                result_status.write(exc)
+                except yaml.YAMLError as exc:
+                    result_status.error(f"This file {uploaded_file.name} contains an error!", icon="🚨")
+                    result_status.write(exc)
 
         # Call Infrahub API
         st.write("Calling Infrahub API...")

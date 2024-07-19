@@ -156,8 +156,8 @@ client = get_client(branch=st.session_state.infrahub_branch)
 schema_data = get_schema(branch=st.session_state.infrahub_branch)
 
 # Process schema data to separate Generics and Nodes
-generics = [item for item in schema_data.values() if isinstance(item, GenericSchema)]
-nodes = [item for item in schema_data.values() if isinstance(item, NodeSchema)]
+_generics = [item for item in schema_data.values() if isinstance(item, GenericSchema)]
+_nodes = [item for item in schema_data.values() if isinstance(item, NodeSchema)]
 
 
 # Create a Tab for "All Nodes" So if we want more Tab (i.e per Namespace) we could
@@ -167,7 +167,7 @@ with tabs[0]:
     col1, col2 = st.columns([3, 1])
 
     with col1:
-        selected_id = visualize_schema_flow(generics=generics, nodes=nodes, key="schema_flow_all")
+        _selected_id = visualize_schema_flow(generics=_generics, nodes=_nodes, key="schema_flow_all")
 
     with col2:
         # Display Tips
@@ -181,6 +181,6 @@ with tabs[0]:
             - **Toggle the minimap** for an overview of the graph.
             """,
         )
-        if selected_id:
-            st.markdown(f"### {selected_id}")
-            display_node_info(selected_id, generics, nodes)
+        if _selected_id:
+            st.markdown(f"### {_selected_id}")
+            display_node_info(_selected_id, _generics, _nodes)

@@ -38,7 +38,7 @@ def get_instance_branch() -> str:
 
 
 @st.cache_resource
-def get_client(address: str | None = None, branch: str | None = None) -> InfrahubClientSync:
+def get_client(address: str | None = None, branch: str | None = None) -> InfrahubClientSync:  # pylint: disable=unused-argument
     return InfrahubClientSync(address=address)
 
 
@@ -92,7 +92,7 @@ def check_reachability(client: InfrahubClientSync) -> bool:
         return False
 
 
-def get_objects_as_df(kind: str, page=1, page_size=20, include_id: bool = True, branch: str | None = None):
+def get_objects_as_df(kind: str, page=1, page_size=20, include_id: bool = True, branch: str | None = None):  # pylint: disable=unused-argument
     client = get_client()
 
     objs = client.all(kind=kind, branch=branch)
