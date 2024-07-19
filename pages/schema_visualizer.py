@@ -6,15 +6,21 @@ from streamlit_flow import streamlit_flow
 from streamlit_flow.elements import StreamlitFlowEdge, StreamlitFlowNode
 from streamlit_flow.layouts import LayeredLayout
 
-from emma.infrahub import add_branch_selector, convert_schema_to_dict, dict_to_df, get_schema
-from emma.streamlit_helper import display_expander
+from emma.infrahub import (
+    convert_schema_to_dict,
+    dict_to_df,
+    get_client,
+    get_schema,
+)
+from emma.streamlit_utils import display_expander, set_page_config
+from menu import menu_with_redirect
+
+set_page_config(title="Schema Visualizer")
+st.markdown("# Schema Visualizer")
+menu_with_redirect()
 
 
-def visualize_schema_flow(
-    generics: List[GenericSchema],
-    nodes: List[NodeSchema],
-    key: str
-) -> str:
+def visualize_schema_flow(generics: List[GenericSchema], nodes: List[NodeSchema], key: str) -> str:
     """
     Visualize the schema using Streamlit Flow.
 
@@ -39,7 +45,7 @@ def visualize_schema_flow(
                 data={"content": node_id},
                 node_type="input",
                 source_position="right",
-                style={"backgroundColor": "lightblue"}
+                style={"backgroundColor": "lightblue"},
             )
         )
         for rel in generic.relationships:
@@ -51,7 +57,7 @@ def visualize_schema_flow(
                     target=peer_id,
                     animated=True,
                     label=rel.name,
-                    style={"stroke": "#8884d8"}
+                    style={"stroke": "#8884d8"},
                 )
             )
 
@@ -65,7 +71,7 @@ def visualize_schema_flow(
                 data={"content": node_id},
                 node_type="default",
                 source_position="right",
-                style={"backgroundColor": "orange"}
+                style={"backgroundColor": "orange"},
             )
         )
         for rel in node.relationships:
@@ -78,7 +84,7 @@ def visualize_schema_flow(
                     target=peer_id,
                     animated=True,
                     label=rel.name,
-                    style=edge_style
+                    style=edge_style,
                 )
             )
 
@@ -87,12 +93,7 @@ def visualize_schema_flow(
         key=key,
         init_nodes=flow_nodes,
         init_edges=flow_edges,
-        layout=LayeredLayout(
-            direction="right",
-            horizontal_spacing=200,
-            vertical_spacing=150,
-            node_layer_spacing=200
-        ),
+        layout=LayeredLayout(direction="right", horizontal_spacing=200, vertical_spacing=150, node_layer_spacing=200),
         fit_view=True,
         show_minimap=True,
         show_controls=True,
@@ -101,7 +102,7 @@ def visualize_schema_flow(
         height=1000,
         get_node_on_click=True,
         get_edge_on_click=True,
-        hide_watermark=True
+        hide_watermark=True,
     )
 
     return selected_id
@@ -135,44 +136,38 @@ def display_node_info(selected_id: str, generics: List[GenericSchema], nodes: Li
 
         st.markdown("##### Attributes")
         if not attributes_df.empty:
-            st.dataframe(attributes_df)
+            st.dataframe(data=attributes_df, hide_index=True)
         else:
             st.markdown("No Attributes found.")
 
         st.markdown("##### Relationships")
         if not relationships_df.empty:
-            st.dataframe(relationships_df)
+            st.dataframe(data=relationships_df, hide_index=True)
         else:
             st.markdown("No Relationships found.")
     else:
         st.markdown("No additional information available for this ID.")
 
-# Force wide mode
-st.set_page_config(page_title="Schema Visualizer", layout="wide")
+
+# Check if infrahub_address is set and get the client
+client = get_client(branch=st.session_state.infrahub_branch)
 
 # Fetch schema data based on the branch
-add_branch_selector(st.sidebar)
-schema_data = get_schema(branch=st.session_state["infrahub_branch"])
+schema_data = get_schema(branch=st.session_state.infrahub_branch)
 
 # Process schema data to separate Generics and Nodes
-generics = [item for item in schema_data.values() if isinstance(item, GenericSchema)]
-nodes = [item for item in schema_data.values() if isinstance(item, NodeSchema)]
+_generics = [item for item in schema_data.values() if isinstance(item, GenericSchema)]
+_nodes = [item for item in schema_data.values() if isinstance(item, NodeSchema)]
 
 
 # Create a Tab for "All Nodes" So if we want more Tab (i.e per Namespace) we could
 tabs = st.tabs(["All Nodes"])
 
 with tabs[0]:
-    st.markdown("## Schema Visualization")
-
-    col1, col2 = st.columns([5, 3])
+    col1, col2 = st.columns([3, 1])
 
     with col1:
-        selected_id = visualize_schema_flow(
-            generics=generics,
-            nodes=nodes,
-            key="schema_flow_all"
-        )
+        _selected_id = visualize_schema_flow(generics=_generics, nodes=_nodes, key="schema_flow_all")
 
     with col2:
         # Display Tips
@@ -184,8 +179,8 @@ with tabs[0]:
             - **Use the controls** on the graph to zoom and pan.
             - **Hover over edges** to see relationship labels.
             - **Toggle the minimap** for an overview of the graph.
-            """
+            """,
         )
-        if selected_id:
-            st.markdown(f"### {selected_id}")
-            display_node_info(selected_id, generics, nodes)
+        if _selected_id:
+            st.markdown(f"### {_selected_id}")
+            display_node_info(_selected_id, _generics, _nodes)

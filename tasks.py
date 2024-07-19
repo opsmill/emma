@@ -6,7 +6,7 @@ MAIN_DIRECTORY_PATH = Path(__file__).parent
 
 
 @task
-def format(context: Context):
+def format(context: Context):  # pylint: disable=redefined-builtin
     """Run RUFF to format all Python files."""
 
     exec_cmds = ["ruff format .", "ruff check . --fix"]
