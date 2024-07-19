@@ -39,8 +39,10 @@ else:
             response = agent.invoke(input=input)
 
             if "thread_id" not in st.session_state:
-                st.session_state.thread_id = response.return_values["thread_id"]
+                st.session_state.thread_id = response.return_values["thread_id"]  # type: ignore[union-attr]
 
-            st.write(response.return_values["output"])
+            st.write(response.return_values["output"])  # type: ignore[union-attr]
 
-        st.session_state.messages.append({"role": "assistant", "content": response.return_values["output"]})
+        st.session_state.messages.append(
+            {"role": "assistant", "content": response.return_values["output"]}  # type: ignore[union-attr]
+        )
