@@ -27,7 +27,7 @@ RUN poetry install --no-ansi --no-root --no-directory --without dev  && \
 
 # Copy application and install it
 COPY . ./
-RUN poetry install --no-ansi --no-root --no-directory --without dev
+RUN poetry install --no-ansi --no-directory --without dev
 
 # Run streamlite app
 EXPOSE 8501
