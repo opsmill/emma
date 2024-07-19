@@ -26,15 +26,15 @@ class InfrahubStatus(str, Enum):
 
 
 def get_instance_address() -> str:
-    if "infrahub_address" not in st.session_state:
-        st.session_state["infrahub_address"] = os.environ.get("INFRAHUB_ADDRESS", "")
+    if "infrahub_address" not in st.session_state or not st.session_state["infrahub_address"]:
+        st.session_state["infrahub_address"] = os.environ.get("INFRAHUB_ADDRESS")
     return st.session_state["infrahub_address"]
 
 
 def get_instance_branch() -> str:
     if "infrahub_branch" not in st.session_state:
         st.session_state["infrahub_branch"] = None
-    return st.session_state["infrahub_address"]
+    return st.session_state["infrahub_branch"]
 
 
 @st.cache_resource
