@@ -1,0 +1,86 @@
+---
+# yamllint disable rule:truthy rule:truthy rule:line-length
+name: "CI"
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  yaml-lint:
+    runs-on: "ubuntu-latest"
+    timeout-minutes: 5
+    steps:
+      - name: "Check out repository code"
+        uses: "actions/checkout@v4"
+      - name: "Setup environment"
+        run: "pip install yamllint==1.35.1"
+      - name: "Linting: yamllint"
+        run: "yamllint -s ."
+
+  python-lint:
+    runs-on: "ubuntu-latest"
+    timeout-minutes: 5
+    steps:
+      - name: "Check out repository code"
+        uses: "actions/checkout@v4"
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: "Setup environment"
+        run: |
+          pipx install poetry
+          poetry config virtualenvs.prefer-active-python true
+          pip install invoke toml
+      - name: "Install Package"
+        run: "poetry install --all-extras"
+      - name: "Linting: ruff check"
+        run: "poetry run ruff check ."
+      - name: "Linting: ruff format"
+        run: "poetry run ruff format --check --diff ."
+      - name: "Mypy Tests"
+        run: "poetry run mypy --show-error-codes ."
+      - name: "Pylint Tests"
+        run: "poetry run pylint emma pages *.py"
+
+  # linter:
+  #   runs-on: "ubuntu-latest"
+  #   timeout-minutes: 5
+  #   env:
+  #     VALIDATE_PYTHON_MYPY: true
+  #     VALIDATE_PYTHON_RUFF: true
+  #     VALIDATE_PYTHON_PYLINT: true
+  #     VALIDATE_YAML: true
+  #     VALIDATE_GITHUB_ACTIONS: true
+  #     PYTHON_MYPY_CONFIG_FILE: pyproject.toml
+  #     PYTHON_RUFF_CONFIG_FILE: pyproject.toml
+  #     MULTI_STATUS: false
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v4
+  #       with:
+  #         # super-linter needs the full git history to get the
+  #         # list of files that changed across commits
+  #         fetch-depth: 0
+
+  #     - name: Set up Python
+  #       uses: actions/setup-python@v5
+  #       with:
+  #         python-version: "3.12"
+  #     - name: "Setup environment"
+  #       run: |
+  #         pipx install poetry
+  #         poetry config virtualenvs.prefer-active-python true
+  #     - name: "Install Package"
+  #       run: "poetry install"
+
+  #     - name: Super-linter
+  #       uses: super-linter/super-linter/slim@v6.7.0
+  #       env:
+  #         PYTHONPATH: "/github/workspace:/github/workflow/.venv/lib/python3.12/site-packages"

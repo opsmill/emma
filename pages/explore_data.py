@@ -32,7 +32,7 @@ column_mapping = {
     "default": st.column_config.Column,
 }
 
-attr_kind_map = []
+attr_kind_map: list = []
 column_config = {}
 for attr in selected_schema.attributes:
     column_class = column_mapping.get(attr.kind, st.column_config.Column)
