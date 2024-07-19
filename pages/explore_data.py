@@ -11,8 +11,8 @@ menu_with_redirect()
 
 
 @st.cache_data
-def convert_df_to_csv(df: DataFrame):
-    return df.to_csv(index=False).encode("utf-8")
+def convert_df_to_csv(dataframe: DataFrame):
+    return dataframe.to_csv(index=False).encode("utf-8")
 
 
 client = get_client(branch=st.session_state.infrahub_branch)

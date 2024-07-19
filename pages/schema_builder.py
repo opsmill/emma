@@ -31,12 +31,12 @@ else:
             st.markdown(prompt)
 
         with st.chat_message("assistant"):
-            input = {"content": prompt}
+            chat_input = {"content": prompt}
 
             if "thread_id" in st.session_state:
-                input["thread_id"] = st.session_state.thread_id
+                chat_input["thread_id"] = st.session_state.thread_id
 
-            response = agent.invoke(input=input)
+            response = agent.invoke(input=chat_input)
 
             if "thread_id" not in st.session_state:
                 st.session_state.thread_id = response.return_values["thread_id"]  # type: ignore[union-attr]
