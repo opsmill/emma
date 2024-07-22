@@ -11,7 +11,7 @@ from emma.infrahub import check_schema, get_schema
 from emma.streamlit_utils import set_page_config
 from menu import menu_with_redirect
 
-client = OpenAI(base_url="https://emma-gateway.cloudflare-096.workers.dev/v1", api_key="Emma doesn't require one!")
+client = OpenAI(base_url="https://emma.opsmill.cloud/v1", api_key="Emma doesn't require one!")
 
 INITIAL_PROMPT_HEADER = """The following is a user request for a new schema, or a modification.
 You are to generate a new schema segment that will work with the provided existing schema.
@@ -198,12 +198,13 @@ with col2:
     # Check Schema button
     if st.button("Check Schema"):
         combined_code = "\n\n".join(
-            re.findall(r"```(.*?)```", "\n\n".join(x["content"] for x in st.session_state.messages), re.DOTALL)
+            re.findall(r"```(?:\w+)?(.*?)```", st.session_state.messages[-1]["content"], re.DOTALL)
         )
 
-        schema_result, schema_detail = check_schema(st.session_state["infrahub_branch"], combined_code)
+        schema_result, schema_detail = check_schema(st.session_state["infrahub_branch"], yaml.safe_load(combined_code))
 
         if schema_result:
-            st.write("Schema Check Result:", schema_detail)
+            st.write("Schema is valid!\n\nDiff:", schema_detail)
         else:
-            st.exception("Uhoh! We've got a problem.\n", schema_detail)
+            e = RuntimeError("Uhoh! We've got a problem.\n" + schema_detail)
+            st.exception(e)
