@@ -22,9 +22,9 @@ st.markdown(
 if "infrahub_address" not in st.session_state:
     st.session_state.infrahub_address = None
 
-if "infrahub_branch" not in st.session_state:
-    st.session_state.infrahub_branch = None
-    st.session_state._infrahub_branch = st.session_state.infrahub_branch
+# if "infrahub_branch" not in st.session_state:
+#     st.session_state.infrahub_branch = None
+#     st.session_state._infrahub_branch = st.session_state.infrahub_branch
 
 ensure_infrahub_address_and_branch()
 menu()

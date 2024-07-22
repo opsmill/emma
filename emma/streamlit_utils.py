@@ -1,7 +1,14 @@
 import streamlit as st
 from streamlit.delta_generator import DG
 
-from emma.infrahub import check_reachability, create_branch, get_branches, get_client, get_instance_address
+from emma.infrahub import (
+    check_reachability,
+    create_branch,
+    get_branches,
+    get_client,
+    get_instance_address,
+    get_instance_branch,
+)
 
 
 def set_page_config(title: str, icon: str | None = None, wide: bool | None = True):
@@ -30,11 +37,14 @@ def set_branch():
 
 def display_branch_selector(sidebar: DG):
     branches = get_branches(address=st.session_state.infrahub_address)
-    if "infrahub_branch" not in st.session_state:
-        if st.session_state._infrahub_branch is None:
-            st.session_state._infrahub_branch = "main"
-    else:
+    current_branch = get_instance_branch()
+    if current_branch:
         st.session_state._infrahub_branch = st.session_state.infrahub_branch
+    elif "_infrahub_branch" not in st.session_state:
+        st.session_state._infrahub_branch = "main"
+        st.session_state.infrahub_branch = "main"
+    else:
+        st.session_state._infrahub_branch = None
     sidebar.selectbox(
         label="Branch:",
         options=branches.keys(),
