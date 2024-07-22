@@ -2,7 +2,6 @@ from typing import Tuple
 
 import streamlit as st
 from streamlit.delta_generator import DG
-from streamlit_theme import st_theme
 
 from emma.infrahub import check_reachability, create_branch, get_branches, get_client, get_instance_address
 
@@ -12,19 +11,6 @@ def set_page_config(title: str, icon: str | None = None, wide: bool | None = Tru
         st.set_page_config(page_title=title, page_icon=icon, layout="wide")
     else:
         st.set_page_config(page_title=title, page_icon=icon)
-
-
-def get_theme_settings() -> Tuple[str, str]:
-    """
-    Get theme settings for background and font color.
-
-    Returns:
-        Tuple[str, str]: Background color and font color.
-    """
-    theme = st_theme()
-    if theme:
-        return theme["backgroundColor"], theme["textColor"]
-    return "#FFFFFF", "#000000"  # Default to light mode colors if not set
 
 
 def display_expander(name: str, content: str) -> None:
