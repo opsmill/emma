@@ -1,6 +1,5 @@
 import datetime
 import io
-import os
 import re
 
 import streamlit as st
@@ -8,10 +7,9 @@ import yaml
 from langchain_community.agents.openai_assistant import OpenAIAssistantV2Runnable
 from openai import OpenAI
 
-from emma.infrahub import get_schema, check_schema
+from emma.infrahub import check_schema, get_schema
 from emma.streamlit_utils import set_page_config
 from menu import menu_with_redirect
-
 
 client = OpenAI(base_url="https://emma-gateway.cloudflare-096.workers.dev/v1", api_key="Emma doesn't require one!")
 
@@ -113,7 +111,9 @@ set_page_config(title="Schema Builder")
 st.markdown("# Schema Builder")
 menu_with_redirect()
 
-agent = OpenAIAssistantV2Runnable(assistant_id="asst_tQPcGt2OV7fuVgi4JmwsgeHJ", as_agent=True, client=client, check_every_ms=500)
+agent = OpenAIAssistantV2Runnable(
+    assistant_id="asst_tQPcGt2OV7fuVgi4JmwsgeHJ", as_agent=True, client=client, check_every_ms=500
+)
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
