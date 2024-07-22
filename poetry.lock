@@ -2579,6 +2579,20 @@ streamlit = ">=1.0.0"
 devel = ["playwright (==1.39.0)", "pytest (==7.4.0)", "pytest-playwright-snapshot (==1.0)", "pytest-rerunfailures (==12.0)", "requests (==2.31.0)", "wheel"]
 
 [[package]]
+name = "streamlit-sortables"
+version = "0.2.0"
+description = "A Streamlit component to provide sortable list."
+optional = false
+python-versions = ">=3.8,<4.0"
+files = [
+    {file = "streamlit_sortables-0.2.0-py3-none-any.whl", hash = "sha256:62dcac58eb25ff12a7cce748d2b56d20fdb917d93bffd6d008f96bc96b920018"},
+    {file = "streamlit_sortables-0.2.0.tar.gz", hash = "sha256:b82b3e27255a7f02b25c97a5d212edc067aff5613ce568e4fecb17bb98daffd0"},
+]
+
+[package.dependencies]
+streamlit = ">=1.0.0"
+
+[[package]]
 name = "tenacity"
 version = "8.5.0"
 description = "Retry code until it succeeds"
@@ -3086,4 +3100,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "406ae5507734fba392fce2ca3a9a6e97570c554a12b935be93bd0033cff5493a"
+content-hash = "b17c14ddeb0079dfce09365729b533e08e098487305f5cfe57cf107609b20467"
