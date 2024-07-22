@@ -112,7 +112,7 @@ st.markdown("# Schema Builder")
 menu_with_redirect()
 
 agent = OpenAIAssistantV2Runnable(
-    assistant_id="asst_tQPcGt2OV7fuVgi4JmwsgeHJ", as_agent=True, client=client, check_every_ms=500
+    assistant_id="asst_tQPcGt2OV7fuVgi4JmwsgeHJ", as_agent=True, client=client, check_every_ms=1000
 )
 
 if "messages" not in st.session_state:
@@ -148,7 +148,7 @@ demo_prompts = [
     "Come up with a simple schema for NTP.",
 ]
 
-if st.session_state.messages == []:
+if not st.session_state.messages:
     # Add buttons for demo prompts
     st.markdown("### Try me!")
 
