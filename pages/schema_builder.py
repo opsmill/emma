@@ -145,7 +145,7 @@ if "infrahub_schema_fid" not in st.session_state:
 demo_prompts = [
     "Generate a schema for kubernetes. It must contain Cluster, Node, Namespace.",
     "Build a DNS record schema, with a dropdown for record types.",
-    "Come up with a simple schema for NTP."
+    "Come up with a simple schema for NTP.",
 ]
 
 if st.session_state.messages == []:
@@ -208,7 +208,7 @@ if prompt:
     )
 
 # Create columns for buttons
-col1, col2, col3 = st.columns([1,4,1], gap="small")
+col1, col2, col3 = st.columns([1, 4, 1], gap="small")
 
 buttons_disabled = not st.session_state.messages
 
