@@ -1,10 +1,14 @@
-from typing import Tuple
-
 import streamlit as st
 from streamlit.delta_generator import DG
-from streamlit_theme import st_theme
 
-from emma.infrahub import check_reachability, create_branch, get_branches, get_client, get_instance_address
+from emma.infrahub import (
+    check_reachability,
+    create_branch,
+    get_branches,
+    get_client,
+    get_instance_address,
+    get_instance_branch,
+)
 
 
 def set_page_config(title: str, icon: str | None = None, wide: bool | None = True):
@@ -12,19 +16,6 @@ def set_page_config(title: str, icon: str | None = None, wide: bool | None = Tru
         st.set_page_config(page_title=title, page_icon=icon, layout="wide")
     else:
         st.set_page_config(page_title=title, page_icon=icon)
-
-
-def get_theme_settings() -> Tuple[str, str]:
-    """
-    Get theme settings for background and font color.
-
-    Returns:
-        Tuple[str, str]: Background color and font color.
-    """
-    theme = st_theme()
-    if theme:
-        return theme["backgroundColor"], theme["textColor"]
-    return "#FFFFFF", "#000000"  # Default to light mode colors if not set
 
 
 def display_expander(name: str, content: str) -> None:
@@ -46,8 +37,14 @@ def set_branch():
 
 def display_branch_selector(sidebar: DG):
     branches = get_branches(address=st.session_state.infrahub_address)
-    if st.session_state._infrahub_branch is None:
+    current_branch = get_instance_branch()
+    if current_branch:
+        st.session_state._infrahub_branch = st.session_state.infrahub_branch
+    elif "_infrahub_branch" not in st.session_state:
         st.session_state._infrahub_branch = "main"
+        st.session_state.infrahub_branch = "main"
+    else:
+        st.session_state._infrahub_branch = None
     sidebar.selectbox(
         label="Branch:",
         options=branches.keys(),
