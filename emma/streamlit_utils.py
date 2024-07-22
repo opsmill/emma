@@ -112,7 +112,7 @@ def ensure_infrahub_address_and_branch():
 def update_infrahub_instance_dialog():
     new_instance = st.text_input("Infrahub Address...")
     if st.button("Submit"):
-        st.session_state["infrahub_address"] = new_instance
+        st.session_state.infrahub_address = new_instance
         st.rerun()
 
 
@@ -121,7 +121,7 @@ def create_branch_dialog():
     new_branch_name = st.text_input("Branch name...")
     if st.button("Submit"):
         create_branch(new_branch_name)
-        st.session_state["infrahub_branch"] = new_branch_name
+        st.session_state.infrahub_branch = new_branch_name
         st.rerun()
 
 
