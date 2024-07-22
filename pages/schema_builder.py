@@ -119,7 +119,7 @@ if "messages" not in st.session_state:
     st.session_state.messages = []
 
 if "infrahub_schema_fid" not in st.session_state:
-    infra_schema = get_schema(st.session_state["infrahub_branch"])
+    infra_schema = get_schema(st.session_state.infrahub_branch)
 
     transformed_schema = {
         k: transform_schema(v.model_dump())
@@ -136,11 +136,11 @@ if "infrahub_schema_fid" not in st.session_state:
     # Upload the file-like object
     message_file = client.files.create(file=file_like_object, purpose="assistants")
 
-    st.session_state["infrahub_schema_fid"] = message_file.id
+    st.session_state.infrahub_schema_fid = message_file.id
 
     # Create and store the schema overview for the initial prompt
     overviews = [transform_schema_overview(schema.model_dump()) for schema in infra_schema.values()]
-    st.session_state["schema_overview"] = merge_overviews(overviews)
+    st.session_state.schema_overview = merge_overviews(overviews)
 
 demo_prompts = [
     "Generate a schema for kubernetes. It must contain Cluster, Node, Namespace.",
@@ -154,7 +154,7 @@ if not st.session_state.messages:
 
     for demo in demo_prompts:
         if st.button(demo):
-            st.session_state["prompt_input"] = demo
+            st.session_state.prompt_input = demo
 
     st.markdown("Or enter a message below to start.")
 
@@ -163,8 +163,8 @@ prompt = st.chat_input("What is up?")
 
 # Set the input field
 if "prompt_input" in st.session_state:
-    prompt = st.session_state["prompt_input"]
-    del st.session_state["prompt_input"]
+    prompt = st.session_state.prompt_input
+    del st.session_state.prompt_input
 
 # Display previous messages
 for message in st.session_state.messages:
@@ -185,14 +185,14 @@ if prompt:
             chat_input["thread_id"] = st.session_state.thread_id
         else:
             chat_input["content"] = (
-                INITIAL_PROMPT_HEADER.format(overview=st.session_state["schema_overview"]) + chat_input["content"]
+                INITIAL_PROMPT_HEADER.format(overview=st.session_state.schema_overview) + chat_input["content"]
             )
 
         response = agent.invoke(
             input=chat_input,
             attachments=[
                 {
-                    "file_id": st.session_state["infrahub_schema_fid"],
+                    "file_id": st.session_state.infrahub_schema_fid,
                     "tools": [{"type": "file_search"}],
                 }
             ],
@@ -230,7 +230,7 @@ with col2:
             re.findall(r"```(?:\w+)?(.*?)```", st.session_state.messages[-1]["content"], re.DOTALL)
         )
 
-        schema_result, schema_detail = check_schema(st.session_state["infrahub_branch"], yaml.safe_load(combined_code))
+        schema_result, schema_detail = check_schema(st.session_state.infrahub_branch, yaml.safe_load(combined_code))
 
         if schema_result:
             st.write("Schema is valid!\n\nDiff:", schema_detail)

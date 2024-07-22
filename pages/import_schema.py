@@ -14,7 +14,7 @@ menu_with_redirect()
 
 # Initialization
 if "is_upload_valid" not in st.session_state:
-    st.session_state["is_upload_valid"] = False
+    st.session_state.is_upload_valid = False
 
 
 uploaded_files = st.file_uploader(
@@ -40,7 +40,7 @@ result_container = st.container(border=False)
 # If something is uploaded ...
 if not apply_button and uploaded_files and len(uploaded_files) > 0:
     # Set upload as valid
-    st.session_state["is_upload_valid"] = True
+    st.session_state.is_upload_valid = True
 
     # Loop over all uploaded files
     for uploaded_file in uploaded_files:
@@ -58,7 +58,7 @@ if not apply_button and uploaded_files and len(uploaded_files) > 0:
 
                 # If something went wrong
                 if not success:
-                    st.session_state["is_upload_valid"] = False
+                    st.session_state.is_upload_valid = False
                     preview_status.error("Infrahub doesn't like it!", icon="🚨")
                     preview_status.exception(response)  # TODO: Improve error message
                     preview_status.update(label=uploaded_file.name, state="error", expanded=True)
@@ -70,7 +70,7 @@ if not apply_button and uploaded_files and len(uploaded_files) > 0:
 
             # Something wrong happened with YAML
             except yaml.YAMLError as exc:
-                st.session_state["is_upload_valid"] = False
+                st.session_state.is_upload_valid = False
                 preview_status.error("This file contains a YAML error!", icon="🚨")
                 preview_status.exception(exc)  # TODO: Improve that?
                 preview_status.update(label=uploaded_file.name, state="error", expanded=True)
