@@ -142,15 +142,42 @@ if "infrahub_schema_fid" not in st.session_state:
     overviews = [transform_schema_overview(schema.model_dump()) for schema in infra_schema.values()]
     st.session_state["schema_overview"] = merge_overviews(overviews)
 
+demo_prompts = [
+    "Generate a schema for kubernetes. It must contain Cluster, Node, Namespace.",
+    "Build a DNS record schema, with a dropdown for record types.",
+    "Come up with a simple schema for NTP."
+]
+
+if st.session_state.messages == []:
+    # Add buttons for demo prompts
+    st.markdown("### Try me!")
+
+    for demo in demo_prompts:
+        if st.button(demo):
+            st.session_state["prompt_input"] = demo
+
+    st.markdown("Or enter a message below to start.")
+
+
+prompt = st.chat_input("What is up?")
+
+# Set the input field
+if "prompt_input" in st.session_state:
+    prompt = st.session_state["prompt_input"]
+    del st.session_state["prompt_input"]
+
+# Display previous messages
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-if prompt := st.chat_input("What is up?"):
+# Handle new user input
+if prompt:
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
 
+    # Existing code to handle the assistant response
     with st.chat_message("assistant"):
         chat_input = {"content": prompt}
 
@@ -181,10 +208,12 @@ if prompt := st.chat_input("What is up?"):
     )
 
 # Create columns for buttons
-col1, col2, *_ = st.columns([1, 1, 1, 1, 1, 1, 1, 1])
+col1, col2, col3 = st.columns([1,4,1], gap="small")
+
+buttons_disabled = not st.session_state.messages
 
 with col1:
-    if st.button("Export Chat"):
+    if st.button("Export Chat", disabled=buttons_disabled):
         markdown_buffer = generate_markdown(st.session_state.messages)
 
         st.download_button(
@@ -196,7 +225,7 @@ with col1:
 
 with col2:
     # Check Schema button
-    if st.button("Check Schema"):
+    if st.button("Check Schema", disabled=buttons_disabled):
         combined_code = "\n\n".join(
             re.findall(r"```(?:\w+)?(.*?)```", st.session_state.messages[-1]["content"], re.DOTALL)
         )
@@ -208,3 +237,8 @@ with col2:
         else:
             e = RuntimeError("Uhoh! We've got a problem.\n" + schema_detail)
             st.exception(e)
+
+with col3:
+    if st.button("New Chat", disabled=buttons_disabled):
+        st.session_state.messages = []
+        st.rerun()
