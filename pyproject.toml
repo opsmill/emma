@@ -18,7 +18,6 @@ langchain = "^0.2.6"
 langchain-community = "^0.2.6"
 openai = "^1.35.10"
 langchain-openai = "^0.1.14"
-langchain-huggingface = "^0.0.3"
 st-theme = "^1.2.3"
 streamlit-flow-component = "^1.2.8"
 
