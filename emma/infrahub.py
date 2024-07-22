@@ -25,7 +25,7 @@ class InfrahubStatus(str, Enum):
     ERROR = "error"
 
 
-def get_instance_address() -> str:
+def get_instance_address() -> str | None:
     if "infrahub_address" not in st.session_state or not st.session_state.infrahub_address:
         st.session_state.infrahub_address = os.environ.get("INFRAHUB_ADDRESS")
     return st.session_state.infrahub_address
