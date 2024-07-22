@@ -1,17 +1,19 @@
 import datetime
 import io
 import os
+import re
 
 import streamlit as st
 import yaml
 from langchain_community.agents.openai_assistant import OpenAIAssistantV2Runnable
 from openai import OpenAI
 
-from emma.infrahub import get_schema
+from emma.infrahub import get_schema, check_schema
 from emma.streamlit_utils import set_page_config
 from menu import menu_with_redirect
 
-client = OpenAI()
+
+client = OpenAI(base_url="https://emma-gateway.cloudflare-096.workers.dev/v1", api_key="Emma doesn't require one!")
 
 INITIAL_PROMPT_HEADER = """The following is a user request for a new schema, or a modification.
 You are to generate a new schema segment that will work with the provided existing schema.
@@ -111,80 +113,77 @@ set_page_config(title="Schema Builder")
 st.markdown("# Schema Builder")
 menu_with_redirect()
 
-if not os.environ.get("OPENAI_API_KEY"):
-    st.error("You must provide a valid OpenAI API Key to use this application : OPENAI_API_KEY")
-else:
-    agent = OpenAIAssistantV2Runnable(assistant_id="asst_tQPcGt2OV7fuVgi4JmwsgeHJ", as_agent=True)
+agent = OpenAIAssistantV2Runnable(assistant_id="asst_tQPcGt2OV7fuVgi4JmwsgeHJ", as_agent=True, client=client, check_every_ms=500)
 
-    if "openai_model" not in st.session_state:
-        st.session_state.openai_model = "gpt-4o"
+if "messages" not in st.session_state:
+    st.session_state.messages = []
 
-    if "messages" not in st.session_state:
-        st.session_state.messages = []
+if "infrahub_schema_fid" not in st.session_state:
+    infra_schema = get_schema(st.session_state["infrahub_branch"])
 
-    if "infrahub_schema_fid" not in st.session_state:
-        infra_schema = get_schema(st.session_state["infrahub_branch"])
+    transformed_schema = {
+        k: transform_schema(v.model_dump())
+        for k, v in infra_schema.items()
+        if v.namespace  # not in ("Core", "Profile", "Builtin")
+    }
 
-        transformed_schema = {
-            k: transform_schema(v.model_dump())
-            for k, v in infra_schema.items()
-            if v.namespace  # not in ("Core", "Profile", "Builtin")
-        }
+    yaml_schema = yaml.dump(transformed_schema, default_flow_style=False)
 
-        yaml_schema = yaml.dump(transformed_schema, default_flow_style=False)
+    # Convert the schema to a BytesIO object
+    file_like_object = io.BytesIO(yaml_schema.encode("utf-8"))
+    file_like_object.name = "current_schema.yaml.txt"
 
-        # Convert the schema to a BytesIO object
-        file_like_object = io.BytesIO(yaml_schema.encode("utf-8"))
-        file_like_object.name = "current_schema.yaml.txt"
+    # Upload the file-like object
+    message_file = client.files.create(file=file_like_object, purpose="assistants")
 
-        # Upload the file-like object
-        message_file = client.files.create(file=file_like_object, purpose="assistants")
+    st.session_state["infrahub_schema_fid"] = message_file.id
 
-        st.session_state["infrahub_schema_fid"] = message_file.id
+    # Create and store the schema overview for the initial prompt
+    overviews = [transform_schema_overview(schema.model_dump()) for schema in infra_schema.values()]
+    st.session_state["schema_overview"] = merge_overviews(overviews)
 
-        # Create and store the schema overview for the initial prompt
-        overviews = [transform_schema_overview(schema.model_dump()) for schema in infra_schema.values()]
-        st.session_state["schema_overview"] = merge_overviews(overviews)
+for message in st.session_state.messages:
+    with st.chat_message(message["role"]):
+        st.markdown(message["content"])
 
-    for message in st.session_state.messages:
-        with st.chat_message(message["role"]):
-            st.markdown(message["content"])
+if prompt := st.chat_input("What is up?"):
+    st.session_state.messages.append({"role": "user", "content": prompt})
+    with st.chat_message("user"):
+        st.markdown(prompt)
 
-    if prompt := st.chat_input("What is up?"):
-        st.session_state.messages.append({"role": "user", "content": prompt})
-        with st.chat_message("user"):
-            st.markdown(prompt)
+    with st.chat_message("assistant"):
+        chat_input = {"content": prompt}
 
-        with st.chat_message("assistant"):
-            chat_input = {"content": prompt}
-
-            if "thread_id" in st.session_state:
-                chat_input["thread_id"] = st.session_state.thread_id
-            else:
-                chat_input["content"] = (
-                    INITIAL_PROMPT_HEADER.format(overview=st.session_state["schema_overview"]) + chat_input["content"]
-                )
-
-            response = agent.invoke(
-                input=chat_input,
-                attachments=[
-                    {
-                        "file_id": st.session_state["infrahub_schema_fid"],
-                        "tools": [{"type": "file_search"}],
-                    }
-                ],
+        if "thread_id" in st.session_state:
+            chat_input["thread_id"] = st.session_state.thread_id
+        else:
+            chat_input["content"] = (
+                INITIAL_PROMPT_HEADER.format(overview=st.session_state["schema_overview"]) + chat_input["content"]
             )
 
-            if "thread_id" not in st.session_state:
-                st.session_state.thread_id = response.return_values["thread_id"]  # type: ignore[union-attr]
-
-            st.write(response.return_values["output"])  # type: ignore[union-attr]
-
-        st.session_state.messages.append(
-            {"role": "assistant", "content": response.return_values["output"]}  # type: ignore[union-attr]
+        response = agent.invoke(
+            input=chat_input,
+            attachments=[
+                {
+                    "file_id": st.session_state["infrahub_schema_fid"],
+                    "tools": [{"type": "file_search"}],
+                }
+            ],
         )
 
-    # Export to Markdown button
+        if "thread_id" not in st.session_state:
+            st.session_state.thread_id = response.return_values["thread_id"]  # type: ignore[union-attr]
+
+        st.write(response.return_values["output"])  # type: ignore[union-attr]
+
+    st.session_state.messages.append(
+        {"role": "assistant", "content": response.return_values["output"]}  # type: ignore[union-attr]
+    )
+
+# Create columns for buttons
+col1, col2, *_ = st.columns([1, 1, 1, 1, 1, 1, 1, 1])
+
+with col1:
     if st.button("Export Chat"):
         markdown_buffer = generate_markdown(st.session_state.messages)
 
@@ -194,3 +193,17 @@ else:
             file_name=f"schema_generator_log_{datetime.datetime.now(tz=datetime.timezone.utc)}.md",
             mime="text/markdown",
         )
+
+with col2:
+    # Check Schema button
+    if st.button("Check Schema"):
+        combined_code = "\n\n".join(
+            re.findall(r"```(.*?)```", "\n\n".join(x["content"] for x in st.session_state.messages), re.DOTALL)
+        )
+
+        schema_result, schema_detail = check_schema(st.session_state["infrahub_branch"], combined_code)
+
+        if schema_result:
+            st.write("Schema Check Result:", schema_detail)
+        else:
+            st.exception("Uhoh! We've got a problem.\n", schema_detail)
