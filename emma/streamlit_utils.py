@@ -1,5 +1,3 @@
-from typing import Tuple
-
 import streamlit as st
 from streamlit.delta_generator import DG
 
