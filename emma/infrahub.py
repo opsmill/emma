@@ -26,11 +26,7 @@ class InfrahubStatus(str, Enum):
 
 
 def get_instance_address() -> str:
-<<<<<<< HEAD
     if "infrahub_address" not in st.session_state or not st.session_state.infrahub_address:
-=======
-    if "infrahub_address" not in st.session_state or not st.session_state["infrahub_address"]:
->>>>>>> origin/main
         st.session_state.infrahub_address = os.environ.get("INFRAHUB_ADDRESS")
     return st.session_state.infrahub_address
 
