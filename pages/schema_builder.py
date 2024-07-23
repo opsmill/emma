@@ -133,7 +133,7 @@ def translate_errors(errors):
             location = " -> ".join(map(str, error["loc"][3:]))
             message = error["msg"]
             input_value = error["input"]
-            human_readable.append(f"{message}\n\n\tLocation: {location}\n\n\tInput: {json.dumps(input_value, indent=2)}\n")
+            human_readable.append(f"{message}\n\nLocation: {location}\n\nInput:\n```json\n{json.dumps(input_value, indent=2)}\n```")
         else:
             message = error["message"]
             code = error["extensions"]["code"]
