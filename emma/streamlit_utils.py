@@ -11,7 +11,8 @@ from emma.infrahub import (
 )
 
 
-def set_page_config(title: str, icon: str | None = None, wide: bool | None = True):
+def set_page_config(title: str | None = None, wide: bool | None = True):
+    icon = "static/emma-assist-character.png"
     if wide:
         st.set_page_config(page_title=title, page_icon=icon, layout="wide")
     else:
@@ -64,7 +65,9 @@ def display_infrahub_address(sidebar: DG):
 
 def input_infrahub_address():
     with st.form(key="input_address_form"):
-        new_address = st.text_input(label="Enter Infrahub Address", value=st.session_state.infrahub_address)
+        new_address = st.text_input(
+            label="Enter Infrahub Address", value=st.session_state.infrahub_address
+        )
         submit_address = st.form_submit_button(label="Submit")
         if submit_address and new_address:
             st.session_state.infrahub_address = new_address
@@ -74,11 +77,13 @@ def input_infrahub_address():
 def ensure_infrahub_address_and_branch():
     # Input Infrahub address via UI if not set
     if not get_instance_address():
-        st.info("""
+        st.info(
+            """
                 No INFRAHUB_ADDRESS found in your environment variable.
 
                 Please set the Infrahub Address.
-                """)
+                """
+        )
         input_infrahub_address()
 
     # Check if infrahub_address is set and get the client
@@ -91,8 +96,12 @@ def ensure_infrahub_address_and_branch():
 
             # If reachable, show success message and version info
             if not is_reachable:
-                st.error(f"Server address {address} is unreachable or not a valid Infrahub Instance.")
-                display_expander(name="Detail", content=st.session_state.infrahub_error_message)
+                st.error(
+                    f"Server address {address} is unreachable or not a valid Infrahub Instance."
+                )
+                display_expander(
+                    name="Detail", content=st.session_state.infrahub_error_message
+                )
                 input_infrahub_address()
                 st.stop()
 
@@ -130,3 +139,11 @@ def update_infrahub_instance_button(sidebar: DG):
 def add_create_branch_button(sidebar: DG):
     if sidebar.button("Create a new branch"):
         create_branch_dialog()
+
+
+def display_logo():
+    st.logo(
+        "static/opsmill-logo.png",
+        link="https://github.com/opsmill",
+        icon_image="static/opsmill-logo.png",
+    )

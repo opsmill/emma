@@ -3,11 +3,17 @@ import streamlit as st
 from emma.streamlit_utils import ensure_infrahub_address_and_branch, set_page_config
 from menu import menu
 
-set_page_config(title="Home", icon=":wave:")
+set_page_config(title="Homepage")
 
-st.write("# Welcome to Emma! :wave:")
+# Set columns to receive content
+left, right = st.columns([1, 1.6], gap="medium", vertical_alignment="center")
 
-st.markdown(
+# Left is for Emma avatar
+left.image("static/emma-assist-character.png", caption="Hello, I'm Emma")
+
+# Right is for the text
+right.write("# Welcome! :wave:")
+right.markdown(
     """
     Emma is an agent designed to help you interact with Infrahub.
 
@@ -21,10 +27,6 @@ st.markdown(
 
 if "infrahub_address" not in st.session_state:
     st.session_state.infrahub_address = None
-
-# if "infrahub_branch" not in st.session_state:
-#     st.session_state.infrahub_branch = None
-#     st.session_state._infrahub_branch = st.session_state.infrahub_branch
 
 ensure_infrahub_address_and_branch()
 menu()
