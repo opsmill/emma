@@ -23,7 +23,7 @@ def menu():
     st.sidebar.page_link("main.py", label="🏠 Homepage")
     st.sidebar.page_link("pages/data_exporter.py", label="🔭 Data Exporter")
     st.sidebar.page_link("pages/data_importer.py", label="📥 Data Importer")
-    st.sidebar.page_link("pages/schema_load.py", label="📦 Schema Loader")
+    st.sidebar.page_link("pages/schema_loader.py", label="📦 Schema Loader")
     st.sidebar.page_link("pages/schema_builder.py", label="👷 Schema Builder")
     st.sidebar.page_link("pages/schema_visualizer.py", label="👀 Schema Visualizer")
     st.sidebar.divider()
