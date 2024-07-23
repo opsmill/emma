@@ -25,8 +25,8 @@ class InfrahubStatus(str, Enum):
     ERROR = "error"
 
 
-def get_instance_address() -> str:
-    if "infrahub_address" not in st.session_state or not st.session_state["infrahub_address"]:
+def get_instance_address() -> str | None:
+    if "infrahub_address" not in st.session_state or not st.session_state.infrahub_address:
         st.session_state.infrahub_address = os.environ.get("INFRAHUB_ADDRESS")
     return st.session_state.infrahub_address
 
@@ -77,7 +77,7 @@ def get_version(client: InfrahubClientSync) -> str:
 def check_reachability(client: InfrahubClientSync) -> bool:
     try:
         get_version(client=client)
-        st.session_state["infrahub_status"] = InfrahubStatus.OK
+        st.session_state.infrahub_status = InfrahubStatus.OK
         return True
     except (
         AuthenticationError,
@@ -87,8 +87,8 @@ def check_reachability(client: InfrahubClientSync) -> bool:
         ServerNotReachableError,
         ServerNotResponsiveError,
     ) as exc:
-        st.session_state["infrahub_error_message"] = str(exc)
-        st.session_state["infrahub_status"] = InfrahubStatus.ERROR
+        st.session_state.infrahub_error_message = str(exc)
+        st.session_state.infrahub_status = InfrahubStatus.ERROR
         return False
 
 
