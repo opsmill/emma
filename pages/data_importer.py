@@ -45,6 +45,17 @@ def validate_if_df_is_compatible_with_schema(df: pd.DataFrame, target_schema: No
     for item in additional:
         errors.append(Message(severity=MessageSeverity.WARNING, message=f"unable to map {item} for {option!r}"))
 
+    for column in df_columns:
+        if column in target_schema.relationship_names:
+            for relationship_schema in target_schema.relationships:
+                if relationship_schema.name == column and relationship_schema.cardinality == "many":
+                    errors.append(
+                        Message(
+                            severity=MessageSeverity.ERROR,
+                            message=f"Only relationships with a cardinality of one are supported: {column!r}",
+                        )
+                    )
+
     return errors
 
 
