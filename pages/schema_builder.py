@@ -126,30 +126,32 @@ def generate_markdown(chat_log):
     return buffer
 
 
-def translate_errors(errors):
+def translate_errors(schema_errors):
     human_readable = []
-    for error in errors:
+    for error in schema_errors:
         if "loc" in error:
             location = " -> ".join(map(str, error["loc"][3:]))
-            message = error["msg"]
+            err_message = error["msg"]
             input_value = error["input"]
-            human_readable.append(f"{message}\n\nLocation: {location}\n\nInput:\n```json\n{json.dumps(input_value, indent=2)}\n```")
+            human_readable.append(
+                f"{err_message}\n\nLocation: {location}\n\nInput:\n```json\n{json.dumps(input_value, indent=2)}\n```"
+            )
         else:
-            message = error["message"]
+            err_message = error["message"]
             code = error["extensions"]["code"]
-            human_readable.append(f"Error Message: {message}\n\n\tCode: {code}\n")
+            human_readable.append(f"Error Message: {err_message}\n\n\tCode: {code}\n")
     return "\n\n".join(human_readable)
 
 
 def translate_success(data):
     human_readable = []
     diff = data["diff"]
-    
+
     if "added" in diff and diff["added"]:
         human_readable.append("Added:")
         for key, value in diff["added"].items():
             human_readable.append(f"  - {key}")
-    
+
     if "changed" in diff and diff["changed"]:
         human_readable.append("\n\nChanged:")
         for key, value in diff["changed"].items():
@@ -157,7 +159,7 @@ def translate_success(data):
             if "relationships" in value["changed"] and value["changed"]["relationships"]["added"]:
                 for rel_key, rel_value in value["changed"]["relationships"]["added"].items():
                     human_readable.append(f"    * Added relationship '{rel_key}' with value {rel_value}")
-    
+
     if "removed" in diff and diff["removed"]:
         human_readable.append("Removed:")
         for key, value in diff["removed"].items():
@@ -283,9 +285,7 @@ with col2:
     # Check Schema button
     if st.button("Check Schema", disabled=buttons_disabled):
         assistant_messages = [m for m in st.session_state.messages if m["role"] == "assistant"]
-        combined_code = "\n\n".join(
-            re.findall(r"```(?:\w+)?(.*?)```", assistant_messages[-1]["content"], re.DOTALL)
-        )
+        combined_code = "\n\n".join(re.findall(r"```(?:\w+)?(.*?)```", assistant_messages[-1]["content"], re.DOTALL))
 
         schema_result, schema_detail = check_schema(st.session_state.infrahub_branch, [yaml.safe_load(combined_code)])
 
@@ -321,8 +321,7 @@ with col3:
 if st.session_state.get("check_schema_errors"):
     if st.button("Send to Emma"):
         st.session_state.prompt_input = ERROR_PROMPT.format(
-            errors=st.session_state.check_schema_errors,
-            schema=st.session_state.combined_code
+            errors=st.session_state.check_schema_errors, schema=st.session_state.combined_code
         )
         del st.session_state.check_schema_errors
         st.rerun()  # Force rerun to handle new prompt input
