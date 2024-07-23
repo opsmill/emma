@@ -60,7 +60,7 @@ menu_with_redirect()
 
 schema = get_schema(branch=st.session_state.infrahub_branch)
 if schema:
-    option = st.selectbox("Select which models you want to explore?", schema.keys())
+    option = st.selectbox("Select which model you want to explore?", schema.keys())
 
 
 if option:
@@ -69,13 +69,18 @@ if option:
 
     column_labels = get_column_labels(selected_schema)
 
-    with st.expander(label="Personalization Tips", icon="💡"):
-        st.info("""
-        Drag and drop the column names to reorder them.
-        The columns marked as '(Mandatory)' cannot be omitted.
-        """)
+    st.info(
+        icon="💡",
+        body="""
+            You can personalize the CSV by removing Optional fields or re-ordering them.
 
-    omitted_columns = st.multiselect("Select optional columns to omit:", options=column_labels.optional)
+            Drag and drop the column names to reorder them
+            The columns marked as '(Mandatory)' cannot be omitted.
+            """,
+    )
+    omitted_columns = st.multiselect(
+        "Select optional columns to omit:", options=column_labels.optional, help="Choose the colums you want to omit"
+    )
     dataframe = dataframe.drop(columns=omitted_columns)
 
     column_mapping = create_column_label_mapping(
