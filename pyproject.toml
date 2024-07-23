@@ -17,12 +17,18 @@ langchain-openai = "^0.1.14"
 langchain-huggingface = "^0.0.3"
 st-theme = "^1.2.3"
 streamlit-flow-component = "^1.2.8"
+typer = "^0.12.3"
+nltk = "^3.8.1"
+thefuzz = "^0.22.1"
 
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.4.8"
 mypy = "^1.10.0"
 yamllint = "^1.35.1"
+ipykernel = "^6.29.5"
 
+[tool.poetry.scripts]
+emma = "emma.cli:app"
 
 [tool.coverage.run]
 branch = true
