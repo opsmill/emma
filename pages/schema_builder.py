@@ -17,7 +17,7 @@ api_key = "EmmaDefaultAuthMakingInfrahubEasierToUse!!!11"
 client = OpenAI(base_url="https://emma.opsmill.cloud/v1", api_key=api_key)
 
 agent = OpenAIAssistantV2Runnable(
-    assistant_id="asst_dUy6OrBFvhkgAJgdETCOrr8n", as_agent=True, client=client, check_every_ms=1000
+    assistant_id="asst_ftBgbXuXwdiMa8AyvMMSeIwU", as_agent=True, client=client, check_every_ms=1000
 )
 
 INITIAL_PROMPT_HEADER = """The following is a user request for a new schema, or a modification.
@@ -282,14 +282,15 @@ with col1:
 with col2:
     # Check Schema button
     if st.button("Check Schema", disabled=buttons_disabled):
+        assistant_messages = [m for m in st.session_state.messages if m["role"] == "assistant"]
         combined_code = "\n\n".join(
-            re.findall(r"```(?:\w+)?(.*?)```", st.session_state.messages[-1]["content"], re.DOTALL)
+            re.findall(r"```(?:\w+)?(.*?)```", assistant_messages[-1]["content"], re.DOTALL)
         )
 
         schema_result, schema_detail = check_schema(st.session_state.infrahub_branch, [yaml.safe_load(combined_code)])
 
         if schema_result:
-            st.write("Schema is valid!\n\n", translate_success(schema_detail))
+            message = "Schema is valid!\n\n" + translate_success(schema_detail)
             st.session_state.check_schema_errors = None  # Clear any previous errors
         else:
             if "detail" in schema_detail:
@@ -302,7 +303,13 @@ with col2:
             st.session_state.combined_code = combined_code  # Store schema code in session state
 
             message = "Hmm, looks like we've got some problems.\n\n" + errors_out
-            st.write(message)
+
+        # We use 'ai' as the role here to format the message the same as assistant messages,
+        # But not include them in the messages we look for schema in.
+        st.session_state.messages.append(
+            {"role": "ai", "content": message}  # type: ignore[union-attr]
+        )
+        st.rerun()
 
 with col3:
     if st.button("New Chat", disabled=buttons_disabled):
