@@ -15,15 +15,6 @@ set_page_config(title="Import Data")
 st.markdown("# Import Data from CSV file")
 menu_with_redirect()
 
-client = get_client(branch=st.session_state.infrahub_branch)
-schema = get_schema(branch=st.session_state.infrahub_branch)
-
-option = st.selectbox("Select which type of data you want to import?", options=schema.keys())
-
-selected_schema = schema[option]
-
-uploaded_file = st.file_uploader("Choose a CSV file")
-
 
 class MessageSeverity(str, Enum):
     INFO = "info"
@@ -56,6 +47,16 @@ def validate_if_df_is_compatible_with_schema(df: pd.DataFrame, target_schema: No
 
     return errors
 
+
+client = get_client(branch=st.session_state.infrahub_branch)
+schema = get_schema(branch=st.session_state.infrahub_branch)
+
+option = st.selectbox("Select which type of data you want to import?", options=schema.keys())
+
+if option:
+    selected_schema = schema[option]
+
+    uploaded_file = st.file_uploader("Choose a CSV file")
 
 if uploaded_file is not None:
     dataframe = pd.read_csv(uploaded_file)
