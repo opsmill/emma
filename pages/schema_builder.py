@@ -11,7 +11,9 @@ from emma.infrahub import check_schema, get_schema
 from emma.streamlit_utils import set_page_config
 from menu import menu_with_redirect
 
-client = OpenAI(base_url="https://emma.opsmill.cloud/v1", api_key="Emma doesn't require one!")
+api_key = "EmmaDefaultAuthMakingInfrahubEasierToUse!!!11"
+
+client = OpenAI(base_url="https://emma.opsmill.cloud/v1", api_key=api_key)
 
 INITIAL_PROMPT_HEADER = """The following is a user request for a new schema, or a modification.
 You are to generate a new schema segment that will work with the provided existing schema.
