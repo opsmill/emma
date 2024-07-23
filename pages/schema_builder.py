@@ -157,8 +157,8 @@ def translate_success(data):
         for key, value in diff["changed"].items():
             human_readable.append(f"  - {key}")
             if "relationships" in value["changed"] and value["changed"]["relationships"]["added"]:
-                for rel_key, rel_value in value["changed"]["relationships"]["added"].items():
-                    human_readable.append(f"    * Added relationship '{rel_key}' with value {rel_value}")
+                for rel_key in value["changed"]["relationships"]["added"]:
+                    human_readable.append(f"    * Added relationship '{rel_key}'")
 
     if "removed" in diff and diff["removed"]:
         human_readable.append("Removed:")
@@ -166,6 +166,7 @@ def translate_success(data):
             human_readable.append(f"  - {key}")
 
     return "\n".join(human_readable)
+
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
@@ -179,19 +180,19 @@ menu_with_redirect()
 markdown_buffer = generate_markdown(st.session_state.messages)
 
 if st.sidebar.download_button(
-        label="Download Markdown",
-        data=markdown_buffer,
-        file_name=f"schema_generator_log_{datetime.datetime.now(tz=datetime.timezone.utc)}.md",
-        mime="text/markdown",
-        disabled=buttons_disabled
-    ):
+    label="Export Conversation",
+    data=markdown_buffer,
+    file_name=f"schema_generator_log_{datetime.datetime.now(tz=datetime.timezone.utc)}.md",
+    mime="text/markdown",
+    disabled=buttons_disabled,
+):
     pass
-    
+
 
 if st.sidebar.button("New Chat", disabled=buttons_disabled):
-        del st.session_state.thread_id
-        st.session_state.messages = []
-        st.rerun()
+    del st.session_state.thread_id
+    st.session_state.messages = []
+    st.rerun()
 
 if "infrahub_schema_fid" not in st.session_state:
     infra_schema = get_schema(st.session_state.infrahub_branch)
@@ -285,7 +286,11 @@ if prompt:
     st.rerun()
 
 # Check Schema button
-if st.button("Check Schema", disabled=buttons_disabled or st.session_state.messages[-1]["role"] == "ai"):
+if st.button(
+    "Check Schema",
+    disabled=buttons_disabled or st.session_state.messages[-1]["role"] == "ai",
+    help="Check the schema with your Infrahub instance",
+):
     assistant_messages = [m for m in st.session_state.messages if m["role"] == "assistant"]
     combined_code = "\n\n".join(re.findall(r"```(?:\w+)?(.*?)```", assistant_messages[-1]["content"], re.DOTALL))
 
@@ -314,7 +319,7 @@ if st.button("Check Schema", disabled=buttons_disabled or st.session_state.messa
     st.rerun()
 
 if st.session_state.get("check_schema_errors"):
-    if st.button("Fix Schema"):
+    if st.button("Fix Schema", help="Send the generated schema and errors to our schema builder"):
         st.session_state.prompt_input = ERROR_PROMPT.format(
             errors=st.session_state.check_schema_errors, schema=st.session_state.combined_code
         )
