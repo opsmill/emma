@@ -11,7 +11,8 @@ from emma.infrahub import (
 )
 
 
-def set_page_config(title: str, icon: str | None = None, wide: bool | None = True):
+def set_page_config(title: str | None = None, wide: bool | None = True):
+    icon = "static/emma-assist-character.png"
     if wide:
         st.set_page_config(page_title=title, page_icon=icon, layout="wide")
     else:
@@ -74,11 +75,13 @@ def input_infrahub_address():
 def ensure_infrahub_address_and_branch():
     # Input Infrahub address via UI if not set
     if not get_instance_address():
-        st.info("""
+        st.info(
+            """
                 No INFRAHUB_ADDRESS found in your environment variable.
 
                 Please set the Infrahub Address.
-                """)
+                """
+        )
         input_infrahub_address()
 
     # Check if infrahub_address is set and get the client
@@ -130,3 +133,11 @@ def update_infrahub_instance_button(sidebar: DG):
 def add_create_branch_button(sidebar: DG):
     if sidebar.button("Create a new branch"):
         create_branch_dialog()
+
+
+def display_logo():
+    st.logo(
+        "static/opsmill-logo.png",
+        link="https://github.com/opsmill",
+        icon_image="static/opsmill-logo.png",
+    )
