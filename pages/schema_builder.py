@@ -167,13 +167,31 @@ def translate_success(data):
 
     return "\n".join(human_readable)
 
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+
+buttons_disabled = not st.session_state.messages
 
 set_page_config(title="Schema Builder")
 st.markdown("# Schema Builder")
 menu_with_redirect()
 
-if "messages" not in st.session_state:
-    st.session_state.messages = []
+markdown_buffer = generate_markdown(st.session_state.messages)
+
+if st.sidebar.download_button(
+        label="Download Markdown",
+        data=markdown_buffer,
+        file_name=f"schema_generator_log_{datetime.datetime.now(tz=datetime.timezone.utc)}.md",
+        mime="text/markdown",
+        disabled=buttons_disabled
+    ):
+    pass
+    
+
+if st.sidebar.button("New Chat", disabled=buttons_disabled):
+        del st.session_state.thread_id
+        st.session_state.messages = []
+        st.rerun()
 
 if "infrahub_schema_fid" not in st.session_state:
     infra_schema = get_schema(st.session_state.infrahub_branch)
@@ -244,16 +262,16 @@ if prompt:
             chat_input["content"] = (
                 INITIAL_PROMPT_HEADER.format(overview=st.session_state.schema_overview) + chat_input["content"]
             )
-
-        response = agent.invoke(
-            input=chat_input,
-            attachments=[
-                {
-                    "file_id": st.session_state.infrahub_schema_fid,
-                    "tools": [{"type": "file_search"}],
-                }
-            ],
-        )
+        with st.spinner(text="Thinking! Just a moment..."):
+            response = agent.invoke(
+                input=chat_input,
+                attachments=[
+                    {
+                        "file_id": st.session_state.infrahub_schema_fid,
+                        "tools": [{"type": "file_search"}],
+                    }
+                ],
+            )
 
         if "thread_id" not in st.session_state:
             st.session_state.thread_id = response.return_values["thread_id"]  # type: ignore[union-attr]
@@ -264,62 +282,39 @@ if prompt:
         {"role": "assistant", "content": response.return_values["output"]}  # type: ignore[union-attr]
     )
 
+    st.rerun()
 
-# Create columns for buttons
-col1, col2, col3 = st.columns([1, 4, 1], gap="small")
+# Check Schema button
+if st.button("Check Schema", disabled=buttons_disabled or st.session_state.messages[-1]["role"] == "ai"):
+    assistant_messages = [m for m in st.session_state.messages if m["role"] == "assistant"]
+    combined_code = "\n\n".join(re.findall(r"```(?:\w+)?(.*?)```", assistant_messages[-1]["content"], re.DOTALL))
 
-buttons_disabled = not st.session_state.messages
+    schema_result, schema_detail = check_schema(st.session_state.infrahub_branch, [yaml.safe_load(combined_code)])
 
-with col1:
-    if st.button("Export Chat", disabled=buttons_disabled):
-        markdown_buffer = generate_markdown(st.session_state.messages)
-
-        st.download_button(
-            label="Download Markdown",
-            data=markdown_buffer,
-            file_name=f"schema_generator_log_{datetime.datetime.now(tz=datetime.timezone.utc)}.md",
-            mime="text/markdown",
-        )
-
-with col2:
-    # Check Schema button
-    if st.button("Check Schema", disabled=buttons_disabled):
-        assistant_messages = [m for m in st.session_state.messages if m["role"] == "assistant"]
-        combined_code = "\n\n".join(re.findall(r"```(?:\w+)?(.*?)```", assistant_messages[-1]["content"], re.DOTALL))
-
-        schema_result, schema_detail = check_schema(st.session_state.infrahub_branch, [yaml.safe_load(combined_code)])
-
-        if schema_result:
-            message = "Schema is valid!\n\n" + translate_success(schema_detail)
-            st.session_state.check_schema_errors = None  # Clear any previous errors
+    if schema_result:
+        message = "Schema is valid!\n\n" + translate_success(schema_detail)
+        st.session_state.check_schema_errors = None  # Clear any previous errors
+    else:
+        if "detail" in schema_detail:
+            errors = schema_detail["detail"]
         else:
-            if "detail" in schema_detail:
-                errors = schema_detail["detail"]
-            else:
-                errors = schema_detail["errors"]
+            errors = schema_detail["errors"]
 
-            errors_out = translate_errors(errors)
-            st.session_state.check_schema_errors = errors_out  # Store errors in session state
-            st.session_state.combined_code = combined_code  # Store schema code in session state
+        errors_out = translate_errors(errors)
+        st.session_state.check_schema_errors = errors_out  # Store errors in session state
+        st.session_state.combined_code = combined_code  # Store schema code in session state
 
-            message = "Hmm, looks like we've got some problems.\n\n" + errors_out
+        message = "Hmm, looks like we've got some problems.\n\n" + errors_out
 
-        # We use 'ai' as the role here to format the message the same as assistant messages,
-        # But not include them in the messages we look for schema in.
-        st.session_state.messages.append(
-            {"role": "ai", "content": message}  # type: ignore[union-attr]
-        )
-        st.rerun()
-
-with col3:
-    if st.button("New Chat", disabled=buttons_disabled):
-        del st.session_state.thread_id
-        st.session_state.messages = []
-        st.rerun()
-
+    # We use 'ai' as the role here to format the message the same as assistant messages,
+    # But not include them in the messages we look for schema in.
+    st.session_state.messages.append(
+        {"role": "ai", "content": message}  # type: ignore[union-attr]
+    )
+    st.rerun()
 
 if st.session_state.get("check_schema_errors"):
-    if st.button("Send to Emma"):
+    if st.button("Fix Schema"):
         st.session_state.prompt_input = ERROR_PROMPT.format(
             errors=st.session_state.check_schema_errors, schema=st.session_state.combined_code
         )
