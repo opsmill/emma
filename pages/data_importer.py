@@ -15,15 +15,6 @@ set_page_config(title="Import Data")
 st.markdown("# Import Data from CSV file")
 menu_with_redirect()
 
-client = get_client(branch=st.session_state.infrahub_branch)
-schema = get_schema(branch=st.session_state.infrahub_branch)
-
-option = st.selectbox("Select which type of data you want to import?", options=schema.keys())
-
-selected_schema = schema[option]
-
-uploaded_file = st.file_uploader("Choose a CSV file")
-
 
 class MessageSeverity(str, Enum):
     INFO = "info"
@@ -57,27 +48,37 @@ def validate_if_df_is_compatible_with_schema(df: pd.DataFrame, target_schema: No
     return errors
 
 
-if uploaded_file is not None:
-    dataframe = pd.read_csv(uploaded_file)
+client = get_client(branch=st.session_state.infrahub_branch)
+schema = get_schema(branch=st.session_state.infrahub_branch)
 
-    container = st.container(border=True)
+option = st.selectbox("Select which type of data you want to import?", options=schema.keys())
 
-    _errors = validate_if_df_is_compatible_with_schema(df=dataframe, target_schema=selected_schema)
-    if _errors:
-        for error in _errors:
-            container.error(error.message)
+if option:
+    selected_schema = schema[option]
 
-    if not _errors:
-        edited_df = st.data_editor(dataframe)
+    uploaded_file = st.file_uploader("Choose a CSV file")
 
-        if st.button("Import Data"):
-            nbr_errors = 0
-            with st.status("Loading data...", expanded=True) as status:
-                for index, row in edited_df.iterrows():
-                    node = client.create(kind=option, **dict(row), branch=st.session_state.infrahub_branch)
-                    node.save(allow_upsert=True)
-                    edited_df.at[index, "Status"] = "ONGOING"
-                    st.write(f"Item {index} CREATED id:{node.id}\n")
+    if uploaded_file is not None:
+        dataframe = pd.read_csv(uploaded_file)
 
-                time.sleep(2)
-                status.update(label=f"Loading completed with {nbr_errors} errors", state="complete", expanded=False)
+        container = st.container(border=True)
+
+        _errors = validate_if_df_is_compatible_with_schema(df=dataframe, target_schema=selected_schema)
+        if _errors:
+            for error in _errors:
+                container.error(error.message)
+
+        if not _errors:
+            edited_df = st.data_editor(dataframe)
+
+            if st.button("Import Data"):
+                nbr_errors = 0
+                with st.status("Loading data...", expanded=True) as status:
+                    for index, row in edited_df.iterrows():
+                        node = client.create(kind=option, **dict(row), branch=st.session_state.infrahub_branch)
+                        node.save(allow_upsert=True)
+                        edited_df.at[index, "Status"] = "ONGOING"
+                        st.write(f"Item {index} CREATED id:{node.id}\n")
+
+                    time.sleep(2)
+                    status.update(label=f"Loading completed with {nbr_errors} errors", state="complete", expanded=False)

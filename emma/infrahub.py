@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Any, Tuple
 import pandas as pd
 import streamlit as st
 from httpx import HTTPError
-from infrahub_sdk import InfrahubClientSync, InfrahubNodeSync
+from infrahub_sdk import InfrahubClientSync, InfrahubNodeSync, MainSchemaTypes
 from infrahub_sdk.exceptions import (
     AuthenticationError,
     GraphQLError,
@@ -43,7 +43,7 @@ def get_client(address: str | None = None, branch: str | None = None) -> Infrahu
 
 
 @st.cache_data
-def get_schema(branch: str | None = None):
+def get_schema(branch: str | None = None) -> dict[str, MainSchemaTypes]:
     client = get_client(branch=branch)
     return client.schema.all(branch=branch)
 

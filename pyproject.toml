@@ -19,6 +19,7 @@ langchain-community = "^0.2.6"
 openai = "^1.35.10"
 langchain-openai = "^0.1.14"
 streamlit-flow-component = "^1.2.8"
+streamlit-sortables = "^0.2.0"
 
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.4.8"
