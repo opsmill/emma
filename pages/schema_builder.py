@@ -1,5 +1,6 @@
 import datetime
 import io
+import json
 import re
 
 import streamlit as st
@@ -15,6 +16,10 @@ api_key = "EmmaDefaultAuthMakingInfrahubEasierToUse!!!11"
 
 client = OpenAI(base_url="https://emma.opsmill.cloud/v1", api_key=api_key)
 
+agent = OpenAIAssistantV2Runnable(
+    assistant_id="asst_dUy6OrBFvhkgAJgdETCOrr8n", as_agent=True, client=client, check_every_ms=1000
+)
+
 INITIAL_PROMPT_HEADER = """The following is a user request for a new schema, or a modification.
 You are to generate a new schema segment that will work with the provided existing schema.
 
@@ -28,6 +33,18 @@ This is *not* the format we want back, just an idea of what is here already.
 ```
 
 User request:
+"""
+
+ERROR_PROMPT = """We've generated the following schema, but when validating with Infrahub we ran into some problems.
+Regenerate the schema so that it will pass our checks.
+
+Schema:
+```yml
+{schema}
+```
+
+Errors:
+{errors}
 """
 
 
@@ -109,13 +126,49 @@ def generate_markdown(chat_log):
     return buffer
 
 
+def translate_errors(errors):
+    human_readable = []
+    for error in errors:
+        if "loc" in error:
+            location = " -> ".join(map(str, error["loc"][3:]))
+            message = error["msg"]
+            input_value = error["input"]
+            human_readable.append(f"{message}\n\n\tLocation: {location}\n\n\tInput: {json.dumps(input_value, indent=2)}\n")
+        else:
+            message = error["message"]
+            code = error["extensions"]["code"]
+            human_readable.append(f"Error Message: {message}\n\n\tCode: {code}\n")
+    return "\n\n".join(human_readable)
+
+
+def translate_success(data):
+    human_readable = []
+    diff = data["diff"]
+    
+    if "added" in diff and diff["added"]:
+        human_readable.append("Added:")
+        for key, value in diff["added"].items():
+            human_readable.append(f"  - {key}")
+    
+    if "changed" in diff and diff["changed"]:
+        human_readable.append("\n\nChanged:")
+        for key, value in diff["changed"].items():
+            human_readable.append(f"  - {key}")
+            if "relationships" in value["changed"] and value["changed"]["relationships"]["added"]:
+                for rel_key, rel_value in value["changed"]["relationships"]["added"].items():
+                    human_readable.append(f"    * Added relationship '{rel_key}' with value {rel_value}")
+    
+    if "removed" in diff and diff["removed"]:
+        human_readable.append("Removed:")
+        for key, value in diff["removed"].items():
+            human_readable.append(f"  - {key}")
+
+    return "\n".join(human_readable)
+
+
 set_page_config(title="Schema Builder")
 st.markdown("# Schema Builder")
 menu_with_redirect()
-
-agent = OpenAIAssistantV2Runnable(
-    assistant_id="asst_tQPcGt2OV7fuVgi4JmwsgeHJ", as_agent=True, client=client, check_every_ms=1000
-)
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
@@ -209,6 +262,7 @@ if prompt:
         {"role": "assistant", "content": response.return_values["output"]}  # type: ignore[union-attr]
     )
 
+
 # Create columns for buttons
 col1, col2, col3 = st.columns([1, 4, 1], gap="small")
 
@@ -232,15 +286,36 @@ with col2:
             re.findall(r"```(?:\w+)?(.*?)```", st.session_state.messages[-1]["content"], re.DOTALL)
         )
 
-        schema_result, schema_detail = check_schema(st.session_state.infrahub_branch, yaml.safe_load(combined_code))
+        schema_result, schema_detail = check_schema(st.session_state.infrahub_branch, [yaml.safe_load(combined_code)])
 
         if schema_result:
-            st.write("Schema is valid!\n\nDiff:", schema_detail)
+            st.write("Schema is valid!\n\n", translate_success(schema_detail))
+            st.session_state.check_schema_errors = None  # Clear any previous errors
         else:
-            e = RuntimeError("Uhoh! We've got a problem.\n" + schema_detail)
-            st.exception(e)
+            if "detail" in schema_detail:
+                errors = schema_detail["detail"]
+            else:
+                errors = schema_detail["errors"]
+
+            errors_out = translate_errors(errors)
+            st.session_state.check_schema_errors = errors_out  # Store errors in session state
+            st.session_state.combined_code = combined_code  # Store schema code in session state
+
+            message = "Hmm, looks like we've got some problems.\n\n" + errors_out
+            st.write(message)
 
 with col3:
     if st.button("New Chat", disabled=buttons_disabled):
+        del st.session_state.thread_id
         st.session_state.messages = []
         st.rerun()
+
+
+if st.session_state.get("check_schema_errors"):
+    if st.button("Send to Emma"):
+        st.session_state.prompt_input = ERROR_PROMPT.format(
+            errors=st.session_state.check_schema_errors,
+            schema=st.session_state.combined_code
+        )
+        del st.session_state.check_schema_errors
+        st.rerun()  # Force rerun to handle new prompt input
