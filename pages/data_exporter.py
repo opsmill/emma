@@ -22,13 +22,13 @@ class ColumnMapping(BaseModel):
 
 
 @st.cache_data
-def convert_df_to_csv(dataframe: pd.DataFrame) -> bytes:
-    return dataframe.to_csv(index=False).encode("utf-8")
+def convert_df_to_csv(df: pd.DataFrame) -> bytes:
+    return df.to_csv(index=False).encode("utf-8")
 
 
-def get_column_labels(selected_schema: MainSchemaTypes) -> ColumnLabels:
-    optional_columns = [attr.name for attr in selected_schema.attributes if attr.optional]
-    mandatory_columns = [attr.name for attr in selected_schema.attributes if not attr.optional]
+def get_column_labels(model_schema: MainSchemaTypes) -> ColumnLabels:
+    optional_columns = [attr.name for attr in model_schema.attributes if attr.optional]
+    mandatory_columns = [attr.name for attr in model_schema.attributes if not attr.optional]
     return ColumnLabels(optional=optional_columns, mandatory=mandatory_columns)
 
 
@@ -41,33 +41,31 @@ def create_column_label_mapping(optional_columns: List[str], mandatory_columns: 
     return ColumnMapping(labels=column_labels, label_to_col=label_to_col)
 
 
-def filter_and_reorder_columns(
-    dataframe: pd.DataFrame, omitted_columns: List[str], column_mapping: ColumnMapping
-) -> pd.DataFrame:
-    remaining_columns = [col for col in dataframe.columns if col not in omitted_columns]
+def filter_and_reorder_columns(df: pd.DataFrame, to_omit: List[str], column_mapping: ColumnMapping) -> pd.DataFrame:
+    remaining_columns = [col for col in df.columns if col not in to_omit]
     ordered_labels = sort_items(column_mapping.labels)
     ordered_columns = [
         column_mapping.label_to_col[label]
         for label in ordered_labels
         if column_mapping.label_to_col[label] in remaining_columns
     ]
-    return dataframe[ordered_columns]
+    return df[ordered_columns]
 
 
 set_page_config(title="Data Explorer")
 st.markdown("# Data Explorer")
 menu_with_redirect()
 
-schema = get_schema(branch=st.session_state.infrahub_branch)
-if schema:
-    option = st.selectbox("Select which model you want to explore?", schema.keys())
+infrahub_schema = get_schema(branch=st.session_state.infrahub_branch)
+selected_option = None
+if infrahub_schema:
+    selected_option = st.selectbox("Select which model you want to explore?", infrahub_schema.keys())
 
+if selected_option:
+    selected_schema = infrahub_schema[selected_option]
+    dataframe = get_objects_as_df(kind=selected_option, include_id=False, branch=st.session_state.infrahub_branch)
 
-if option:
-    selected_schema = schema[option]
-    dataframe = get_objects_as_df(kind=option, include_id=False, branch=st.session_state.infrahub_branch)
-
-    column_labels = get_column_labels(selected_schema)
+    column_labels_info = get_column_labels(model_schema=selected_schema)
 
     st.info(
         icon="💡",
@@ -79,17 +77,19 @@ if option:
             """,
     )
     omitted_columns = st.multiselect(
-        "Select optional columns to omit:", options=column_labels.optional, help="Choose the colums you want to omit"
+        "Select optional columns to omit:",
+        options=column_labels_info.optional,
+        help="Choose the colums you want to omit",
     )
-    dataframe = dataframe.drop(columns=omitted_columns)
+    filtered_df = dataframe.drop(columns=omitted_columns)
 
-    column_mapping = create_column_label_mapping(
-        optional_columns=column_labels.optional, mandatory_columns=column_labels.mandatory
+    column_label_mapping_info = create_column_label_mapping(
+        optional_columns=column_labels_info.optional, mandatory_columns=column_labels_info.mandatory
     )
-    dataframe = filter_and_reorder_columns(
-        dataframe=dataframe, omitted_columns=omitted_columns, column_mapping=column_mapping
+    reordered_df = filter_and_reorder_columns(
+        df=filtered_df, to_omit=omitted_columns, column_mapping=column_label_mapping_info
     )
 
-    csv = convert_df_to_csv(dataframe=dataframe)
-    st.dataframe(dataframe, hide_index=True)
-    st.download_button("Download CSV File", csv, f"{option}.csv", "text/csv", key="download-csv")
+    csv = convert_df_to_csv(df=reordered_df)
+    st.dataframe(reordered_df, hide_index=True)
+    st.download_button("Download CSV File", csv, f"{selected_option}.csv", "text/csv", key="download-csv")

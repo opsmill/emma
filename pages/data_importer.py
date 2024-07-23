@@ -58,27 +58,27 @@ if option:
 
     uploaded_file = st.file_uploader("Choose a CSV file")
 
-if uploaded_file is not None:
-    dataframe = pd.read_csv(uploaded_file)
+    if uploaded_file is not None:
+        dataframe = pd.read_csv(uploaded_file)
 
-    container = st.container(border=True)
+        container = st.container(border=True)
 
-    _errors = validate_if_df_is_compatible_with_schema(df=dataframe, target_schema=selected_schema)
-    if _errors:
-        for error in _errors:
-            container.error(error.message)
+        _errors = validate_if_df_is_compatible_with_schema(df=dataframe, target_schema=selected_schema)
+        if _errors:
+            for error in _errors:
+                container.error(error.message)
 
-    if not _errors:
-        edited_df = st.data_editor(dataframe)
+        if not _errors:
+            edited_df = st.data_editor(dataframe)
 
-        if st.button("Import Data"):
-            nbr_errors = 0
-            with st.status("Loading data...", expanded=True) as status:
-                for index, row in edited_df.iterrows():
-                    node = client.create(kind=option, **dict(row), branch=st.session_state.infrahub_branch)
-                    node.save(allow_upsert=True)
-                    edited_df.at[index, "Status"] = "ONGOING"
-                    st.write(f"Item {index} CREATED id:{node.id}\n")
+            if st.button("Import Data"):
+                nbr_errors = 0
+                with st.status("Loading data...", expanded=True) as status:
+                    for index, row in edited_df.iterrows():
+                        node = client.create(kind=option, **dict(row), branch=st.session_state.infrahub_branch)
+                        node.save(allow_upsert=True)
+                        edited_df.at[index, "Status"] = "ONGOING"
+                        st.write(f"Item {index} CREATED id:{node.id}\n")
 
-                time.sleep(2)
-                status.update(label=f"Loading completed with {nbr_errors} errors", state="complete", expanded=False)
+                    time.sleep(2)
+                    status.update(label=f"Loading completed with {nbr_errors} errors", state="complete", expanded=False)
