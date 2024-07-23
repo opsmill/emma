@@ -65,9 +65,7 @@ def display_infrahub_address(sidebar: DG):
 
 def input_infrahub_address():
     with st.form(key="input_address_form"):
-        new_address = st.text_input(
-            label="Enter Infrahub Address", value=st.session_state.infrahub_address
-        )
+        new_address = st.text_input(label="Enter Infrahub Address", value=st.session_state.infrahub_address)
         submit_address = st.form_submit_button(label="Submit")
         if submit_address and new_address:
             st.session_state.infrahub_address = new_address
@@ -96,12 +94,8 @@ def ensure_infrahub_address_and_branch():
 
             # If reachable, show success message and version info
             if not is_reachable:
-                st.error(
-                    f"Server address {address} is unreachable or not a valid Infrahub Instance."
-                )
-                display_expander(
-                    name="Detail", content=st.session_state.infrahub_error_message
-                )
+                st.error(f"Server address {address} is unreachable or not a valid Infrahub Instance.")
+                display_expander(name="Detail", content=st.session_state.infrahub_error_message)
                 input_infrahub_address()
                 st.stop()
 
