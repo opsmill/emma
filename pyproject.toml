@@ -5,14 +5,12 @@ description = "Emma is an agent designed to help you interact with Infrahub."
 authors = ["OpsMill <info@opsmill.com>"]
 readme = "README.md"
 
-packages = [
-    { include = "emma" }
-]
+packages = [{ include = "emma" }]
 
 [tool.poetry.dependencies]
 python = "^3.10"
 streamlit = "^1.36.0"
-infrahub-sdk = {version = "^0,>=0.11.1", extras = ["all"]}
+infrahub-sdk = { version = "^0,>=0.11.1", extras = ["all"] }
 watchdog = "^4.0.1"
 langchain = "^0.2.6"
 langchain-community = "^0.2.6"
@@ -75,17 +73,14 @@ max-complexity = 15
 [tool.ruff.lint.per-file-ignores]
 
 [tool.pylint.general]
-extension-pkg-whitelist = [
-    "pydantic",
-    "ujson",
-]
+extension-pkg-whitelist = ["pydantic", "ujson"]
 
 [tool.pylint.format]
 disable = "logging-fstring-interpolation"
 
 [tool.pylint.basic]
 # No docstrings required for private methods (Pylint default), or for test_ functions.
-no-docstring-rgx="^(_|test_)"
+no-docstring-rgx = "^(_|test_)"
 
 [tool.pylint.messages_control]
 # Line length is enforced by Black, so pylint doesn't need to check it.
@@ -136,7 +131,7 @@ directory = "emma/changelog.d"
 filename = "CHANGELOG.md"
 start_string = "<!-- towncrier release notes start -->\n"
 underlines = ["", "", ""]
-title_format = "## [{version}](https://github.com/opsmill/emma/tree/{version}) - {project_date}"
+title_format = "## [{version}](https://github.com/opsmill/emma/tree/v{version}) - {project_date}"
 issue_format = "[#{issue}](https://github.com/opsmill/emma/issues/{issue})"
 orphan_prefix = "+"
 
