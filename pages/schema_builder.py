@@ -1,6 +1,7 @@
 import datetime
 import io
 import json
+import os
 import re
 
 import streamlit as st
@@ -17,7 +18,10 @@ api_key = "EmmaDefaultAuthMakingInfrahubEasierToUse!!!11"
 client = OpenAI(base_url="https://emma.opsmill.cloud/v1", api_key=api_key)
 
 agent = OpenAIAssistantV2Runnable(
-    assistant_id="asst_ftBgbXuXwdiMa8AyvMMSeIwU", as_agent=True, client=client, check_every_ms=1000
+    assistant_id=os.environ.get("OPENAI_ASSISTANT_ID", "asst_ftBgbXuXwdiMa8AyvMMSeIwU"),
+    as_agent=True,
+    client=client,
+    check_every_ms=1000,
 )
 
 INITIAL_PROMPT_HEADER = """The following is a user request for a new schema, or a modification.
