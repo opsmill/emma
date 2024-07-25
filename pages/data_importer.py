@@ -28,11 +28,11 @@ class Message(BaseModel):
     message: str
 
 
-def dict_remove_nan_values(data: Dict[str, Any]) -> Dict[str, Any]:
-    remove = [k for k, v in data.items() if pd.isnull(v)]
+def dict_remove_nan_values(dictionary: Dict[str, Any]) -> Dict[str, Any]:
+    remove = [k for k, v in dictionary.items() if pd.isnull(v)]
     for k in remove:
-        data.pop(k)
-    return data
+        dictionary.pop(k)
+    return dictionary
 
 
 def validate_if_df_is_compatible_with_schema(df: pd.DataFrame, target_schema: NodeSchema) -> list[Message]:
@@ -95,9 +95,6 @@ if option:
                 with st.status("Loading data...", expanded=True) as status:
                     for index, row in edited_df.iterrows():
                         data = dict_remove_nan_values(dict(row))
-                        for key, value in data.items():
-                            if value == float("nan"):
-                                data.pop(key)
                         node = client.create(kind=option, **data, branch=st.session_state.infrahub_branch)
                         node.save(allow_upsert=True)
                         edited_df.at[index, "Status"] = "ONGOING"
