@@ -29,7 +29,7 @@ class Message(BaseModel):
 
 
 def dict_remove_nan_values(data: Dict[str, Any]) -> Dict[str, Any]:
-    remove = [k for k,v in data.items() if pd.isnull(v)]
+    remove = [k for k, v in data.items() if pd.isnull(v)]
     for k in remove:
         data.pop(k)
     return data
