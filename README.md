@@ -13,7 +13,6 @@ Currently Emma can help you to :
 ## Quick start
 
 ```console
-poetry shell
 poetry install
 streamlit run main.py
 ```
