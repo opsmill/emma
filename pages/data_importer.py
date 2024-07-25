@@ -75,7 +75,7 @@ option = st.selectbox("Select which type of data you want to import?", options=s
 if option:
     selected_schema = schema[option]
 
-    uploaded_file = st.file_uploader("Choose a CSV file")
+    uploaded_file = st.file_uploader("Choose a CSV file", type=["csv"])
 
     if uploaded_file is not None:
         dataframe = pd.read_csv(uploaded_file)
