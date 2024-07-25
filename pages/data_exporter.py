@@ -58,8 +58,8 @@ def filter_and_reorder_columns(df: pd.DataFrame, to_omit: List[str], column_mapp
     return df[ordered_columns]
 
 
-set_page_config(title="Data Explorer")
-st.markdown("# Data Explorer")
+set_page_config(title="Data Exporter")
+st.markdown("# Data Exporter")
 menu_with_redirect()
 
 infrahub_schema = get_schema(branch=st.session_state.infrahub_branch)
