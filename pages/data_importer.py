@@ -80,7 +80,7 @@ if option:
                 container.error(error.message)
 
         if not _errors:
-            edited_df = st.data_editor(dataframe)
+            edited_df = st.data_editor(dataframe, hide_index=True)
 
             if st.button("Import Data"):
                 nbr_errors = 0
