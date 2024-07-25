@@ -131,7 +131,7 @@ def convert_node_to_dict(
             rel: RelatedNodeSync = getattr(obj, rel_name)
             if rel.initialized:
                 rel.fetch()
-                data[rel_name] = rel.peer.hfid if rel.peer.hfid and len(rel.peer.hfid) == 1 else rel.peer.id
+                data[rel_name] = rel.peer.hfid[0] if rel.peer.hfid and len(rel.peer.hfid) == 1 else rel.peer.id
     return data
 
 
