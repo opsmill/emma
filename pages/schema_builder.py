@@ -2,6 +2,7 @@ import datetime
 import io
 import json
 import re
+from typing import Dict, List
 
 import streamlit as st
 import yaml
@@ -33,6 +34,7 @@ This is *not* the format we want back, just an idea of what is here already.
 ```
 
 User request:
+```
 """
 
 ERROR_PROMPT = """We've generated the following schema, but when validating with Infrahub we ran into some problems.
@@ -44,8 +46,14 @@ Schema:
 ```
 
 Errors:
+```
 {errors}
 """
+
+FILENAME_PROMPT_FOOTER = """```\n\nYou should send schemas in one code block,
+with a comment on the first line with a filename.
+
+Something like '# interfaces.yml` is ideal (based on the content of the schema)"""
 
 
 def transform_schema(schema_dict):
@@ -114,18 +122,6 @@ def merge_overviews(overview_list):
     return merged
 
 
-def generate_markdown(chat_log):
-    buffer = io.BytesIO()
-    for entry in chat_log:
-        if entry["role"] == "user":
-            out = f"## User\n\n{entry['content']}\n\n"
-        else:
-            out = f"## Assistant\n\n{entry['content']}\n\n"
-        buffer.write(out.encode("utf-8"))
-    buffer.seek(0)
-    return buffer
-
-
 def translate_errors(schema_errors):
     human_readable = []
     for error in schema_errors:
@@ -138,8 +134,8 @@ def translate_errors(schema_errors):
             )
         else:
             err_message = error["message"]
-            code = error["extensions"]["code"]
-            human_readable.append(f"Error Message: {err_message}\n\n\tCode: {code}\n")
+            err_code = error["extensions"]["code"]
+            human_readable.append(f"Error Message: {err_message}\n\n\tCode: {err_code}\n")
     return "\n\n".join(human_readable)
 
 
@@ -168,6 +164,19 @@ def translate_success(data):
     return "\n".join(human_readable)
 
 
+def generate_yaml(conversation: List[Dict]):
+    # Define the custom representer correctly
+    def str_presenter(dumper, data):
+        if "\n" in data:
+            return dumper.represent_scalar("tag:yaml.org,2002:str", data, style="|")
+        return dumper.represent_scalar("tag:yaml.org,2002:str", data)
+
+    # Add the custom representer to the Dumper
+    yaml.add_representer(str, str_presenter)
+
+    return yaml.dump(conversation, default_flow_style=False)
+
+
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
@@ -177,11 +186,11 @@ set_page_config(title="Schema Builder")
 st.markdown("# Schema Builder")
 menu_with_redirect()
 
-markdown_buffer = generate_markdown(st.session_state.messages)
+yaml_buffer = generate_yaml(st.session_state.messages)
 
 if st.sidebar.download_button(
     label="Export Conversation",
-    data=markdown_buffer,
+    data=yaml_buffer,
     file_name=f"schema_generator_log_{datetime.datetime.now(tz=datetime.timezone.utc)}.md",
     mime="text/markdown",
     disabled=buttons_disabled,
@@ -190,7 +199,8 @@ if st.sidebar.download_button(
 
 
 if st.sidebar.button("New Chat", disabled=buttons_disabled):
-    del st.session_state.thread_id
+    if "thread_id" in st.session_state:
+        del st.session_state.thread_id
     st.session_state.messages = []
     st.rerun()
 
@@ -261,7 +271,9 @@ if prompt:
             chat_input["thread_id"] = st.session_state.thread_id
         else:
             chat_input["content"] = (
-                INITIAL_PROMPT_HEADER.format(overview=st.session_state.schema_overview) + chat_input["content"]
+                INITIAL_PROMPT_HEADER.format(overview=st.session_state.schema_overview)
+                + chat_input["content"]
+                + FILENAME_PROMPT_FOOTER
             )
         with st.spinner(text="Thinking! Just a moment..."):
             response = agent.invoke(
@@ -277,51 +289,83 @@ if prompt:
         if "thread_id" not in st.session_state:
             st.session_state.thread_id = response.return_values["thread_id"]  # type: ignore[union-attr]
 
-        st.write(response.return_values["output"])  # type: ignore[union-attr]
+        output = response.return_values["output"]# type: ignore[union-attr]
+
+        st.write(output)  # type: ignore[union-attr]
 
     st.session_state.messages.append(
-        {"role": "assistant", "content": response.return_values["output"]}  # type: ignore[union-attr]
+        {"role": "assistant", "content": output}  # type: ignore[union-attr]
     )
 
+    st.session_state.combined_code = "\n\n".join(re.findall(r"```(?:\w+)?(.*?)```", output, re.DOTALL)).lstrip("\n")
+
+    # Rerun to enable schema check/fix buttons
     st.rerun()
 
+col1, col2, col3 = st.columns([2, 2, 2])
+
 # Check Schema button
-if st.button(
-    "Check Schema",
-    disabled=buttons_disabled or st.session_state.messages[-1]["role"] == "ai",
-    help="Check the schema with your Infrahub instance",
-):
-    assistant_messages = [m for m in st.session_state.messages if m["role"] == "assistant"]
-    combined_code = "\n\n".join(re.findall(r"```(?:\w+)?(.*?)```", assistant_messages[-1]["content"], re.DOTALL))
+with col1:
+    if st.button(
+        "Check Schema",
+        disabled=buttons_disabled or st.session_state.messages[-1]["role"] == "ai",
+        help="Check the schema with your Infrahub instance",
+    ):
+        assistant_messages = [m for m in st.session_state.messages if m["role"] == "assistant"]
 
-    schema_result, schema_detail = check_schema(st.session_state.infrahub_branch, [yaml.safe_load(combined_code)])
+        schema_result, schema_detail = check_schema(
+            st.session_state.infrahub_branch, [yaml.safe_load(st.session_state.combined_code)]
+        )
 
-    if schema_result:
-        message = "Schema is valid!\n\n" + translate_success(schema_detail)
-        st.session_state.check_schema_errors = None  # Clear any previous errors
-    else:
-        if "detail" in schema_detail:
-            errors = schema_detail["detail"]
+        if schema_result:
+            message = "Schema is valid!\n\nWant to download it, or check it out in the importer?"
+            st.session_state.check_schema_errors = False  # Clear any previous errors
         else:
             errors = schema_detail["errors"]
 
-        errors_out = translate_errors(errors)
-        st.session_state.check_schema_errors = errors_out  # Store errors in session state
-        st.session_state.combined_code = combined_code  # Store schema code in session state
+            errors_out = translate_errors(errors)
+            st.session_state.schema_errors = errors_out  # Store errors in session state
 
-        message = "Hmm, looks like we've got some problems.\n\n" + errors_out
+            message = "Hmm, looks like we've got some problems.\n\n" + errors_out
 
-    # We use 'ai' as the role here to format the message the same as assistant messages,
-    # But not include them in the messages we look for schema in.
-    st.session_state.messages.append(
-        {"role": "ai", "content": message}  # type: ignore[union-attr]
-    )
-    st.rerun()
-
-if st.session_state.get("check_schema_errors"):
-    if st.button("Fix Schema", help="Send the generated schema and errors to our schema builder"):
-        st.session_state.prompt_input = ERROR_PROMPT.format(
-            errors=st.session_state.check_schema_errors, schema=st.session_state.combined_code
+        # We use 'ai' as the role here to format the message the same as assistant messages,
+        # But not include them in the messages we look for schema in.
+        st.session_state.messages.append(
+            {"role": "ai", "content": message}  # type: ignore[union-attr]
         )
-        del st.session_state.check_schema_errors
-        st.rerun()  # Force rerun to handle new prompt input
+        st.rerun()
+
+
+if st.session_state.get("combined_code"):
+    code = st.session_state.combined_code.splitlines()
+
+    filename = code[0].replace("#", "").strip()
+
+    if st.session_state.combined_code.startswith("#"):
+        st.session_state.combined_code = "\n".join(code[1:])
+
+    else:
+        filename = f"schema_generated_{str(datetime.datetime.now(tz=datetime.timezone.utc))[:16]}.yml"
+
+    with col2:
+        st.download_button(
+            label="Download Schema",
+            data=st.session_state.combined_code.lstrip(filename),
+            file_name=filename,
+            mime="text/yaml",
+        )
+
+    with col3:
+        if st.button("See in Schema Importer"):
+            st.session_state.generated_files = [{"name": filename, "content": st.session_state.combined_code}]
+
+            st.switch_page("pages/schema_loader.py")
+
+with col1:
+    if st.session_state.get("schema_errors"):
+        if st.button("Fix Schema", help="Send the generated schema and errors to our schema builder"):
+            st.session_state.prompt_input = ERROR_PROMPT.format(
+                errors=st.session_state.schema_errors, schema=st.session_state.combined_code
+            )
+            del st.session_state.schema_errors
+            st.rerun()  # Force rerun to handle new prompt input
