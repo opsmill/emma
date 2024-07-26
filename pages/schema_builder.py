@@ -322,7 +322,6 @@ with col1:
             st.session_state.check_schema_errors = False  # Clear any previous errors
 
         else:
-            print(schema_detail)
             errors = schema_detail.get("errors")
 
             # Sometimes the schema will fail to parse at all (like if extensions is an empty list)
@@ -344,8 +343,6 @@ with col1:
 
 if st.session_state.get("combined_code"):
     code = st.session_state.combined_code.splitlines()
-
-    print(code[0])
 
     if code[0].lstrip().startswith("#"):
         filename = code[0].replace("#", "").lstrip()
