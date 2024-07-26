@@ -1,6 +1,6 @@
 import os
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Tuple
+from typing import TYPE_CHECKING, Any, List, Tuple
 
 import pandas as pd
 import streamlit as st
@@ -16,7 +16,7 @@ from infrahub_sdk.exceptions import (
 from infrahub_sdk.schema import GenericSchema, NodeSchema
 
 if TYPE_CHECKING:
-    from infrahub_sdk.node import Attribute
+    from infrahub_sdk.node import Attribute, RelatedNodeSync
 
 
 class InfrahubStatus(str, Enum):
@@ -95,13 +95,28 @@ def check_reachability(client: InfrahubClientSync) -> bool:
 def get_objects_as_df(kind: str, page=1, page_size=20, include_id: bool = True, branch: str | None = None):  # pylint: disable=unused-argument
     client = get_client()
 
+    node_schema = client.schema.get(kind=kind)
+    export_relationships = get_relationships_to_export(node_schema=node_schema)
+
     objs = client.all(kind=kind, branch=branch)
 
-    df = pd.DataFrame([convert_node_to_dict(obj, include_id=include_id) for obj in objs])
+    df = pd.DataFrame(
+        [convert_node_to_dict(obj, include_id=include_id, export_relationships=export_relationships) for obj in objs]
+    )
     return df
 
 
-def convert_node_to_dict(obj: InfrahubNodeSync, include_id: bool = True) -> dict[str, Any]:
+def get_relationships_to_export(node_schema: NodeSchema) -> List[str]:
+    export_relationships = []
+    for relationship in node_schema.relationships:
+        if relationship.cardinality == "one":
+            export_relationships.append(relationship.name)
+    return export_relationships
+
+
+def convert_node_to_dict(
+    obj: InfrahubNodeSync, export_relationships: List[str], include_id: bool = True
+) -> dict[str, Any]:
     data = {}
 
     if include_id:
@@ -111,6 +126,12 @@ def convert_node_to_dict(obj: InfrahubNodeSync, include_id: bool = True) -> dict
         attr: Attribute = getattr(obj, attr_name)
         data[attr_name] = attr.value
 
+    for rel_name in obj._schema.relationship_names:
+        if rel_name in export_relationships:
+            rel: RelatedNodeSync = getattr(obj, rel_name)
+            if rel.initialized:
+                rel.fetch()
+                data[rel_name] = rel.peer.hfid[0] if rel.peer.hfid and len(rel.peer.hfid) == 1 else rel.peer.id
     return data
 
 
