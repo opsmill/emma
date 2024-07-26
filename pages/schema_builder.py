@@ -289,7 +289,7 @@ if prompt:
         if "thread_id" not in st.session_state:
             st.session_state.thread_id = response.return_values["thread_id"]  # type: ignore[union-attr]
 
-        output = response.return_values["output"]# type: ignore[union-attr]
+        output = response.return_values["output"]  # type: ignore[union-attr]
 
         st.write(output)  # type: ignore[union-attr]
 
@@ -320,8 +320,14 @@ with col1:
         if schema_result:
             message = "Schema is valid!\n\nWant to download it, or check it out in the importer?"
             st.session_state.check_schema_errors = False  # Clear any previous errors
+
         else:
-            errors = schema_detail["errors"]
+            print(schema_detail)
+            errors = schema_detail.get("errors")
+
+            # Sometimes the schema will fail to parse at all (like if extensions is an empty list)
+            if not errors:
+                errors = schema_detail.get("detail")
 
             errors_out = translate_errors(errors)
             st.session_state.schema_errors = errors_out  # Store errors in session state
@@ -339,18 +345,20 @@ with col1:
 if st.session_state.get("combined_code"):
     code = st.session_state.combined_code.splitlines()
 
-    filename = code[0].replace("#", "").strip()
+    print(code[0])
 
-    if st.session_state.combined_code.startswith("#"):
-        st.session_state.combined_code = "\n".join(code[1:])
+    if code[0].lstrip().startswith("#"):
+        filename = code[0].replace("#", "").lstrip()
+        code = "\n".join(code[1:])
 
     else:
         filename = f"schema_generated_{str(datetime.datetime.now(tz=datetime.timezone.utc))[:16]}.yml"
+        code = "\n".join(code)
 
     with col2:
         st.download_button(
             label="Download Schema",
-            data=st.session_state.combined_code.lstrip(filename),
+            data=code,
             file_name=filename,
             mime="text/yaml",
         )
