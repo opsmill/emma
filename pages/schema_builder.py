@@ -8,7 +8,7 @@ import yaml
 from langchain_community.agents.openai_assistant import OpenAIAssistantV2Runnable
 from openai import OpenAI
 
-from emma.infrahub import check_schema, get_schema
+from emma.infrahub import check_schema, get_schema, handle_reachability_error
 from emma.streamlit_utils import set_page_config
 from menu import menu_with_redirect
 
@@ -195,11 +195,13 @@ if st.sidebar.button("New Chat", disabled=buttons_disabled):
     st.rerun()
 
 if "infrahub_schema_fid" not in st.session_state:
-    infra_schema = get_schema(st.session_state.infrahub_branch)
+    infrahub_schema = get_schema(st.session_state.infrahub_branch)
+    if not infrahub_schema:
+        handle_reachability_error()
 
     transformed_schema = {
         k: transform_schema(v.model_dump())
-        for k, v in infra_schema.items()
+        for k, v in infrahub_schema.items()
         if v.namespace  # not in ("Core", "Profile", "Builtin")
     }
 
@@ -215,7 +217,7 @@ if "infrahub_schema_fid" not in st.session_state:
     st.session_state.infrahub_schema_fid = message_file.id
 
     # Create and store the schema overview for the initial prompt
-    overviews = [transform_schema_overview(schema.model_dump()) for schema in infra_schema.values()]
+    overviews = [transform_schema_overview(schema.model_dump()) for schema in infrahub_schema.values()]
     st.session_state.schema_overview = merge_overviews(overviews)
 
 demo_prompts = [

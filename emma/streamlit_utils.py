@@ -8,6 +8,7 @@ from emma.infrahub import (
     get_client,
     get_instance_address,
     get_instance_branch,
+    handle_reachability_error,
 )
 
 
@@ -37,18 +38,19 @@ def set_branch():
 
 
 def display_branch_selector(sidebar: DG):
+    # st.session_state._infrahub_branch = None
     branches = get_branches(address=st.session_state.infrahub_address)
     current_branch = get_instance_branch()
     if current_branch:
         st.session_state._infrahub_branch = st.session_state.infrahub_branch
-    elif "_infrahub_branch" not in st.session_state:
+    elif "_infrahub_branch" not in st.session_state and branches:
         st.session_state._infrahub_branch = "main"
         st.session_state.infrahub_branch = "main"
     else:
-        st.session_state._infrahub_branch = None
+        st.session_state._infrahub_branch = "Not found"
     sidebar.selectbox(
         label="Branch:",
-        options=branches.keys(),
+        options=branches.keys() if branches else [st.session_state._infrahub_branch],
         key="_infrahub_branch",
         on_change=set_branch,
     )
@@ -69,19 +71,18 @@ def input_infrahub_address():
         submit_address = st.form_submit_button(label="Submit")
         if submit_address and new_address:
             st.session_state.infrahub_address = new_address
+            st.toast(f"Trying to connect to {new_address}")
             st.rerun()
 
 
 def ensure_infrahub_address_and_branch():
     # Input Infrahub address via UI if not set
     if not get_instance_address():
-        st.info(
-            """
+        st.info("""
                 No INFRAHUB_ADDRESS found in your environment variable.
 
                 Please set the Infrahub Address.
-                """
-        )
+        """)
         input_infrahub_address()
 
     # Check if infrahub_address is set and get the client
@@ -94,14 +95,14 @@ def ensure_infrahub_address_and_branch():
 
             # If reachable, show success message and version info
             if not is_reachable:
-                st.error(f"Server address {address} is unreachable or not a valid Infrahub Instance.")
-                display_expander(name="Detail", content=st.session_state.infrahub_error_message)
+                handle_reachability_error()
                 input_infrahub_address()
                 st.stop()
 
         except ValueError as e:
-            st.error(f"Inputed address {address} is not valid.")
-            display_expander(name="Detail", content=str(e))
+            # display_expander(name="Detail", content=str(e))
+            st.session_state.infrahub_error_message = str(e)
+            handle_reachability_error()
             input_infrahub_address()
             st.stop()
     else:

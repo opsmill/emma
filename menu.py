@@ -13,6 +13,7 @@ def menu():
     if "infrahub_address" not in st.session_state or st.session_state.infrahub_address is None:
         st.sidebar.page_link("main.py", label="🏠 Homepage")
         return
+
     # Display Opsmill logo
     display_logo()
     # Display current Infrahub Instance
@@ -35,4 +36,5 @@ def menu_with_redirect():
     # Redirect users to the main page
     if "infrahub_address" not in st.session_state or st.session_state.infrahub_address is None:
         st.switch_page("main.py")
+
     menu()

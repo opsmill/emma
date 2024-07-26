@@ -6,12 +6,7 @@ from streamlit_flow import streamlit_flow
 from streamlit_flow.elements import StreamlitFlowEdge, StreamlitFlowNode
 from streamlit_flow.layouts import LayeredLayout
 
-from emma.infrahub import (
-    convert_schema_to_dict,
-    dict_to_df,
-    get_client,
-    get_schema,
-)
+from emma.infrahub import convert_schema_to_dict, dict_to_df, get_schema, handle_reachability_error
 from emma.streamlit_utils import display_expander, set_page_config
 from menu import menu_with_redirect
 
@@ -149,15 +144,15 @@ def display_node_info(selected_id: str, generics: List[GenericSchema], nodes: Li
         st.markdown("No additional information available for this ID.")
 
 
-# Check if infrahub_address is set and get the client
-client = get_client(branch=st.session_state.infrahub_branch)
-
 # Fetch schema data based on the branch
-schema_data = get_schema(branch=st.session_state.infrahub_branch)
+infrahub_schema = get_schema(branch=st.session_state.infrahub_branch)
+
+if not infrahub_schema:
+    handle_reachability_error()
 
 # Process schema data to separate Generics and Nodes
-_generics = [item for item in schema_data.values() if isinstance(item, GenericSchema)]
-_nodes = [item for item in schema_data.values() if isinstance(item, NodeSchema)]
+_generics = [item for item in infrahub_schema.values() if isinstance(item, GenericSchema)]
+_nodes = [item for item in infrahub_schema.values() if isinstance(item, NodeSchema)]
 
 
 # Create a Tab for "All Nodes" So if we want more Tab (i.e per Namespace) we could

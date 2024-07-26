@@ -1,3 +1,4 @@
+import types
 from typing import Dict, List
 
 import pandas as pd
@@ -6,7 +7,7 @@ from infrahub_sdk.schema import MainSchemaTypes
 from pydantic import BaseModel
 from streamlit_sortables import sort_items
 
-from emma.infrahub import get_objects_as_df, get_schema
+from emma.infrahub import get_objects_as_df, get_schema, handle_reachability_error
 from emma.streamlit_utils import set_page_config
 from menu import menu_with_redirect
 
@@ -63,14 +64,16 @@ st.markdown("# Data Exporter")
 menu_with_redirect()
 
 infrahub_schema = get_schema(branch=st.session_state.infrahub_branch)
-selected_option = None
-if infrahub_schema:
-    selected_option = st.selectbox("Select which model you want to explore?", infrahub_schema.keys())
+if not infrahub_schema:
+    handle_reachability_error()
+
+selected_option = st.selectbox("Select which model you want to explore?", infrahub_schema.keys())
 
 if selected_option:
     selected_schema = infrahub_schema[selected_option]
     dataframe = get_objects_as_df(kind=selected_option, include_id=False, branch=st.session_state.infrahub_branch)
-
+    if isinstance(dataframe, types.NoneType) is True:
+        handle_reachability_error(redirect=False)
     column_labels_info = get_column_labels(model_schema=selected_schema)
 
     st.info(

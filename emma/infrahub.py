@@ -5,7 +5,9 @@ from typing import TYPE_CHECKING, Any, List, Tuple
 import pandas as pd
 import streamlit as st
 from httpx import HTTPError
+from infrahub.python_sdk.infrahub_sdk.schema import SchemaLoadResponse
 from infrahub_sdk import InfrahubClientSync, InfrahubNodeSync, MainSchemaTypes
+from infrahub_sdk.branch import BranchData
 from infrahub_sdk.exceptions import (
     AuthenticationError,
     GraphQLError,
@@ -14,6 +16,7 @@ from infrahub_sdk.exceptions import (
     ServerNotResponsiveError,
 )
 from infrahub_sdk.schema import GenericSchema, NodeSchema
+from st_pages import get_pages, get_script_run_ctx
 
 if TYPE_CHECKING:
     from infrahub_sdk.node import Attribute, RelatedNodeSync
@@ -43,29 +46,40 @@ def get_client(address: str | None = None, branch: str | None = None) -> Infrahu
 
 
 @st.cache_data
-def get_schema(branch: str | None = None) -> dict[str, MainSchemaTypes]:
+def get_schema(branch: str | None = None) -> dict[str, MainSchemaTypes] | None:
     client = get_client(branch=branch)
-    return client.schema.all(branch=branch)
+    if check_reachability(client=client):
+        return client.schema.all(branch=branch)
+    return None
 
 
-def load_schema(branch: str, schemas: list[dict] | None = None):
+def load_schema(branch: str, schemas: list[dict] | None = None) -> SchemaLoadResponse | None:
     client = get_client(branch=branch)
-    return client.schema.load(schemas, branch)
+    if check_reachability(client=client):
+        return client.schema.load(schemas, branch)
+    return None
 
 
-def check_schema(branch: str, schemas: list[dict] | None = None):
+def check_schema(branch: str, schemas: list[dict] | None = None) -> tuple[bool, dict | None] | None:
     client = get_client(branch=branch)
-    return client.schema.check(schemas, branch)
+    if check_reachability(client=client):
+        return client.schema.check(schemas, branch)
+    return None
 
 
-def get_branches(address: str | None = None):
+def get_branches(address: str | None = None) -> dict[str, BranchData] | None:
     client = get_client(address=address)
-    return client.branch.all()
+    if check_reachability(client=client):
+        return client.branch.all()
+    return None
 
 
-def create_branch(branch_name: str):
+def create_branch(branch_name: str) -> BranchData | None:
     client = get_client()
-    return client.branch.create(branch_name)
+    if check_reachability(client=client):
+        return client.branch.create(branch_name=branch_name)
+    else:
+        return None
 
 
 def get_version(client: InfrahubClientSync) -> str:
@@ -92,8 +106,10 @@ def check_reachability(client: InfrahubClientSync) -> bool:
         return False
 
 
-def get_objects_as_df(kind: str, page=1, page_size=20, include_id: bool = True, branch: str | None = None):  # pylint: disable=unused-argument
-    client = get_client()
+def get_objects_as_df(kind: str, include_id: bool = True, branch: str | None = None) -> pd.DataFrame | None:
+    client = get_client(branch=branch)
+    if not check_reachability(client=client):
+        return None
 
     node_schema = client.schema.get(kind=kind)
     export_relationships = get_relationships_to_export(node_schema=node_schema)
@@ -214,3 +230,27 @@ def dict_to_df(data: dict[str, Any]) -> Tuple[pd.DataFrame, pd.DataFrame, pd.Dat
     main_info_df = pd.DataFrame(main_info)
 
     return main_info_df, attributes_df, relationships_df
+
+
+def get_current_page():
+    """This is a snippet from Zachary Blackwood using his st_pages package per
+    https://discuss.streamlit.io/t/how-can-i-learn-what-page-i-am-looking-at/56980
+    for getting the page name without having the script run twice as it does using
+    """
+    pages = get_pages("")
+    ctx = get_script_run_ctx()
+    try:
+        current_page = pages[ctx.page_script_hash]
+    except KeyError:
+        current_page = [p for p in pages.values() if p["relative_page_hash"] == ctx.page_script_hash][0]
+    return current_page["page_name"]
+
+
+def handle_reachability_error(redirect: bool | None = True):
+    st.toast(icon="🚨", body=f"Error: {st.session_state.infrahub_error_message}")
+    if not redirect:
+        st.stop()
+    st.cache_data.clear()
+    current_page = get_current_page()
+    if current_page != "main":
+        st.switch_page("main.py")
