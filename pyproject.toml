@@ -12,7 +12,7 @@ packages = [
 [tool.poetry.dependencies]
 python = "^3.10, < 3.13"
 streamlit = "^1.37.0"
-infrahub-sdk = {version = "^0.12.0", extras = ["all"]}
+infrahub-sdk = {version = "^0,>=0.12.0", extras = ["all"]}
 watchdog = "^4.0.1"
 langchain = "^0.2.11"
 langchain-community = "^0.2.10"
