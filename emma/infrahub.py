@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING, Any, List, Tuple
 import pandas as pd
 import streamlit as st
 from httpx import HTTPError
-from infrahub.python_sdk.infrahub_sdk.schema import SchemaLoadResponse
 from infrahub_sdk import InfrahubClientSync, InfrahubNodeSync, MainSchemaTypes
 from infrahub_sdk.branch import BranchData
 from infrahub_sdk.exceptions import (
@@ -15,7 +14,7 @@ from infrahub_sdk.exceptions import (
     ServerNotReachableError,
     ServerNotResponsiveError,
 )
-from infrahub_sdk.schema import GenericSchema, NodeSchema
+from infrahub_sdk.schema import GenericSchema, NodeSchema, SchemaLoadResponse
 from st_pages import get_pages, get_script_run_ctx
 
 if TYPE_CHECKING:
