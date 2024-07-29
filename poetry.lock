@@ -1456,8 +1456,8 @@ files = [
 [package.dependencies]
 numpy = [
     {version = ">=1.22.4", markers = "python_version < \"3.11\""},
-    {version = ">=1.23.2", markers = "python_version == \"3.11\""},
     {version = ">=1.26.0", markers = "python_version >= \"3.12\""},
+    {version = ">=1.23.2", markers = "python_version == \"3.11\""},
 ]
 python-dateutil = ">=2.8.2"
 pytz = ">=2020.1"
@@ -1808,10 +1808,7 @@ files = [
 [package.dependencies]
 annotated-types = ">=0.4.0"
 pydantic-core = "2.20.1"
-typing-extensions = [
-    {version = ">=4.6.1", markers = "python_version < \"3.13\""},
-    {version = ">=4.12.2", markers = "python_version >= \"3.13\""},
-]
+typing-extensions = {version = ">=4.6.1", markers = "python_version < \"3.13\""}
 
 [package.extras]
 email = ["email-validator (>=2.0.0)"]
@@ -1985,8 +1982,8 @@ astroid = ">=3.2.2,<=3.3.0-dev0"
 colorama = {version = ">=0.4.5", markers = "sys_platform == \"win32\""}
 dill = [
     {version = ">=0.2", markers = "python_version < \"3.11\""},
-    {version = ">=0.3.6", markers = "python_version >= \"3.11\" and python_version < \"3.12\""},
     {version = ">=0.3.7", markers = "python_version >= \"3.12\""},
+    {version = ">=0.3.6", markers = "python_version >= \"3.11\" and python_version < \"3.12\""},
 ]
 isort = ">=4.2.5,<5.13.0 || >5.13.0,<6"
 mccabe = ">=0.6,<0.8"
@@ -3099,5 +3096,5 @@ multidict = ">=4.0"
 
 [metadata]
 lock-version = "2.0"
-python-versions = "^3.10"
-content-hash = "6783c3cf09684d0169710c88f60f4b05b0cb413417e686041fdd4f00b520f63b"
+python-versions = "^3.10, < 3.13"
+content-hash = "b976e6eca0a0dede8342a3baded4274ed81152a4c22935f1c0450ae2ed73e018"
