@@ -16,14 +16,21 @@ menu_with_redirect()
 if "is_upload_valid" not in st.session_state:
     st.session_state.is_upload_valid = False
 
+# Check for generated files in session state
+generated_files = st.session_state.get("generated_files", [])
 
-uploaded_files = st.file_uploader(
-    "Uploader",
-    label_visibility="hidden",
-    accept_multiple_files=True,
-    type=["yaml", "yml"],
-    help="If you need help building your schema, feel free to reach out to Opsmill team!",
-)
+if generated_files:
+    st.session_state.uploaded_files = generated_files
+    st.write("Using generated files from another tab.")
+else:
+    # Use the generated files or fall back to file uploader
+    st.session_state.uploaded_files = st.file_uploader(
+        "Uploader",
+        label_visibility="hidden",
+        accept_multiple_files=True,
+        type=["yaml", "yml"],
+        help="If you need help building your schema, feel free to reach out to Opsmill team!",
+    )
 
 preview_container = st.container(border=False)
 
@@ -35,21 +42,17 @@ apply_button = st.button(
 
 result_container = st.container(border=False)
 
-# TODO: Add session storage and so on
-# TODO: Handle states so if non valid or empty files button remains disabled
-# If something is uploaded ...
-if not apply_button and uploaded_files and len(uploaded_files) > 0:
-    # Set upload as valid
+# If something is uploaded or available in session state...
+if not apply_button and st.session_state.uploaded_files and len(st.session_state.uploaded_files) > 0:
     st.session_state.is_upload_valid = True
 
-    # Loop over all uploaded files
-    for uploaded_file in uploaded_files:
-        # Prep a preview expander for each file
+    for uploaded_file in st.session_state.uploaded_files:
+        file_name = uploaded_file["name"] if isinstance(uploaded_file, dict) else uploaded_file.name
+        file_content = uploaded_file["content"] if isinstance(uploaded_file, dict) else uploaded_file.read()
+
         with preview_container.status("Checking schema ...") as preview_status:
-            # Check if the provided file contains a valid YAML
             try:
-                # First load the yaml and make sure it's valid
-                schema_content = yaml.safe_load(uploaded_file.read())
+                schema_content = yaml.safe_load(file_content)
                 preview_status.success("This YAML file is valid", icon="✅")
                 preview_status.code(yaml.safe_dump(schema_content), language="yaml", line_numbers=True)
 
@@ -72,7 +75,6 @@ if not apply_button and uploaded_files and len(uploaded_files) > 0:
                             preview_status.code(yaml.safe_dump(schema_check_result.response), language="yaml")
                         preview_status.update(label=uploaded_file.name, state="complete", expanded=True)
 
-            # Something wrong happened with YAML
             except yaml.YAMLError as exc:
                 st.session_state.is_upload_valid = False
                 preview_status.error("This file contains a YAML error!", icon="🚨")
@@ -81,27 +83,26 @@ if not apply_button and uploaded_files and len(uploaded_files) > 0:
 
 # If someone clicks the button and upload is ok
 if apply_button and st.session_state.is_upload_valid:
-    # Loop over all uploaded files
     with result_container.status("Loading schema ...") as result_status:
-        # List with all schema dict
         schemas_data = []
         result_status.update(expanded=True)
 
-        # Loop over all files to build schema list
-        if uploaded_files:
-            for uploaded_file in uploaded_files:
+        if st.session_state.uploaded_files:
+            for uploaded_file in st.session_state.uploaded_files:
                 try:
-                    st.write(f"Loading `{uploaded_file.name}` ...")
-                    schemas_data.append(yaml.safe_load(uploaded_file.read()))
+                    file_name = uploaded_file["name"] if isinstance(uploaded_file, dict) else uploaded_file.name
+                    file_content = uploaded_file["content"] if isinstance(uploaded_file, dict) else uploaded_file.read()
+                    st.write(f"Loading `{file_name}` ...")
+                    schemas_data.append(yaml.safe_load(file_content))
 
                 except yaml.YAMLError as exc:
-                    result_status.error(f"This file {uploaded_file.name} contains an error!", icon="🚨")
+                    result_status.error(f"This file {file_name} contains an error!", icon="🚨")
                     result_status.write(exc)
 
-        # Call Infrahub API
         st.write("Calling Infrahub API...")
         response = load_schema(branch=st.session_state.infrahub_branch, schemas=schemas_data)
         st.write("Computing results...")
+
         if response:
             # Compute response
             if response.errors:
@@ -121,6 +122,5 @@ if apply_button and st.session_state.is_upload_valid:
                         icon="ℹ️",
                     )
 
-# If someome clicks even tho upload is faulty
 elif apply_button and not st.session_state.is_upload_valid:
     st.toast("One uploaded file looks fishy...", icon="🚨")
