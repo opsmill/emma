@@ -27,6 +27,7 @@ class InfrahubStatus(str, Enum):
     OK = "ok"
     ERROR = "error"
 
+
 class SchemaCheckResponse(BaseModel):
     success: bool
     response: dict | None = None
@@ -254,7 +255,7 @@ def get_current_page():
 
 def handle_reachability_error(redirect: bool | None = True):
     st.toast(icon="🚨", body=f"Error: {st.session_state.infrahub_error_message}")
-    st.cache_data.clear()   # TODO: Maybe something less violent ?
+    st.cache_data.clear()  # TODO: Maybe something less violent ?
     if not redirect:
         st.stop()
     current_page = get_current_page()

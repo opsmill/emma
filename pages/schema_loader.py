@@ -58,7 +58,7 @@ if not apply_button and uploaded_files and len(uploaded_files) > 0:
 
                 if schema_check_result:
                     # If something went wrong
-                    if not schema_check_result.success :
+                    if not schema_check_result.success:
                         st.session_state.is_upload_valid = False
                         preview_status.error("Infrahub doesn't like it!", icon="🚨")
                         if schema_check_result.response:

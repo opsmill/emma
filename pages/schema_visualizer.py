@@ -155,7 +155,6 @@ else:
     _generics = [item for item in infrahub_schema.values() if isinstance(item, GenericSchema)]
     _nodes = [item for item in infrahub_schema.values() if isinstance(item, NodeSchema)]
 
-
     # Create a Tab for "All Nodes" So if we want more Tab (i.e per Namespace) we could
     tabs = st.tabs(["All Nodes"])
 

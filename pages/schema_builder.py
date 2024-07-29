@@ -300,12 +300,9 @@ if st.button(
     assistant_messages = [m for m in st.session_state.messages if m["role"] == "assistant"]
     combined_code = "\n\n".join(re.findall(r"```(?:\w+)?(.*?)```", assistant_messages[-1]["content"], re.DOTALL))
 
-    schema_check_result = check_schema(
-        branch=st.session_state.infrahub_branch,
-        schemas=[yaml.safe_load(combined_code)]
-    )
+    schema_check_result = check_schema(branch=st.session_state.infrahub_branch, schemas=[yaml.safe_load(combined_code)])
     if schema_check_result:
-        if not schema_check_result.success :
+        if not schema_check_result.success:
             if schema_check_result.response:
                 if "detail" in schema_check_result.response:
                     errors = schema_check_result.response["detail"]
@@ -320,7 +317,6 @@ if st.button(
         else:
             message = "Schema is valid!\n\n" + translate_success(data=schema_check_result.response)
             st.session_state.check_schema_errors = None  # Clear any previous errors
-
 
     # We use 'ai' as the role here to format the message the same as assistant messages,
     # But not include them in the messages we look for schema in.

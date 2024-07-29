@@ -72,7 +72,9 @@ else:
 
     if selected_option:
         selected_schema = infrahub_schema[selected_option]
-        dataframe: pd.DataFrame = get_objects_as_df(kind=selected_option, include_id=False, branch=st.session_state.infrahub_branch)
+        dataframe: pd.DataFrame = get_objects_as_df(
+            kind=selected_option, include_id=False, branch=st.session_state.infrahub_branch
+        )
         if isinstance(dataframe, types.NoneType) is True:
             handle_reachability_error(redirect=False)
         else:
