@@ -202,27 +202,27 @@ if "infrahub_schema_fid" not in st.session_state:
     infrahub_schema = get_schema(st.session_state.infrahub_branch)
     if not infrahub_schema:
         handle_reachability_error()
+    else:
+        transformed_schema = {
+            k: transform_schema(v.model_dump())
+            for k, v in infrahub_schema.items()
+            if v.namespace  # not in ("Core", "Profile", "Builtin")
+        }
 
-    transformed_schema = {
-        k: transform_schema(v.model_dump())
-        for k, v in infrahub_schema.items()
-        if v.namespace  # not in ("Core", "Profile", "Builtin")
-    }
+        yaml_schema = yaml.dump(transformed_schema, default_flow_style=False)
 
-    yaml_schema = yaml.dump(transformed_schema, default_flow_style=False)
+        # Convert the schema to a BytesIO object
+        file_like_object = io.BytesIO(yaml_schema.encode("utf-8"))
+        file_like_object.name = "current_schema.yaml.txt"
 
-    # Convert the schema to a BytesIO object
-    file_like_object = io.BytesIO(yaml_schema.encode("utf-8"))
-    file_like_object.name = "current_schema.yaml.txt"
+        # Upload the file-like object
+        message_file = client.files.create(file=file_like_object, purpose="assistants")
 
-    # Upload the file-like object
-    message_file = client.files.create(file=file_like_object, purpose="assistants")
+        st.session_state.infrahub_schema_fid = message_file.id
 
-    st.session_state.infrahub_schema_fid = message_file.id
-
-    # Create and store the schema overview for the initial prompt
-    overviews = [transform_schema_overview(schema.model_dump()) for schema in infrahub_schema.values()]
-    st.session_state.schema_overview = merge_overviews(overviews)
+        # Create and store the schema overview for the initial prompt
+        overviews = [transform_schema_overview(schema.model_dump()) for schema in infrahub_schema.values()]
+        st.session_state.schema_overview = merge_overviews(overviews)
 
 demo_prompts = [
     "Generate a schema for kubernetes. It must contain Cluster, Node, Namespace.",
@@ -300,22 +300,27 @@ if st.button(
     assistant_messages = [m for m in st.session_state.messages if m["role"] == "assistant"]
     combined_code = "\n\n".join(re.findall(r"```(?:\w+)?(.*?)```", assistant_messages[-1]["content"], re.DOTALL))
 
-    schema_result, schema_detail = check_schema(st.session_state.infrahub_branch, [yaml.safe_load(combined_code)])
+    schema_check_result = check_schema(
+        branch=st.session_state.infrahub_branch,
+        schemas=[yaml.safe_load(combined_code)]
+    )
+    if schema_check_result:
+        if not schema_check_result.success :
+            if schema_check_result.response:
+                if "detail" in schema_check_result.response:
+                    errors = schema_check_result.response["detail"]
+                else:
+                    errors = schema_check_result.response["errors"]
 
-    if schema_result:
-        message = "Schema is valid!\n\n" + translate_success(schema_detail)
-        st.session_state.check_schema_errors = None  # Clear any previous errors
-    else:
-        if "detail" in schema_detail:
-            errors = schema_detail["detail"]
+            errors_out = translate_errors(schema_errors=errors)
+            st.session_state.check_schema_errors = errors_out  # Store errors in session state
+            st.session_state.combined_code = combined_code  # Store schema code in session state
+
+            message = "Hmm, looks like we've got some problems.\n\n" + errors_out
         else:
-            errors = schema_detail["errors"]
+            message = "Schema is valid!\n\n" + translate_success(data=schema_check_result.response)
+            st.session_state.check_schema_errors = None  # Clear any previous errors
 
-        errors_out = translate_errors(errors)
-        st.session_state.check_schema_errors = errors_out  # Store errors in session state
-        st.session_state.combined_code = combined_code  # Store schema code in session state
-
-        message = "Hmm, looks like we've got some problems.\n\n" + errors_out
 
     # We use 'ai' as the role here to format the message the same as assistant messages,
     # But not include them in the messages we look for schema in.

@@ -150,32 +150,33 @@ infrahub_schema = get_schema(branch=st.session_state.infrahub_branch)
 if not infrahub_schema:
     handle_reachability_error()
 
-# Process schema data to separate Generics and Nodes
-_generics = [item for item in infrahub_schema.values() if isinstance(item, GenericSchema)]
-_nodes = [item for item in infrahub_schema.values() if isinstance(item, NodeSchema)]
+else:
+    # Process schema data to separate Generics and Nodes
+    _generics = [item for item in infrahub_schema.values() if isinstance(item, GenericSchema)]
+    _nodes = [item for item in infrahub_schema.values() if isinstance(item, NodeSchema)]
 
 
-# Create a Tab for "All Nodes" So if we want more Tab (i.e per Namespace) we could
-tabs = st.tabs(["All Nodes"])
+    # Create a Tab for "All Nodes" So if we want more Tab (i.e per Namespace) we could
+    tabs = st.tabs(["All Nodes"])
 
-with tabs[0]:
-    col1, col2 = st.columns([3, 1])
+    with tabs[0]:
+        col1, col2 = st.columns([3, 1])
 
-    with col1:
-        _selected_id = visualize_schema_flow(generics=_generics, nodes=_nodes, key="schema_flow_all")
+        with col1:
+            _selected_id = visualize_schema_flow(generics=_generics, nodes=_nodes, key="schema_flow_all")
 
-    with col2:
-        # Display Tips
-        display_expander(
-            name="Interaction Tips",
-            content="""
-            - **Click on nodes** to view detailed information.
-            - **Drag nodes** to reposition them in the graph.
-            - **Use the controls** on the graph to zoom and pan.
-            - **Hover over edges** to see relationship labels.
-            - **Toggle the minimap** for an overview of the graph.
-            """,
-        )
-        if _selected_id:
-            st.markdown(f"### {_selected_id}")
-            display_node_info(_selected_id, _generics, _nodes)
+        with col2:
+            # Display Tips
+            display_expander(
+                name="Interaction Tips",
+                content="""
+                - **Click on nodes** to view detailed information.
+                - **Drag nodes** to reposition them in the graph.
+                - **Use the controls** on the graph to zoom and pan.
+                - **Hover over edges** to see relationship labels.
+                - **Toggle the minimap** for an overview of the graph.
+                """,
+            )
+            if _selected_id:
+                st.markdown(f"### {_selected_id}")
+                display_node_info(_selected_id, _generics, _nodes)

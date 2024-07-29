@@ -73,49 +73,50 @@ infrahub_schema = get_schema(branch=st.session_state.infrahub_branch)
 if not infrahub_schema:
     handle_reachability_error()
 
-option = st.selectbox("Select which type of data you want to import?", options=infrahub_schema.keys())
+else:
+    option = st.selectbox("Select which type of data you want to import?", options=infrahub_schema.keys())
 
-if option:
-    selected_schema = infrahub_schema[option]
+    if option:
+        selected_schema = infrahub_schema[option]
 
-    uploaded_file = st.file_uploader("Choose a CSV file", type=["csv"])
+        uploaded_file = st.file_uploader("Choose a CSV file", type=["csv"])
 
-    if uploaded_file is not None:
-        msg = st.toast(f"Loading file {uploaded_file}...")
-        dataframe = None
-        try:
-            dataframe = pd.read_csv(filepath_or_buffer=uploaded_file)
-        except EmptyDataError as exc:
-            msg.toast(icon="❌", body=f"{str(exc)}")
+        if uploaded_file is not None:
+            msg = st.toast(f"Loading file {uploaded_file}...")
             dataframe = None
+            try:
+                dataframe = pd.read_csv(filepath_or_buffer=uploaded_file)
+            except EmptyDataError as exc:
+                msg.toast(icon="❌", body=f"{str(exc)}")
+                dataframe = None
 
-        container = st.container(border=True)
+            container = st.container(border=True)
 
-        if isinstance(dataframe, types.NoneType) is True:
-            st.stop()
-        msg.toast("Comparing data to schema...")
-        _errors = validate_if_df_is_compatible_with_schema(df=dataframe, target_schema=selected_schema)
-        if _errors:
-            msg.toast(icon="❌", body=f".csv file is not valid for {option}")
-            for error in _errors:
-                st.toast(icon="⚠️", body=error.message)
+            if isinstance(dataframe, types.NoneType) is True:
+                st.stop()
+            msg.toast("Comparing data to schema...")
+            _errors = validate_if_df_is_compatible_with_schema(df=dataframe, target_schema=selected_schema)
+            if _errors:
+                msg.toast(icon="❌", body=f".csv file is not valid for {option}")
+                for error in _errors:
+                    st.toast(icon="⚠️", body=error.message)
 
-        if not _errors:
-            edited_df = st.data_editor(dataframe, hide_index=True)
+            if not _errors:
+                edited_df = st.data_editor(dataframe, hide_index=True)
 
-            if st.button("Import Data"):
-                nbr_errors = 0
-                client = get_client(branch=st.session_state.infrahub_branch)
-                msg.toast(body=f"Loading data for {selected_schema}")
-                for index, row in edited_df.iterrows():
-                    data = dict_remove_nan_values(dict(row))
-                    node = client.create(kind=option, **data, branch=st.session_state.infrahub_branch)
-                    node.save(allow_upsert=True)
-                    edited_df.at[index, "Status"] = "ONGOING"
-                    msg.toast(icon="✅", body=f"Item {index+1} CREATED id:{node.id}")
+                if st.button("Import Data"):
+                    nbr_errors = 0
+                    client = get_client(branch=st.session_state.infrahub_branch)
+                    msg.toast(body=f"Loading data for {selected_schema}")
+                    for index, row in edited_df.iterrows():
+                        data = dict_remove_nan_values(dict(row))
+                        node = client.create(kind=option, **data, branch=st.session_state.infrahub_branch)
+                        node.save(allow_upsert=True)
+                        edited_df.at[index, "Status"] = "ONGOING"
+                        msg.toast(icon="✅", body=f"Item {index+1} CREATED id:{node.id}")
 
-                time.sleep(2)
-                if nbr_errors > 0:
-                    st.toast(icon="❌", body=f"Loading completed with {nbr_errors} errors")
-                else:
-                    msg.toast(icon="✅", body="Load complete")
+                    time.sleep(2)
+                    if nbr_errors > 0:
+                        st.toast(icon="❌", body=f"Loading completed with {nbr_errors} errors")
+                    else:
+                        msg.toast(icon="✅", body="Load complete")

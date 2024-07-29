@@ -15,6 +15,7 @@ from infrahub_sdk.exceptions import (
     ServerNotResponsiveError,
 )
 from infrahub_sdk.schema import GenericSchema, NodeSchema, SchemaLoadResponse
+from pydantic import BaseModel
 from st_pages import get_pages, get_script_run_ctx
 
 if TYPE_CHECKING:
@@ -25,6 +26,10 @@ class InfrahubStatus(str, Enum):
     UNKNOWN = "unknown"
     OK = "ok"
     ERROR = "error"
+
+class SchemaCheckResponse(BaseModel):
+    success: bool
+    response: dict | None = None
 
 
 def get_instance_address() -> str | None:
@@ -59,10 +64,12 @@ def load_schema(branch: str, schemas: list[dict] | None = None) -> SchemaLoadRes
     return None
 
 
-def check_schema(branch: str, schemas: list[dict] | None = None) -> tuple[bool, dict | None] | None:
+def check_schema(branch: str, schemas: list[dict] | None = None) -> SchemaCheckResponse | None:
     client = get_client(branch=branch)
     if check_reachability(client=client):
-        return client.schema.check(schemas, branch)
+        success, response = client.schema.check(schemas=schemas, branch=branch)
+        schema_check = SchemaCheckResponse(success=success, response=response)
+        return schema_check
     return None
 
 
@@ -247,9 +254,9 @@ def get_current_page():
 
 def handle_reachability_error(redirect: bool | None = True):
     st.toast(icon="🚨", body=f"Error: {st.session_state.infrahub_error_message}")
+    st.cache_data.clear()   # TODO: Maybe something less violent ?
     if not redirect:
         st.stop()
-    st.cache_data.clear()
     current_page = get_current_page()
     if current_page != "main":
         st.switch_page("main.py")
