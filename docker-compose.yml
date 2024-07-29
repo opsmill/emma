@@ -11,7 +11,6 @@ services:
     image: "${EMMA_DOCKER_REPOSITORY:-registry.opsmill.io/opsmill/emma}:${VERSION:-latest}"
     pull_policy: always
     environment:
-        <<: *emma_config
+      <<: *emma_config
     ports:
       - 8501:8501
-
