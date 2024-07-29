@@ -295,8 +295,7 @@ with col1:
         assistant_messages = [m for m in st.session_state.messages if m["role"] == "assistant"]
 
     schema_check_result = check_schema(
-        branch=st.session_state.infrahub_branch,
-        schemas=[yaml.safe_load(st.session_state.combined_code)]
+        branch=st.session_state.infrahub_branch, schemas=[yaml.safe_load(st.session_state.combined_code)]
     )
     if schema_check_result:
         if schema_check_result.success:
