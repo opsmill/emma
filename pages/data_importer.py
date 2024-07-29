@@ -1,5 +1,6 @@
 import time
 from enum import Enum
+from typing import Any, Dict
 
 import pandas as pd
 import streamlit as st
@@ -27,6 +28,13 @@ class Message(BaseModel):
     message: str
 
 
+def dict_remove_nan_values(dictionary: Dict[str, Any]) -> Dict[str, Any]:
+    remove = [k for k, v in dictionary.items() if pd.isnull(v)]
+    for k in remove:
+        dictionary.pop(k)
+    return dictionary
+
+
 def validate_if_df_is_compatible_with_schema(df: pd.DataFrame, target_schema: NodeSchema) -> list[Message]:
     errors = []
     df_columns = list(df.columns.values)
@@ -45,6 +53,17 @@ def validate_if_df_is_compatible_with_schema(df: pd.DataFrame, target_schema: No
     for item in additional:
         errors.append(Message(severity=MessageSeverity.WARNING, message=f"unable to map {item} for {option!r}"))
 
+    for column in df_columns:
+        if column in target_schema.relationship_names:
+            for relationship_schema in target_schema.relationships:
+                if relationship_schema.name == column and relationship_schema.cardinality == "many":
+                    errors.append(
+                        Message(
+                            severity=MessageSeverity.ERROR,
+                            message=f"Only relationships with a cardinality of one are supported: {column!r}",
+                        )
+                    )
+
     return errors
 
 
@@ -56,7 +75,7 @@ option = st.selectbox("Select which type of data you want to import?", options=s
 if option:
     selected_schema = schema[option]
 
-    uploaded_file = st.file_uploader("Choose a CSV file")
+    uploaded_file = st.file_uploader("Choose a CSV file", type=["csv"])
 
     if uploaded_file is not None:
         dataframe = pd.read_csv(uploaded_file)
@@ -69,13 +88,14 @@ if option:
                 container.error(error.message)
 
         if not _errors:
-            edited_df = st.data_editor(dataframe)
+            edited_df = st.data_editor(dataframe, hide_index=True)
 
             if st.button("Import Data"):
                 nbr_errors = 0
                 with st.status("Loading data...", expanded=True) as status:
                     for index, row in edited_df.iterrows():
-                        node = client.create(kind=option, **dict(row), branch=st.session_state.infrahub_branch)
+                        data = dict_remove_nan_values(dict(row))
+                        node = client.create(kind=option, **data, branch=st.session_state.infrahub_branch)
                         node.save(allow_upsert=True)
                         edited_df.at[index, "Status"] = "ONGOING"
                         st.write(f"Item {index} CREATED id:{node.id}\n")

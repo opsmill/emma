@@ -28,7 +28,13 @@ def convert_df_to_csv(df: pd.DataFrame) -> bytes:
 
 def get_column_labels(model_schema: MainSchemaTypes) -> ColumnLabels:
     optional_columns = [attr.name for attr in model_schema.attributes if attr.optional]
+    optional_columns.extend(
+        [rel.name for rel in model_schema.relationships if rel.cardinality == "one" and rel.optional]
+    )
     mandatory_columns = [attr.name for attr in model_schema.attributes if not attr.optional]
+    mandatory_columns.extend(
+        [rel.name for rel in model_schema.relationships if rel.cardinality == "one" and not rel.optional]
+    )
     return ColumnLabels(optional=optional_columns, mandatory=mandatory_columns)
 
 
@@ -52,8 +58,8 @@ def filter_and_reorder_columns(df: pd.DataFrame, to_omit: List[str], column_mapp
     return df[ordered_columns]
 
 
-set_page_config(title="Data Explorer")
-st.markdown("# Data Explorer")
+set_page_config(title="Data Exporter")
+st.markdown("# Data Exporter")
 menu_with_redirect()
 
 infrahub_schema = get_schema(branch=st.session_state.infrahub_branch)

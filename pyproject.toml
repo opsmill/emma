@@ -10,7 +10,7 @@ packages = [
 ]
 
 [tool.poetry.dependencies]
-python = "^3.10"
+python = "^3.10, < 3.13"
 streamlit = "^1.37.0"
 infrahub-sdk = {version = "^0", extras = ["all"]}
 watchdog = "^4.0.1"

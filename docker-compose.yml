@@ -1,9 +1,16 @@
 ---
 # yamllint disable rule:line-length
-name: emma
+x-emma-config: &emma_config
+  INFRAHUB_ADDRESS: "http://infrahub-server:8000"
+  INFRAHUB_API_TOKEN: "06438eb2-8019-4776-878c-0941b1f1d1ec"
+
 services:
-  server:
+  emma:
     build:
       dockerfile: Dockerfile
-    image: "registry.opsmill.io/emma:local"
+    image: "${EMMA_DOCKER_REPOSITORY:-registry.opsmill.io/opsmill/emma}:${VERSION:-latest}"
     pull_policy: always
+    environment:
+      <<: *emma_config
+    ports:
+      - 8501:8501
