@@ -111,17 +111,17 @@ def ensure_infrahub_address_and_branch():
 
 @st.experimental_dialog("Set or Update Infrahub Instance")
 def update_infrahub_instance_dialog():
-    new_instance = st.text_input("Infrahub Address...")
-    if st.button("Submit"):
+    new_instance = st.text_input(label="Infrahub Address:", placeholder="http://infrahub-server-fqdn")
+    if new_instance or st.button("Submit"):
         st.session_state.infrahub_address = new_instance
         st.rerun()
 
 
 @st.experimental_dialog("Create a branch")
 def create_branch_dialog():
-    new_branch_name = st.text_input("Branch name...")
-    if st.button("Submit"):
-        create_branch(new_branch_name)
+    new_branch_name = st.text_input(label="New Branch", placeholder="new-branch-name")
+    if new_branch_name or st.button("Submit"):
+        create_branch(branch_name=new_branch_name)
         st.session_state.infrahub_branch = new_branch_name
         st.rerun()
 
