@@ -303,6 +303,7 @@ if st.button(
     schema_check_result = check_schema(branch=st.session_state.infrahub_branch, schemas=[yaml.safe_load(combined_code)])
     if schema_check_result:
         if not schema_check_result.success:
+            errors = None
             if schema_check_result.response:
                 if "detail" in schema_check_result.response:
                     errors = schema_check_result.response["detail"]

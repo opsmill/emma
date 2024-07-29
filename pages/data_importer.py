@@ -33,23 +33,23 @@ def dict_remove_nan_values(dictionary: Dict[str, Any]) -> Dict[str, Any]:
     return dictionary
 
 
-def validate_if_df_is_compatible_with_schema(df: pd.DataFrame, target_schema: NodeSchema) -> list[Message]:
+def validate_if_df_is_compatible_with_schema(df: pd.DataFrame, target_schema: NodeSchema, schema: str) -> list[Message]:
     errors = []
 
     df_columns = list(df.columns.values)
     _, _, missing_mandatory = compare_lists(list1=df_columns, list2=target_schema.mandatory_input_names)
     for item in missing_mandatory:
         errors.append(
-            Message(severity=MessageSeverity.ERROR, message=f"mandatory column for {option!r} missing : {item!r}")
+            Message(severity=MessageSeverity.ERROR, message=f"mandatory column for {schema!r} missing : {item!r}")
         )
-        # errors.append(f"**ERROR**: mandatory column for {option!r} missing : {item!r}\n")
+        # errors.append(f"**ERROR**: mandatory column for {schema!r} missing : {item!r}\n")
 
     _, additional, _ = compare_lists(
         list1=df_columns, list2=target_schema.relationship_names + target_schema.attribute_names
     )
 
     for item in additional:
-        errors.append(Message(severity=MessageSeverity.WARNING, message=f"unable to map {item} for {option!r}"))
+        errors.append(Message(severity=MessageSeverity.WARNING, message=f"unable to map {item} for {schema!r}"))
 
     for column in df_columns:
         if column in target_schema.relationship_names:
@@ -95,7 +95,9 @@ else:
             if isinstance(dataframe, types.NoneType) is True:
                 st.stop()
             msg.toast("Comparing data to schema...")
-            _errors = validate_if_df_is_compatible_with_schema(df=dataframe, target_schema=selected_schema)
+            _errors = validate_if_df_is_compatible_with_schema(
+                df=dataframe, target_schema=selected_schema, schema=option
+            )
             if _errors:
                 msg.toast(icon="❌", body=f".csv file is not valid for {option}")
                 for error in _errors:

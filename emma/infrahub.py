@@ -85,8 +85,7 @@ def create_branch(branch_name: str) -> BranchData | None:
     client = get_client()
     if check_reachability(client=client):
         return client.branch.create(branch_name=branch_name)
-    else:
-        return None
+    return None
 
 
 def get_version(client: InfrahubClientSync) -> str:
