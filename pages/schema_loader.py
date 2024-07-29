@@ -67,19 +67,19 @@ if not apply_button and st.session_state.uploaded_files and len(st.session_state
                         if schema_check_result.response:
                             # TODO: Improve error message
                             preview_status.exception(exception=BaseException(schema_check_result.response))
-                        preview_status.update(label=uploaded_file.name, state="error", expanded=True)
+                        preview_status.update(label=file_name, state="error", expanded=True)
                     else:
                         # Otherwise we load the diff
                         preview_status.success("This is the diff against current schema", icon="👇")
                         if schema_check_result.response:
                             preview_status.code(yaml.safe_dump(schema_check_result.response), language="yaml")
-                        preview_status.update(label=uploaded_file.name, state="complete", expanded=True)
+                        preview_status.update(label=file_name, state="complete", expanded=True)
 
             except yaml.YAMLError as exc:
                 st.session_state.is_upload_valid = False
                 preview_status.error("This file contains a YAML error!", icon="🚨")
                 preview_status.exception(exception=exc)  # TODO: Improve that?
-                preview_status.update(label=uploaded_file.name, state="error", expanded=True)
+                preview_status.update(label=file_name, state="error", expanded=True)
 
 # If someone clicks the button and upload is ok
 if apply_button and st.session_state.is_upload_valid:

@@ -10,7 +10,7 @@ import yaml
 from langchain_community.agents.openai_assistant import OpenAIAssistantV2Runnable
 from openai import OpenAI
 
-from emma.infrahub import check_schema, get_schema
+from emma.infrahub import check_schema, get_schema, handle_reachability_error
 from emma.streamlit_utils import set_page_config
 from menu import menu_with_redirect
 
@@ -143,31 +143,6 @@ def translate_errors(schema_errors):
     return "\n\n".join(human_readable)
 
 
-def translate_success(data):
-    human_readable = []
-    diff = data["diff"]
-
-    if "added" in diff and diff["added"]:
-        human_readable.append("Added:")
-        for key, value in diff["added"].items():
-            human_readable.append(f"  - {key}")
-
-    if "changed" in diff and diff["changed"]:
-        human_readable.append("\n\nChanged:")
-        for key, value in diff["changed"].items():
-            human_readable.append(f"  - {key}")
-            if "relationships" in value["changed"] and value["changed"]["relationships"]["added"]:
-                for rel_key in value["changed"]["relationships"]["added"]:
-                    human_readable.append(f"    * Added relationship '{rel_key}'")
-
-    if "removed" in diff and diff["removed"]:
-        human_readable.append("Removed:")
-        for key, value in diff["removed"].items():
-            human_readable.append(f"  - {key}")
-
-    return "\n".join(human_readable)
-
-
 def generate_yaml(conversation: List[Dict]):
     # Define the custom representer correctly
     def str_presenter(dumper, data):
@@ -183,6 +158,9 @@ def generate_yaml(conversation: List[Dict]):
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
+
+if "check_schema_errors" not in st.session_state:
+    st.session_state.check_schema_errors = "Placeholder"
 
 buttons_disabled = not st.session_state.messages
 
@@ -209,28 +187,30 @@ if st.sidebar.button("New Chat", disabled=buttons_disabled):
     st.rerun()
 
 if "infrahub_schema_fid" not in st.session_state:
-    infra_schema = get_schema(st.session_state.infrahub_branch)
+    infrahub_schema = get_schema(st.session_state.infrahub_branch)
+    if not infrahub_schema:
+        handle_reachability_error()
+    else:
+        transformed_schema = {
+            k: transform_schema(v.model_dump())
+            for k, v in infrahub_schema.items()
+            if v.namespace  # not in ("Core", "Profile", "Builtin")
+        }
 
-    transformed_schema = {
-        k: transform_schema(v.model_dump())
-        for k, v in infra_schema.items()
-        if v.namespace  # not in ("Core", "Profile", "Builtin")
-    }
+        yaml_schema = yaml.dump(transformed_schema, default_flow_style=False)
 
-    yaml_schema = yaml.dump(transformed_schema, default_flow_style=False)
+        # Convert the schema to a BytesIO object
+        file_like_object = io.BytesIO(yaml_schema.encode("utf-8"))
+        file_like_object.name = "current_schema.yaml.txt"
 
-    # Convert the schema to a BytesIO object
-    file_like_object = io.BytesIO(yaml_schema.encode("utf-8"))
-    file_like_object.name = "current_schema.yaml.txt"
+        # Upload the file-like object
+        message_file = client.files.create(file=file_like_object, purpose="assistants")
 
-    # Upload the file-like object
-    message_file = client.files.create(file=file_like_object, purpose="assistants")
+        st.session_state.infrahub_schema_fid = message_file.id
 
-    st.session_state.infrahub_schema_fid = message_file.id
-
-    # Create and store the schema overview for the initial prompt
-    overviews = [transform_schema_overview(schema.model_dump()) for schema in infra_schema.values()]
-    st.session_state.schema_overview = merge_overviews(overviews)
+        # Create and store the schema overview for the initial prompt
+        overviews = [transform_schema_overview(schema.model_dump()) for schema in infrahub_schema.values()]
+        st.session_state.schema_overview = merge_overviews(overviews)
 
 demo_prompts = [
     "Generate a schema for kubernetes. It must contain Cluster, Node, Namespace.",
@@ -332,7 +312,7 @@ with col1:
                 if not errors:
                     errors = schema_check_result.response.get("detail")
 
-                errors_out = translate_errors(errors)
+                errors_out = translate_errors(schema_errors=errors)
                 st.session_state.schema_errors = errors_out  # Store errors in session state
 
                 message = "Hmm, looks like we've got some problems.\n\n" + errors_out
@@ -365,10 +345,11 @@ if st.session_state.get("combined_code"):
         )
 
     with col3:
-        if st.button("See in Schema Importer"):
-            st.session_state.generated_files = [{"name": filename, "content": st.session_state.combined_code}]
+        if not st.session_state.check_schema_errors:
+            if st.button("See in Schema Importer"):
+                st.session_state.generated_files = [{"name": filename, "content": st.session_state.combined_code}]
 
-            st.switch_page("pages/schema_loader.py")
+                st.switch_page("pages/schema_loader.py")
 
 with col1:
     if st.session_state.get("schema_errors"):
@@ -376,5 +357,5 @@ with col1:
             st.session_state.prompt_input = ERROR_PROMPT.format(
                 errors=st.session_state.schema_errors, schema=st.session_state.combined_code
             )
-            del st.session_state.schema_errors
+            st.session_state.schema_errors = False
             st.rerun()  # Force rerun to handle new prompt input
