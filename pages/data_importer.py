@@ -5,6 +5,7 @@ from typing import Any, Dict
 
 import pandas as pd
 import streamlit as st
+from infrahub_sdk.exceptions import GraphQLError
 from infrahub_sdk.schema import NodeSchema
 from infrahub_sdk.utils import compare_lists
 from pandas.errors import EmptyDataError
@@ -109,16 +110,27 @@ else:
                 if st.button("Import Data"):
                     nbr_errors = 0
                     client = get_client(branch=st.session_state.infrahub_branch)
-                    msg.toast(body=f"Loading data for {selected_schema}")
+                    st.write()
+                    msg.toast(body=f"Loading data for {selected_schema.namespace}{selected_schema.name}")
                     for index, row in edited_df.iterrows():
                         data = dict_remove_nan_values(dict(row))
                         node = client.create(kind=option, **data, branch=st.session_state.infrahub_branch)
-                        node.save(allow_upsert=True)
-                        edited_df.at[index, "Status"] = "ONGOING"
-                        msg.toast(icon="✅", body=f"Item {index+1} CREATED id:{node.id}")
+                        try:
+                            node.save(allow_upsert=True)
+                            edited_df.at[index, "Status"] = "ONGOING"
+                            with st.expander(icon="✅", label=f"Line {index}: Item created with success"):
+                                st.write(f"Node id: {node.id}")  # TODO Add link to node in infrahub
+                        except GraphQLError as exc:
+                            with st.expander(
+                                icon="⚠️",
+                                label=f"Line {index}: Item failed to be import. ",
+                                expanded=False,
+                            ):
+                                st.write(f"Error: {exc}")
+                            nbr_errors += 1
 
                     time.sleep(2)
                     if nbr_errors > 0:
-                        st.toast(icon="❌", body=f"Loading completed with {nbr_errors} errors")
+                        msg.toast(icon="❌", body=f"Loading completed with {nbr_errors} errors")
                     else:
-                        msg.toast(icon="✅", body="Load complete")
+                        msg.toast(icon="✅", body="Loading completed with success")

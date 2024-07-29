@@ -32,8 +32,6 @@ else:
         help="If you need help building your schema, feel free to reach out to Opsmill team!",
     )
 
-preview_container = st.container(border=False)
-
 apply_button = st.button(
     label=f"🚀 Load to :blue[__*{st.session_state.infrahub_branch}*__] branch in Infrahub",
     type="primary",
@@ -45,12 +43,14 @@ result_container = st.container(border=False)
 # If something is uploaded or available in session state...
 if not apply_button and st.session_state.uploaded_files and len(st.session_state.uploaded_files) > 0:
     st.session_state.is_upload_valid = True
+    preview_container = st.container(border=False)
 
     for uploaded_file in st.session_state.uploaded_files:
         file_name = uploaded_file["name"] if isinstance(uploaded_file, dict) else uploaded_file.name
         file_content = uploaded_file["content"] if isinstance(uploaded_file, dict) else uploaded_file.read()
 
-        with preview_container.status("Checking schema ...") as preview_status:
+        msg = st.toast(body=f"Checking {file_name} ...")
+        with preview_container.status(f"Details for {file_name}:") as preview_status:
             try:
                 schema_content = yaml.safe_load(file_content)
                 preview_status.success("This YAML file is valid", icon="✅")
@@ -67,19 +67,19 @@ if not apply_button and st.session_state.uploaded_files and len(st.session_state
                         if schema_check_result.response:
                             # TODO: Improve error message
                             preview_status.exception(exception=BaseException(schema_check_result.response))
-                        preview_status.update(label=file_name, state="error", expanded=True)
+                        msg.toast(body=f"Error encountered for {file_name}", icon="🚨")
                     else:
                         # Otherwise we load the diff
                         preview_status.success("This is the diff against current schema", icon="👇")
                         if schema_check_result.response:
                             preview_status.code(yaml.safe_dump(schema_check_result.response), language="yaml")
-                        preview_status.update(label=file_name, state="complete", expanded=True)
+                        msg.toast(body=f"Loading complete for {file_name}", icon="👍")
 
             except yaml.YAMLError as exc:
                 st.session_state.is_upload_valid = False
-                preview_status.error("This file contains a YAML error!", icon="🚨")
+                preview_container.error("This file contains a YAML error!", icon="🚨")
                 preview_status.exception(exception=exc)  # TODO: Improve that?
-                preview_status.update(label=file_name, state="error", expanded=True)
+                msg.toast(body=f"Error encountered for {file_name}", icon="🚨")
 
 # If someone clicks the button and upload is ok
 if apply_button and st.session_state.is_upload_valid:
