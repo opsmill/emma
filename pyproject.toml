@@ -20,6 +20,7 @@ openai = "^1.37.1"
 langchain-openai = "^0.1.19"
 streamlit-flow-component = "^1.2.8"
 streamlit-sortables = "^0.2.0"
+st-pages = "^0.5.0"
 
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.5.5"

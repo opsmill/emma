@@ -1,20 +1,19 @@
 import time
+import types
 from enum import Enum
 from typing import Any, Dict
 
 import pandas as pd
 import streamlit as st
+from infrahub_sdk.exceptions import GraphQLError
 from infrahub_sdk.schema import NodeSchema
 from infrahub_sdk.utils import compare_lists
+from pandas.errors import EmptyDataError
 from pydantic import BaseModel
 
-from emma.infrahub import get_client, get_schema
+from emma.infrahub import get_client, get_schema, handle_reachability_error
 from emma.streamlit_utils import set_page_config
 from menu import menu_with_redirect
-
-set_page_config(title="Import Data")
-st.markdown("# Import Data from CSV file")
-menu_with_redirect()
 
 
 class MessageSeverity(str, Enum):
@@ -35,23 +34,23 @@ def dict_remove_nan_values(dictionary: Dict[str, Any]) -> Dict[str, Any]:
     return dictionary
 
 
-def validate_if_df_is_compatible_with_schema(df: pd.DataFrame, target_schema: NodeSchema) -> list[Message]:
+def validate_if_df_is_compatible_with_schema(df: pd.DataFrame, target_schema: NodeSchema, schema: str) -> list[Message]:
     errors = []
-    df_columns = list(df.columns.values)
 
+    df_columns = list(df.columns.values)
     _, _, missing_mandatory = compare_lists(list1=df_columns, list2=target_schema.mandatory_input_names)
     for item in missing_mandatory:
         errors.append(
-            Message(severity=MessageSeverity.ERROR, message=f"mandatory column for {option!r} missing : {item!r}")
+            Message(severity=MessageSeverity.ERROR, message=f"mandatory column for {schema!r} missing : {item!r}")
         )
-        # errors.append(f"**ERROR**: mandatory column for {option!r} missing : {item!r}\n")
+        # errors.append(f"**ERROR**: mandatory column for {schema!r} missing : {item!r}\n")
 
     _, additional, _ = compare_lists(
         list1=df_columns, list2=target_schema.relationship_names + target_schema.attribute_names
     )
 
     for item in additional:
-        errors.append(Message(severity=MessageSeverity.WARNING, message=f"unable to map {item} for {option!r}"))
+        errors.append(Message(severity=MessageSeverity.WARNING, message=f"unable to map {item} for {schema!r}"))
 
     for column in df_columns:
         if column in target_schema.relationship_names:
@@ -67,38 +66,71 @@ def validate_if_df_is_compatible_with_schema(df: pd.DataFrame, target_schema: No
     return errors
 
 
-client = get_client(branch=st.session_state.infrahub_branch)
-schema = get_schema(branch=st.session_state.infrahub_branch)
+set_page_config(title="Import Data")
+st.markdown("# Import Data from CSV file")
+menu_with_redirect()
 
-option = st.selectbox("Select which type of data you want to import?", options=schema.keys())
+infrahub_schema = get_schema(branch=st.session_state.infrahub_branch)
+if not infrahub_schema:
+    handle_reachability_error()
 
-if option:
-    selected_schema = schema[option]
+else:
+    option = st.selectbox("Select which type of data you want to import?", options=infrahub_schema.keys())
 
-    uploaded_file = st.file_uploader("Choose a CSV file", type=["csv"])
+    if option:
+        selected_schema = infrahub_schema[option]
 
-    if uploaded_file is not None:
-        dataframe = pd.read_csv(uploaded_file)
+        uploaded_file = st.file_uploader("Choose a CSV file", type=["csv"])
 
-        container = st.container(border=True)
+        if uploaded_file is not None:
+            msg = st.toast(f"Loading file {uploaded_file}...")
+            dataframe = None
+            try:
+                dataframe = pd.read_csv(filepath_or_buffer=uploaded_file)
+            except EmptyDataError as exc:
+                msg.toast(icon="❌", body=f"{str(exc)}")
+                dataframe = None
 
-        _errors = validate_if_df_is_compatible_with_schema(df=dataframe, target_schema=selected_schema)
-        if _errors:
-            for error in _errors:
-                container.error(error.message)
+            container = st.container(border=True)
 
-        if not _errors:
-            edited_df = st.data_editor(dataframe, hide_index=True)
+            if isinstance(dataframe, types.NoneType) is True:
+                st.stop()
+            msg.toast("Comparing data to schema...")
+            _errors = validate_if_df_is_compatible_with_schema(
+                df=dataframe, target_schema=selected_schema, schema=option
+            )
+            if _errors:
+                msg.toast(icon="❌", body=f".csv file is not valid for {option}")
+                for error in _errors:
+                    st.toast(icon="⚠️", body=error.message)
 
-            if st.button("Import Data"):
-                nbr_errors = 0
-                with st.status("Loading data...", expanded=True) as status:
+            if not _errors:
+                edited_df = st.data_editor(dataframe, hide_index=True)
+
+                if st.button("Import Data"):
+                    nbr_errors = 0
+                    client = get_client(branch=st.session_state.infrahub_branch)
+                    st.write()
+                    msg.toast(body=f"Loading data for {selected_schema.namespace}{selected_schema.name}")
                     for index, row in edited_df.iterrows():
                         data = dict_remove_nan_values(dict(row))
                         node = client.create(kind=option, **data, branch=st.session_state.infrahub_branch)
-                        node.save(allow_upsert=True)
-                        edited_df.at[index, "Status"] = "ONGOING"
-                        st.write(f"Item {index} CREATED id:{node.id}\n")
+                        try:
+                            node.save(allow_upsert=True)
+                            edited_df.at[index, "Status"] = "ONGOING"
+                            with st.expander(icon="✅", label=f"Line {index}: Item created with success"):
+                                st.write(f"Node id: {node.id}")  # TODO Add link to node in infrahub
+                        except GraphQLError as exc:
+                            with st.expander(
+                                icon="⚠️",
+                                label=f"Line {index}: Item failed to be import. ",
+                                expanded=False,
+                            ):
+                                st.write(f"Error: {exc}")
+                            nbr_errors += 1
 
                     time.sleep(2)
-                    status.update(label=f"Loading completed with {nbr_errors} errors", state="complete", expanded=False)
+                    if nbr_errors > 0:
+                        msg.toast(icon="❌", body=f"Loading completed with {nbr_errors} errors")
+                    else:
+                        msg.toast(icon="✅", body="Loading completed with success")

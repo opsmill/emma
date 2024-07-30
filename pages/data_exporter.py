@@ -1,3 +1,4 @@
+import types
 from typing import Dict, List
 
 import pandas as pd
@@ -6,7 +7,7 @@ from infrahub_sdk.schema import MainSchemaTypes
 from pydantic import BaseModel
 from streamlit_sortables import sort_items
 
-from emma.infrahub import get_objects_as_df, get_schema
+from emma.infrahub import get_objects_as_df, get_schema, handle_reachability_error
 from emma.streamlit_utils import set_page_config
 from menu import menu_with_redirect
 
@@ -63,39 +64,45 @@ st.markdown("# Data Exporter")
 menu_with_redirect()
 
 infrahub_schema = get_schema(branch=st.session_state.infrahub_branch)
-selected_option = None
-if infrahub_schema:
+if not infrahub_schema:
+    handle_reachability_error()
+
+else:
     selected_option = st.selectbox("Select which model you want to explore?", infrahub_schema.keys())
 
-if selected_option:
-    selected_schema = infrahub_schema[selected_option]
-    dataframe = get_objects_as_df(kind=selected_option, include_id=False, branch=st.session_state.infrahub_branch)
+    if selected_option:
+        selected_schema = infrahub_schema[selected_option]
+        dataframe: pd.DataFrame = get_objects_as_df(
+            kind=selected_option, include_id=False, branch=st.session_state.infrahub_branch
+        )
+        if isinstance(dataframe, types.NoneType) is True:
+            handle_reachability_error(redirect=False)
+        else:
+            column_labels_info = get_column_labels(model_schema=selected_schema)
 
-    column_labels_info = get_column_labels(model_schema=selected_schema)
+            st.info(
+                icon="💡",
+                body="""
+                    You can personalize the CSV by removing Optional fields or re-ordering them.
 
-    st.info(
-        icon="💡",
-        body="""
-            You can personalize the CSV by removing Optional fields or re-ordering them.
+                    Drag and drop the column names to reorder them
+                    The columns marked as '(Mandatory)' cannot be omitted.
+                    """,
+            )
+            omitted_columns = st.multiselect(
+                "Select optional columns to omit:",
+                options=column_labels_info.optional,
+                help="Choose the colums you want to omit",
+            )
+            filtered_df = dataframe.drop(columns=omitted_columns)
 
-            Drag and drop the column names to reorder them
-            The columns marked as '(Mandatory)' cannot be omitted.
-            """,
-    )
-    omitted_columns = st.multiselect(
-        "Select optional columns to omit:",
-        options=column_labels_info.optional,
-        help="Choose the colums you want to omit",
-    )
-    filtered_df = dataframe.drop(columns=omitted_columns)
+            column_label_mapping_info = create_column_label_mapping(
+                optional_columns=column_labels_info.optional, mandatory_columns=column_labels_info.mandatory
+            )
+            reordered_df = filter_and_reorder_columns(
+                df=filtered_df, to_omit=omitted_columns, column_mapping=column_label_mapping_info
+            )
 
-    column_label_mapping_info = create_column_label_mapping(
-        optional_columns=column_labels_info.optional, mandatory_columns=column_labels_info.mandatory
-    )
-    reordered_df = filter_and_reorder_columns(
-        df=filtered_df, to_omit=omitted_columns, column_mapping=column_label_mapping_info
-    )
-
-    csv = convert_df_to_csv(df=reordered_df)
-    st.dataframe(reordered_df, hide_index=True)
-    st.download_button("Download CSV File", csv, f"{selected_option}.csv", "text/csv", key="download-csv")
+            csv = convert_df_to_csv(df=reordered_df)
+            st.dataframe(reordered_df, hide_index=True)
+            st.download_button("Download CSV File", csv, f"{selected_option}.csv", "text/csv", key="download-csv")

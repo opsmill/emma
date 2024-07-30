@@ -693,13 +693,13 @@ files = [
 
 [[package]]
 name = "incremental"
-version = "24.7.1"
+version = "24.7.2"
 description = "A small library that versions your Python projects."
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "incremental-24.7.1-py3-none-any.whl", hash = "sha256:fdec6e533d06fd5497080fad4d8b78416c98801588551c9e620409940e8745f7"},
-    {file = "incremental-24.7.1.tar.gz", hash = "sha256:a3717c20534499835555ba727b32ee087945ba9daaf23851471dfe3d1e3d1698"},
+    {file = "incremental-24.7.2-py3-none-any.whl", hash = "sha256:8cb2c3431530bec48ad70513931a760f446ad6c25e8333ca5d95e24b0ed7b8fe"},
+    {file = "incremental-24.7.2.tar.gz", hash = "sha256:fb4f1d47ee60efe87d4f6f0ebb5f70b9760db2b2574c59c8e8912be4ebd464c9"},
 ]
 
 [package.dependencies]
@@ -2402,13 +2402,13 @@ files = [
 
 [[package]]
 name = "setuptools"
-version = "71.1.0"
+version = "72.1.0"
 description = "Easily download, build, install, upgrade, and uninstall Python packages"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "setuptools-71.1.0-py3-none-any.whl", hash = "sha256:33874fdc59b3188304b2e7c80d9029097ea31627180896fb549c578ceb8a0855"},
-    {file = "setuptools-71.1.0.tar.gz", hash = "sha256:032d42ee9fb536e33087fb66cac5f840eb9391ed05637b3f2a76a7c8fb477936"},
+    {file = "setuptools-72.1.0-py3-none-any.whl", hash = "sha256:5a03e1860cf56bb6ef48ce186b0e557fdba433237481a9a625176c2831be15d1"},
+    {file = "setuptools-72.1.0.tar.gz", hash = "sha256:8d243eff56d095e5817f796ede6ae32941278f542e0f941867cc05ae52b162ec"},
 ]
 
 [package.extras]
@@ -2546,6 +2546,20 @@ postgresql-psycopg2cffi = ["psycopg2cffi"]
 postgresql-psycopgbinary = ["psycopg[binary] (>=3.0.7)"]
 pymysql = ["pymysql"]
 sqlcipher = ["sqlcipher3_binary"]
+
+[[package]]
+name = "st-pages"
+version = "0.5.0"
+description = "An experimental version of Streamlit Multi-Page Apps"
+optional = false
+python-versions = "!=2.7.*,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*,!=3.5.*,!=3.6.*,!=3.7.*,>=3.8"
+files = [
+    {file = "st_pages-0.5.0-py3-none-any.whl", hash = "sha256:3b6ba6bd419be78e4e8c7133a2032fee7a0bdbf56fb6b45bf72089b316c6e68b"},
+    {file = "st_pages-0.5.0.tar.gz", hash = "sha256:4a49b87e8661a9bd5df229d40bcc550f354f7ba83d79abc8940b546fcc617774"},
+]
+
+[package.dependencies]
+streamlit = ">=1.10.0"
 
 [[package]]
 name = "streamlit"
@@ -3121,4 +3135,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10, < 3.13"
-content-hash = "d0207cd869ce13f847597c93f65ffe66b544c0fadc8347f4aaba4f0c824026e4"
+content-hash = "37e861c140cc9cfeb0ff3ee433dfe3835324319f8f4532d04c4bf487ef955cf3"
