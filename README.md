@@ -22,14 +22,13 @@ To run Emma locally using Poetry, follow these steps:
  poetry install
  ```
 
-1. **Run the Application:**
+2. **Run the Application:**
 
  ```console
- poetry shell
  streamlit run main.py
  ```
 
-1. **Set Environment Variables:**
+3. **Set Environment Variables:**
 
  Emma uses Infrahub standard environment variables to connect to Infrahub:
 
@@ -48,7 +47,7 @@ To run Emma using Docker Compose, follow these steps:
  docker-compose up --build
  ```
 
-### Connecting to Infrahub Network
+2. **Connecting to Infrahub Network:**
 
 If you run Infrahub as another container in the local network, you need to connect Emma to it. After starting both containers, run the following command:
 
