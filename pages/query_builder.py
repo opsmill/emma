@@ -20,7 +20,7 @@ api_key = "EmmaDefaultAuthMakingInfrahubEasierToUse!!!11"
 client = OpenAI(base_url="https://emma.opsmill.cloud/v1", api_key=api_key)
 
 agent = OpenAIAssistantV2Runnable(
-    assistant_id=os.environ.get("OPENAI_ASSISTANT_ID", "asst_5FVcCijX0avcLB8dh2kut9jo"),
+    assistant_id=os.environ.get("OPENAI_ASSISTANT_ID", "asst_Bo7xr4OH9iU3Nkg90IMnkHu1"),
     as_agent=True,
     client=client,
     check_every_ms=1000,
@@ -88,7 +88,12 @@ st.sidebar.download_button(
 if st.sidebar.button("New Chat", disabled=buttons_disabled):
     if "thread_id" in st.session_state:
         del st.session_state.thread_id
+    
+    if "prompt_input" in st.session_state:
+        del st.session_state.prompt_input
+    
     st.session_state.query_messages = []
+
     st.rerun()
 
 # Fetch GraphQL schema
@@ -112,7 +117,7 @@ if "infrahub_query_fid" not in st.session_state:
 demo_prompts = [
     "I need a query to grab all the info I need to template VRF configs.",
     "Can you show me some helpful IPAM queries?",
-    "How can I get the data to template Cisco ios global vlan configs?",
+    "How would I query ip prefixes per location? And filter by location?",
 ]
 
 if not st.session_state.query_messages:
@@ -187,7 +192,7 @@ Here's a sample of your data:
 {json.dumps(query_check_result, indent=4)[:500]}...
 ```
 
-Want to download it, or check it out in the importer?"""
+Want to download it? Or refine it?"""
 
             st.session_state.check_query_errors = False
 
