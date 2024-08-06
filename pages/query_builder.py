@@ -20,7 +20,7 @@ api_key = "EmmaDefaultAuthMakingInfrahubEasierToUse!!!11"
 client = OpenAI(base_url="https://emma.opsmill.cloud/v1", api_key=api_key)
 
 agent = OpenAIAssistantV2Runnable(
-    assistant_id=os.environ.get("OPENAI_ASSISTANT_ID", "asst_Bo7xr4OH9iU3Nkg90IMnkHu1"),
+    assistant_id=os.environ.get("OPENAI_ASSISTANT_ID", "asst_DxlloA58sexdmG5lHljUTTJn"),
     as_agent=True,
     client=client,
     check_every_ms=1000,
@@ -116,7 +116,7 @@ if "infrahub_query_fid" not in st.session_state:
 # Demo prompts
 demo_prompts = [
     "I need a query to grab all the info I need to template VRF configs.",
-    "Can you show me some helpful IPAM queries?",
+    "Can you show a helpful IPAM query for getting started?",
     "How would I query ip prefixes per location? And filter by location?",
 ]
 
