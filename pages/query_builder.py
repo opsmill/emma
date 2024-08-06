@@ -88,10 +88,10 @@ st.sidebar.download_button(
 if st.sidebar.button("New Chat", disabled=buttons_disabled):
     if "thread_id" in st.session_state:
         del st.session_state.thread_id
-    
+
     if "prompt_input" in st.session_state:
         del st.session_state.prompt_input
-    
+
     st.session_state.query_messages = []
 
     st.rerun()
