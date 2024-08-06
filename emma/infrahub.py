@@ -1,12 +1,10 @@
 import os
 from enum import Enum
-
-from graphql import get_introspection_query
-
 from typing import TYPE_CHECKING, Any, List, Tuple
 
 import pandas as pd
 import streamlit as st
+from graphql import get_introspection_query
 from httpx import HTTPError
 from infrahub_sdk import InfrahubClientSync, InfrahubNodeSync, MainSchemaTypes
 from infrahub_sdk.branch import BranchData

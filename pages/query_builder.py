@@ -5,14 +5,13 @@ import os
 import re
 from typing import Dict, List
 
-from infrahub_sdk import GraphQLError
-
 import streamlit as st
 import yaml
+from infrahub_sdk import GraphQLError
 from langchain_community.agents.openai_assistant import OpenAIAssistantV2Runnable
 from openai import OpenAI
 
-from emma.infrahub import run_gql_query, get_gql_schema, handle_reachability_error
+from emma.infrahub import get_gql_schema, handle_reachability_error, run_gql_query
 from emma.streamlit_utils import set_page_config
 from menu import menu_with_redirect
 
@@ -27,15 +26,15 @@ agent = OpenAIAssistantV2Runnable(
     check_every_ms=1000,
 )
 
+
 def remove_none_values(d):
     if isinstance(d, dict):
         if d.get("isDeprecated") is False:
             del d["isDeprecated"]
         return {k: remove_none_values(v) for k, v in d.items() if v is not None}
-    elif isinstance(d, list):
+    if isinstance(d, list):
         return [remove_none_values(v) for v in d if v is not None]
-    else:
-        return d
+    return d
 
 
 ERROR_PROMPT = """We've generated the following query, but when running it against Infrahub we ran into some problems.
@@ -51,15 +50,17 @@ Errors:
 {errors}
 ```"""
 
+
 # YAML generator with custom string presenter
 def generate_yaml(conversation: List[Dict]):
     def str_presenter(dumper, data):
         if "\n" in data:
             return dumper.represent_scalar("tag:yaml.org,2002:str", data, style="|")
         return dumper.represent_scalar("tag:yaml.org,2002:str", data)
-    
+
     yaml.add_representer(str, str_presenter)
     return yaml.dump(conversation, default_flow_style=False)
+
 
 # Set Streamlit page configuration
 set_page_config(title="Query Builder")
@@ -94,10 +95,10 @@ if st.sidebar.button("New Chat", disabled=buttons_disabled):
 if "infrahub_query_fid" not in st.session_state:
     with st.spinner(text="Processing the schema! Just a second."):
         gql_schema = get_gql_schema(st.session_state.infrahub_branch)
-        
+
         if not gql_schema:
             handle_reachability_error()
-        
+
         else:
             clean_schema = remove_none_values(gql_schema)
 
@@ -106,9 +107,6 @@ if "infrahub_query_fid" not in st.session_state:
             file_like_object.name = "graphql_schema.yaml.txt"
             message_file = client.files.create(file=file_like_object, purpose="assistants")
             st.session_state.infrahub_query_fid = message_file.id
-
-            with open("ugh.yaml", "w") as f:
-                f.write(yaml_schema)
 
 # Demo prompts
 demo_prompts = [
@@ -156,9 +154,10 @@ if prompt:
             )
 
         if "query_thread_id" not in st.session_state:
-            st.session_state.query_thread_id = response.return_values["thread_id"]
+            st.session_state.query_thread_id = response.return_values["thread_id"]  # type: ignore[union-attr]
 
-        output = response.return_values["output"]
+        output = response.return_values["output"]  # type: ignore[union-attr]
+
         st.write(output)
 
     st.session_state.query_messages.append({"role": "assistant", "content": output})
@@ -176,7 +175,9 @@ with col1:
     ):
         assistant_messages = [m for m in st.session_state.query_messages if m["role"] == "assistant"]
         try:
-            query_check_result = run_gql_query(branch=st.session_state.infrahub_branch, query=st.session_state.combined_code)
+            query_check_result = run_gql_query(
+                branch=st.session_state.infrahub_branch, query=st.session_state.combined_code
+            )
 
             message = f"""Query is valid!
 
@@ -200,9 +201,13 @@ Want to download it, or check it out in the importer?"""
 
 if st.session_state.get("combined_code"):
     code = st.session_state.combined_code.splitlines()
-    filename = code[0].replace("#", "").lstrip() if code[0].lstrip().startswith("#") else f"query_generated_{str(datetime.datetime.now(tz=datetime.timezone.utc))[:16]}.gql"
+    filename = (
+        code[0].replace("#", "").lstrip()
+        if code[0].lstrip().startswith("#")
+        else f"query_generated_{str(datetime.datetime.now(tz=datetime.timezone.utc))[:16]}.gql"
+    )
     code = "\n".join(code[1:] if filename != code[0] else code)
-    
+
     with col2:
         st.download_button(
             label="Download query",
@@ -215,6 +220,8 @@ if st.session_state.get("combined_code"):
 with col1:
     if st.session_state.get("query_errors"):
         if st.button("Fix query", help="Send the generated query and errors to our query builder"):
-            st.session_state.prompt_input = ERROR_PROMPT.format(errors=st.session_state.query_errors, query=st.session_state.combined_code)
+            st.session_state.prompt_input = ERROR_PROMPT.format(
+                errors=st.session_state.query_errors, query=st.session_state.combined_code
+            )
             st.session_state.query_errors = False
             st.rerun()
