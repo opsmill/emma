@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Any, List, Tuple
 import pandas as pd
 import streamlit as st
 from httpx import HTTPError
-from infrahub_sdk import InfrahubClientSync, InfrahubNodeSync, MainSchemaTypes
+from infrahub_sdk import Config, InfrahubClientSync, InfrahubNodeSync, MainSchemaTypes, RelationshipKind
 from infrahub_sdk.branch import BranchData
 from infrahub_sdk.exceptions import (
     AuthenticationError,
@@ -46,8 +46,8 @@ def get_instance_branch() -> str:
 
 
 @st.cache_resource
-def get_client(address: str | None = None, branch: str | None = None) -> InfrahubClientSync:  # pylint: disable=unused-argument
-    return InfrahubClientSync(address=address)
+def get_client(address: str | None = None, branch: str = "main") -> InfrahubClientSync:  # pylint: disable=unused-argument
+    return InfrahubClientSync(address=address, config=Config(default_branch=branch))
 
 
 @st.cache_data
@@ -57,6 +57,28 @@ def get_schema(branch: str | None = None) -> dict[str, MainSchemaTypes] | None:
         return client.schema.all(branch=branch)
     return None
 
+def get_node_schema(kind: str, branch: str | None = None) -> MainSchemaTypes | None:
+    client = get_client(branch=branch)
+    if check_reachability(client=client):
+        return client.schema.get(kind=kind)
+    return None
+
+
+def get_candidate_related_nodes(schema_node: MainSchemaTypes, branch: str | None = None) -> dict[str, List[InfrahubNodeSync]]:
+    client = get_client(branch=branch)
+    candidates = {}
+    if check_reachability(client=client):
+        relationships = [
+            relationship.peer
+            for relationship in schema_node.relationships
+            if relationship.kind == RelationshipKind.GENERIC
+        ]
+
+        for relation in relationships:
+            nodes = client.all(kind=relation)
+            candidates[relation] = nodes
+
+    return candidates
 
 def load_schema(branch: str, schemas: list[dict] | None = None) -> SchemaLoadResponse | None:
     client = get_client(branch=branch)
@@ -71,8 +93,8 @@ def check_schema(branch: str, schemas: list[dict] | None = None) -> SchemaCheckR
         success, response = client.schema.check(schemas=schemas, branch=branch)
         schema_check = SchemaCheckResponse(success=success, response=response)
         return schema_check
-    return None
 
+    return None
 
 def get_branches(address: str | None = None) -> dict[str, BranchData] | None:
     client = get_client(address=address)

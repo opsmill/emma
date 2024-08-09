@@ -30,6 +30,7 @@ def menu():
     st.sidebar.page_link("pages/schema_loader.py", label="📦 Schema Loader")
     st.sidebar.page_link("pages/schema_builder.py", label="👷 Schema Builder")
     st.sidebar.page_link("pages/schema_visualizer.py", label="👀 Schema Visualizer")
+    st.sidebar.page_link("pages/pop_build.py", label="🛠️ Pop builder")
 
 
 def menu_with_redirect():
