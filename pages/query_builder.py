@@ -110,7 +110,7 @@ if "infrahub_query_fid" not in st.session_state:
             yaml_schema = yaml.dump(clean_schema, default_flow_style=False)
             file_like_object = io.BytesIO(yaml_schema.encode("utf-8"))
             file_like_object.name = "graphql_schema.yaml.txt"
-            message_file = client.files.create(file=file_like_object, purpose="assistants", chunking_strategy={})
+            message_file = client.files.create(file=file_like_object, purpose="assistants")
             st.session_state.infrahub_query_fid = message_file.id
 
 # Demo prompts
