@@ -20,7 +20,7 @@ api_key = "EmmaDefaultAuthMakingInfrahubEasierToUse!!!11"
 client = OpenAI(base_url="https://emma.opsmill.cloud/v1", api_key=api_key)
 
 agent = OpenAIAssistantV2Runnable(
-    assistant_id=os.environ.get("OPENAI_ASSISTANT_ID", "asst_PmSX6PFE6F7cZpRj05gBBbZ7"),
+    assistant_id=os.environ.get("OPENAI_ASSISTANT_ID", "asst_C3nvIFTrdcj6pVdA5jThL7JI"),
     as_agent=True,
     client=client,
     check_every_ms=1000,
@@ -110,7 +110,7 @@ if "infrahub_query_fid" not in st.session_state:
             yaml_schema = yaml.dump(clean_schema, default_flow_style=False)
             file_like_object = io.BytesIO(yaml_schema.encode("utf-8"))
             file_like_object.name = "graphql_schema.yaml.txt"
-            message_file = client.files.create(file=file_like_object, purpose="assistants")
+            message_file = client.files.create(file=file_like_object, purpose="assistants", chunking_strategy={})
             st.session_state.infrahub_query_fid = message_file.id
 
 # Demo prompts
