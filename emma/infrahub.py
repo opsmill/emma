@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, Any, List, Tuple
 
 import pandas as pd
 import streamlit as st
+from graphql import get_introspection_query
 from httpx import HTTPError
 from infrahub_sdk import InfrahubClientSync, InfrahubNodeSync, MainSchemaTypes
 from infrahub_sdk.branch import BranchData
@@ -56,6 +57,13 @@ def get_schema(branch: str | None = None) -> dict[str, MainSchemaTypes] | None:
     if check_reachability(client=client):
         return client.schema.all(branch=branch)
     return None
+
+
+@st.cache_data
+def get_gql_schema(branch: str | None = None) -> dict[str, Any] | None:
+    client = get_client(branch=branch)
+    schema_query = get_introspection_query()
+    return client.execute_graphql(schema_query)
 
 
 def load_schema(branch: str, schemas: list[dict] | None = None) -> SchemaLoadResponse | None:
@@ -260,3 +268,8 @@ def handle_reachability_error(redirect: bool | None = True):
     current_page = get_current_page()
     if current_page != "main":
         st.switch_page("main.py")
+
+
+def run_gql_query(query: str, branch: str | None = None) -> dict[str, MainSchemaTypes]:
+    client = get_client(branch=branch)
+    return client.execute_graphql(query, raise_for_error=False)
