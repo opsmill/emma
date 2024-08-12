@@ -17,7 +17,8 @@ from infrahub_sdk.exceptions import (
 )
 from infrahub_sdk.schema import GenericSchema, NodeSchema, SchemaLoadResponse
 from pydantic import BaseModel
-from st_pages import get_pages, get_script_run_ctx
+from streamlit.runtime.scriptrunner import get_script_run_ctx
+from streamlit.source_util import get_pages
 
 if TYPE_CHECKING:
     from infrahub_sdk.node import Attribute, RelatedNodeSync
