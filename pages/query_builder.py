@@ -27,16 +27,15 @@ agent = OpenAIAssistantV2Runnable(
     assistant_id=os.environ.get("OPENAI_ASSISTANT_ID", "asst_f4yhQsQNJAq2uX43Qw8DYxrN"),
     as_agent=True,
     client=client,
-    tools=tools,
     check_every_ms=1000,
 )
 
 
-def execute_agent(agent, tools, input):
+def execute_agent(agent_runner, user_prompt):
     tool_map = {tool.name: tool for tool in tools}
 
-    response = agent.invoke(
-        input,
+    resp = agent_runner.invoke(
+        user_prompt,
         attachments=[
             {
                 "file_id": st.session_state.infrahub_query_fid,
@@ -46,16 +45,17 @@ def execute_agent(agent, tools, input):
     )
 
     with st.spinner("Refining your query! Just another moment."):
-        while not isinstance(response, AgentFinish):
+        while not isinstance(resp, AgentFinish):
             tool_outputs = []
-            for action in response:
+            for action in resp:
                 print(f"Querying base object: {action.tool_input}")
                 tool_output = tool_map[action.tool].invoke(action.tool_input)
                 tool_outputs.append({"output": tool_output, "tool_call_id": action.tool_call_id})
-            response = agent.invoke(
-                {"tool_outputs": tool_outputs, "run_id": action.run_id, "thread_id": action.thread_id}
+            resp = agent.invoke(
+                {"tool_outputs": tool_outputs, "run_id": action.run_id, "thread_id": action.thread_id}  # pylint: disable=undefined-loop-variable
             )
-    return response
+
+    return resp
 
 
 def remove_extra_values(d):
@@ -70,11 +70,7 @@ def remove_extra_values(d):
         return {k: remove_extra_values(v) for k, v in d.items()}
 
     if isinstance(d, list):
-        data = [
-            obj
-            for obj in d
-            if isinstance(obj, dict) and "__" not in obj.get("name", "")
-        ]
+        data = [obj for obj in d if isinstance(obj, dict) and "__" not in obj.get("name", "")]
         return [remove_extra_values(v) for v in data if v is not None]
     return d
 
@@ -176,8 +172,9 @@ if "infrahub_query_fid" not in st.session_state:
 
             yaml_schema = yaml.dump(clean_schema, default_flow_style=False)
 
-            with open("text.yml", "w") as f:
-                f.write(yaml_schema)
+            # For testing schema output
+            # with open("text.yml", "w") as f:
+            #     f.write(yaml_schema)
 
             file_like_object = io.BytesIO(yaml_schema.encode("utf-8"))
             file_like_object.name = "graphql_schema.yaml.txt"
@@ -222,17 +219,7 @@ if prompt:
             chat_input["thread_id"] = st.session_state.query_thread_id
 
         with st.spinner(text="Thinking! Just a moment..."):
-            response = execute_agent(agent, tools, chat_input)
-            # response = agent.invoke(
-            #     input=chat_input,
-            #     tools=[generate_full_query],
-            #     attachments=[
-            #         {
-            #             "file_id": st.session_state.infrahub_query_fid,
-            #             "tools": [{"type": "file_search"}],
-            #         }
-            #     ],
-            # )
+            response = execute_agent(agent, chat_input)
 
         if "query_thread_id" not in st.session_state:
             st.session_state.query_thread_id = response.return_values["thread_id"]  # type: ignore[union-attr]

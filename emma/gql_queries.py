@@ -1,8 +1,7 @@
 from typing import Optional
 
-from langchain.tools import tool
-
 from graphql import GraphQLList, GraphQLNonNull, GraphQLObjectType, build_client_schema, get_introspection_query
+from langchain.tools import tool
 
 from emma.infrahub import get_client
 
