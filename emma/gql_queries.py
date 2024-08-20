@@ -5,6 +5,24 @@ from langchain.tools import tool
 
 from emma.infrahub import get_client
 
+EXCLUDED_TYPES = (
+    "id",
+    "is_default",
+    "is_protected",
+    "is_visible",
+    "updated_at",
+    "is_from_profile",
+    "source",
+    "owner",
+    "color",
+    "_updated_at",
+    "tags",
+    "member_of_groups",
+    "subscriber_of_groups",
+    "profiles",
+    "properties",
+)
+
 
 def get_gql_schema(branch: Optional[str] = None) -> Optional[GraphQLObjectType]:
     client = get_client(branch=branch)
@@ -26,6 +44,9 @@ def generate_query(object_type: GraphQLObjectType, visited_types: Optional[set] 
     for field_name, field in object_type.fields.items():
         field_type = field.type
 
+        if field_name in EXCLUDED_TYPES:
+            continue
+
         # Unwrap list and non-null types
         while isinstance(field_type, (GraphQLList, GraphQLNonNull)):
             field_type = field_type.of_type
@@ -36,6 +57,7 @@ def generate_query(object_type: GraphQLObjectType, visited_types: Optional[set] 
                 visited_types.add(field_type.name)
                 sub_query = generate_query(field_type, visited_types)
                 query += f"{field_name} {{ {sub_query} }} "
+
         elif hasattr(field_type, "possibleTypes"):
             # Polymorphic field, handle with fragments
             fragment_queries = []
@@ -114,7 +136,7 @@ def generate_full_query(branch: Optional[str], root_object_name: str) -> Optiona
     """
     query_type = get_gql_schema(branch)
 
-    root_object = query_type.fields.get(root_object_name)
+    root_object = None if not query_type else query_type.fields.get(root_object_name)  # type: ignore[union-attr]
 
     if not query_type or not root_object:
         return "NOT_FOUND"
@@ -130,10 +152,9 @@ def generate_full_query(branch: Optional[str], root_object_name: str) -> Optiona
 
     query = generate_query(root_object_type)
 
-    print(query)
-
     return f"{{ {root_object_name} {{ {query} }} }}"
 
 
 if __name__ == "__main__":
-    print(generate_full_query(None, root_object_name="InfraInterface"))
+    # For testing sake
+    print(generate_full_query.run(tool_input={"branch": None, "root_object_name": "InfraInterfaceL3"}))  # type: ignore[attr-defined]
