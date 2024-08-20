@@ -6,7 +6,6 @@ import re
 import streamlit as st
 from infrahub_sdk import GraphQLError
 from infrahub_sdk.jinja2 import identify_faulty_jinja_code
-
 from jinja2 import Template, TemplateSyntaxError
 from langchain_community.agents.openai_assistant import OpenAIAssistantV2Runnable
 from openai import OpenAI
@@ -16,9 +15,9 @@ from emma.infrahub import run_gql_query
 from emma.streamlit_utils import set_page_config
 from menu import menu_with_redirect
 
-api_key = os.getenv("INFRAHUB_API_KEY") #, "EmmaDefaultAuthMakingInfrahubEasierToUse!!!11")
+api_key = os.getenv("INFRAHUB_API_KEY")  # , "EmmaDefaultAuthMakingInfrahubEasierToUse!!!11")
 
-client = OpenAI()# base_url="https://emma.opsmill.cloud/v1", api_key=api_key)
+client = OpenAI()  # base_url="https://emma.opsmill.cloud/v1", api_key=api_key)
 
 agent = OpenAIAssistantV2Runnable(
     assistant_id=os.environ.get("OPENAI_ASSISTANT_ID", "asst_7YCY5lfwzhZRG8LaoWqfx1UC"),
@@ -130,14 +129,17 @@ if st.sidebar.button("New Chat", disabled=buttons_disabled):
     st.rerun()
 
 if not st.session_state.config_fileids:
-    st.markdown("## Upload Configs (Optional)\n\nWe don't require configs to build templates, but it can be helpful to make sure we get the syntax right!")
+    st.markdown(
+        "## Upload Configs (Optional)\n\nWe don't require configs to build templates,"
+        "but it can be helpful to make sure we get the syntax right!"
+    )
     st.session_state.configs = st.file_uploader("Upload here", accept_multiple_files=True)
 
 # GQL Query Input
 st.markdown("""## Step 1: Enter your GQL Query
 
 Emma will use your query to generate the template you're looking for.
-            
+
 Here we don't handle variables directly - You'll have to input those directly if you need a filter!""")
 
 st.session_state.gql_query = st.text_area("GQL Query", st.session_state.gql_query, height=150)
@@ -180,7 +182,10 @@ if st.session_state.gql_data:
 
         with st.chat_message("assistant"):
             if not st.session_state.template_messages:
-                chat_input = {"content": prompt + INITIAL_PROMPT.format(query=st.session_state.gql_query, data=st.session_state.gql_data)}
+                chat_input = {
+                    "content": prompt
+                    + INITIAL_PROMPT.format(query=st.session_state.gql_query, data=st.session_state.gql_data)
+                }
             else:
                 chat_input = {"content": prompt}
 
@@ -200,14 +205,16 @@ if st.session_state.gql_data:
                 )
 
             if "template_thread_id" not in st.session_state:
-                st.session_state.template_thread_id = response.return_values["thread_id"]
+                st.session_state.template_thread_id = response.return_values["thread_id"]  # type: ignore[union-attr]
 
-            output = response.return_values["output"].replace("data.", "")
+            output = response.return_values["output"].replace("data.", "")  # type: ignore[union-attr]
 
             st.write(output)
 
         st.session_state.template_messages.append({"role": "assistant", "content": output})
-        st.session_state.combined_code = "\n\n".join(code for _, code in re.findall(r"```(j2|jinja2)\s*(.*?)```", output, re.DOTALL)).lstrip("\n")
+        st.session_state.combined_code = "\n\n".join(
+            code for _, code in re.findall(r"```(j2|jinja2)\s*(.*?)```", output, re.DOTALL)
+        ).lstrip("\n")
 
         print(st.session_state.combined_code)
         st.rerun()
@@ -224,7 +231,11 @@ with col1:
     ):
         try:
             # Fetch the Jinja2 template from the generated code
-            template = Template(st.session_state.combined_code, trim_blocks=True, lstrip_blocks=True, )
+            template = Template(
+                st.session_state.combined_code,
+                trim_blocks=True,
+                lstrip_blocks=True,
+            )
 
             # Render the template with the data from the GQL query
             rendered_output = template.render(st.session_state.gql_data)
@@ -243,9 +254,12 @@ Want to download it? Or refine it?"""
             # Handle Jinja2 template syntax errors
             st.session_state.template_errors = identify_faulty_jinja_code(e)
 
-            message = "Hmm, looks like we encountered a problem while rendering the template:\n\n" + st.session_state.template_errors
+            message = (
+                "Hmm, looks like we encountered a problem while rendering the template:\n\n"
+                + st.session_state.template_errors
+            )
 
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-exception-caught
             st.session_state.template_errors = str(e)
 
             message = "Hmm, looks like we encountered a problem while rendering the template:\n\n" + str(e)
@@ -276,7 +290,9 @@ with col1:
     if st.session_state.get("template_errors"):
         if st.button("Fix template", help="Send the generated template and errors to our template builder"):
             st.session_state.prompt_input = ERROR_PROMPT.format(
-                errors=st.session_state.template_errors, query=st.session_state.gql_query, template=st.session_state.combined_code
+                errors=st.session_state.template_errors,
+                query=st.session_state.gql_query,
+                template=st.session_state.combined_code,
             )
             st.session_state.template_errors = False
             st.rerun()
