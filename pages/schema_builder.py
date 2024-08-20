@@ -3,13 +3,13 @@ import io
 import json
 import os
 import re
-from typing import Dict, List
 
 import streamlit as st
 import yaml
 from langchain_community.agents.openai_assistant import OpenAIAssistantV2Runnable
 from openai import OpenAI
 
+from emma.assistant_utils import generate_yaml
 from emma.infrahub import check_schema, get_schema, handle_reachability_error
 from emma.streamlit_utils import set_page_config
 from menu import menu_with_redirect
@@ -141,19 +141,6 @@ def translate_errors(schema_errors):
             err_code = error["extensions"]["code"]
             human_readable.append(f"Error Message: {err_message}\n\n\tCode: {err_code}\n")
     return "\n\n".join(human_readable)
-
-
-def generate_yaml(conversation: List[Dict]):
-    # Define the custom representer correctly
-    def str_presenter(dumper, data):
-        if "\n" in data:
-            return dumper.represent_scalar("tag:yaml.org,2002:str", data, style="|")
-        return dumper.represent_scalar("tag:yaml.org,2002:str", data)
-
-    # Add the custom representer to the Dumper
-    yaml.add_representer(str, str_presenter)
-
-    return yaml.dump(conversation, default_flow_style=False)
 
 
 if "messages" not in st.session_state:
