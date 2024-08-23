@@ -9,8 +9,10 @@ import streamlit as st
 import yaml
 from infrahub_sdk import GraphQLError
 from langchain_community.agents.openai_assistant import OpenAIAssistantV2Runnable
+from langchain_core.agents import AgentFinish
 from openai import OpenAI
 
+from emma.gql_queries import generate_full_query
 from emma.infrahub import get_gql_schema, handle_reachability_error, run_gql_query
 from emma.streamlit_utils import set_page_config
 from menu import menu_with_redirect
@@ -19,23 +21,84 @@ api_key = "EmmaDefaultAuthMakingInfrahubEasierToUse!!!11"
 
 client = OpenAI(base_url="https://emma.opsmill.cloud/v1", api_key=api_key)
 
+tools = [generate_full_query]
+
 agent = OpenAIAssistantV2Runnable(
-    assistant_id=os.environ.get("OPENAI_ASSISTANT_ID", "asst_C3nvIFTrdcj6pVdA5jThL7JI"),
+    assistant_id=os.environ.get("OPENAI_ASSISTANT_ID", "asst_6O5PoPYLqD8FuJPAI7A6Odbj"),
     as_agent=True,
     client=client,
     check_every_ms=1000,
 )
 
 
-def remove_none_values(d):
+def execute_agent(agent_runner, user_prompt):
+    tool_map = {tool.name: tool for tool in tools}
+
+    resp = agent_runner.invoke(
+        user_prompt,
+        attachments=[
+            {
+                "file_id": st.session_state.infrahub_query_fid,
+                "tools": [{"type": "file_search"}],
+            }
+        ],
+    )
+
+    with st.spinner("Refining your query! Just another moment."):
+        while not isinstance(resp, AgentFinish):
+            tool_outputs = []
+            for action in resp:
+                print(f"Querying base object: {action.tool_input}")
+                tool_output = tool_map[action.tool].invoke(action.tool_input)
+                tool_outputs.append({"output": tool_output, "tool_call_id": action.tool_call_id})
+            resp = agent.invoke(
+                {"tool_outputs": tool_outputs, "run_id": action.run_id, "thread_id": action.thread_id}  # pylint: disable=undefined-loop-variable
+            )
+
+    return resp
+
+
+def remove_extra_values(d):
     if isinstance(d, dict):
+        schema_key = "__schema"
+        if schema_key in d:
+            return {schema_key: remove_extra_values(d[schema_key])}
+
         if d.get("isDeprecated") is False:
             del d["isDeprecated"]
-        return {k: remove_none_values(v) for k, v in d.items() if v is not None}
+
+        return {k: remove_extra_values(v) for k, v in d.items()}
+
     if isinstance(d, list):
-        return [remove_none_values(v) for v in d if v is not None]
+        data = [obj for obj in d if isinstance(obj, dict) and "__" not in obj.get("name", "")]
+        return [remove_extra_values(v) for v in data if v is not None]
     return d
 
+
+INITIAL_PROMPT = """\n\nThe above is the user requirements spec!
+
+Once you find the right root object, you MUST use the generate_full_query tool
+to fetch all the fields that you can fetch data from for the given object.
+
+Do not assume your search results are complete - that is what the tool is for!
+
+You'll want to filter down the huge query you generated to what you're actually after!
+
+*DO* use fragments to conditionally fetch extra data where present
+
+*DO NOT* include internal attributes like:
+
+is_default
+is_inherited
+is_protected
+is_visible
+updated_at
+id
+is_from_profile
+
+unless the user specifically requests internal attributes.
+
+Your query needs to be concise, and without any extra data outside of the users query."""
 
 ERROR_PROMPT = """We've generated the following query, but when running it against Infrahub we ran into some problems.
 Regenerate the query so that it will work.
@@ -86,8 +149,8 @@ st.sidebar.download_button(
 )
 
 if st.sidebar.button("New Chat", disabled=buttons_disabled):
-    if "thread_id" in st.session_state:
-        del st.session_state.thread_id
+    if "query_thread_id" in st.session_state:
+        del st.session_state.query_thread_id
 
     if "prompt_input" in st.session_state:
         del st.session_state.prompt_input
@@ -105,9 +168,14 @@ if "infrahub_query_fid" not in st.session_state:
             handle_reachability_error()
 
         else:
-            clean_schema = remove_none_values(gql_schema)
+            clean_schema = remove_extra_values(gql_schema)
 
             yaml_schema = yaml.dump(clean_schema, default_flow_style=False)
+
+            # For testing schema output
+            # with open("text.yml", "w") as f:
+            #     f.write(yaml_schema)
+
             file_like_object = io.BytesIO(yaml_schema.encode("utf-8"))
             file_like_object.name = "graphql_schema.yaml.txt"
             message_file = client.files.create(file=file_like_object, purpose="assistants")
@@ -115,7 +183,7 @@ if "infrahub_query_fid" not in st.session_state:
 
 # Demo prompts
 demo_prompts = [
-    "I need a query to grab all the info I need to template VRF configs.",
+    "I need a query to grab all the info available to template VRF configs.",
     "Can you show a helpful IPAM query for getting started?",
     "How would I query ip prefixes per location? And filter by location?",
 ]
@@ -143,20 +211,15 @@ if prompt:
         st.markdown(prompt)
 
     with st.chat_message("assistant"):
+        if not st.session_state.query_messages:
+            prompt += INITIAL_PROMPT
+
         chat_input = {"content": prompt}
         if "query_thread_id" in st.session_state:
             chat_input["thread_id"] = st.session_state.query_thread_id
 
         with st.spinner(text="Thinking! Just a moment..."):
-            response = agent.invoke(
-                input=chat_input,
-                attachments=[
-                    {
-                        "file_id": st.session_state.infrahub_query_fid,
-                        "tools": [{"type": "file_search"}],
-                    }
-                ],
-            )
+            response = execute_agent(agent, chat_input)
 
         if "query_thread_id" not in st.session_state:
             st.session_state.query_thread_id = response.return_values["thread_id"]  # type: ignore[union-attr]
