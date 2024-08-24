@@ -15,12 +15,12 @@ from emma.infrahub import run_gql_query
 from emma.streamlit_utils import set_page_config
 from menu import menu_with_redirect
 
-api_key = os.getenv("INFRAHUB_API_KEY")  # , "EmmaDefaultAuthMakingInfrahubEasierToUse!!!11")
+api_key = "EmmaDefaultAuthMakingInfrahubEasierToUse!!!11"
 
-client = OpenAI()  # base_url="https://emma.opsmill.cloud/v1", api_key=api_key)
+client = OpenAI(base_url="https://emma.opsmill.cloud/v1", api_key=api_key)
 
 agent = OpenAIAssistantV2Runnable(
-    assistant_id=os.environ.get("OPENAI_ASSISTANT_ID", "asst_7YCY5lfwzhZRG8LaoWqfx1UC"),
+    assistant_id=os.environ.get("TEMPLATE_ASSISTANT_ID", "asst_7YCY5lfwzhZRG8LaoWqfx1UC"),
     as_agent=True,
     client=client,
     check_every_ms=1000,
@@ -248,7 +248,7 @@ Here's the rendered output:
 {rendered_output}
 ```
 
-Want to download it? Or refine it?"""
+Want to download the template? Or refine it?"""
 
         except TemplateSyntaxError as e:
             # Handle Jinja2 template syntax errors
