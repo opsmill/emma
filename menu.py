@@ -16,22 +16,26 @@ def menu():
 
     # Display Opsmill logo
     display_logo()
-    # Display current Infrahub Instance
-    display_infrahub_address(st.sidebar)
-    update_infrahub_instance_button(st.sidebar)
-    # Display Branch Selector
-    display_branch_selector(st.sidebar)  # Always display the branch selector
-    add_create_branch_button(st.sidebar)
-    st.sidebar.divider()
-    # Pages Goes there
-    st.sidebar.page_link("main.py", label="🏠 Homepage")
-    st.sidebar.page_link("pages/data_exporter.py", label="🔭 Data Exporter")
-    st.sidebar.page_link("pages/data_importer.py", label="📥 Data Importer")
-    st.sidebar.page_link("pages/schema_loader.py", label="📦 Schema Loader")
-    st.sidebar.page_link("pages/schema_builder.py", label="👷 Schema Builder")
-    st.sidebar.page_link("pages/schema_visualizer.py", label="👀 Schema Visualizer")
-    st.sidebar.page_link("pages/query_builder.py", label="🔍 Query Builder")
-    st.sidebar.page_link("pages/template_builder.py", label="📝 Template Builder")
+
+    with st.sidebar:
+        # Display current Infrahub Instance
+        display_infrahub_address(st.sidebar)
+        update_infrahub_instance_button(st.sidebar)
+        # Display Branch Selector
+        display_branch_selector(st.sidebar)  # Always display the branch selector
+        add_create_branch_button(st.sidebar)
+        st.divider()
+
+        st.page_link("main.py", label="🏠 Homepage")
+        st.page_link("pages/data_exporter.py", label="🔭 Data Exporter")
+        st.page_link("pages/data_importer.py", label="📥 Data Importer")
+        st.page_link("pages/schema_loader.py", label="📦 Schema Loader")
+        st.page_link("pages/schema_visualizer.py", label="👀 Schema Visualizer")
+
+        with st.expander("Builders", expanded=True, icon="👷"):
+            st.page_link("pages/schema_builder.py", label="🛠️ Schema Builder")
+            st.page_link("pages/query_builder.py", label="🔍 Query Builder")
+            st.page_link("pages/template_builder.py", label="📝 Template Builder")
 
 
 def menu_with_redirect():
