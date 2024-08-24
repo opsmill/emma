@@ -33,6 +33,7 @@ def menu():
     st.sidebar.page_link("pages/query_builder.py", label="🔍 Query Builder")
     st.sidebar.page_link("pages/template_builder.py", label="📝 Template Builder")
 
+
 def menu_with_redirect():
     # Redirect users to the main page
     if "infrahub_address" not in st.session_state or st.session_state.infrahub_address is None:
