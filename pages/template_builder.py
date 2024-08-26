@@ -20,7 +20,7 @@ api_key = "EmmaDefaultAuthMakingInfrahubEasierToUse!!!11"
 client = OpenAI(base_url="https://emma.opsmill.cloud/v1", api_key=api_key)
 
 agent = OpenAIAssistantV2Runnable(
-    assistant_id=os.environ.get("TEMPLATE_ASSISTANT_ID", "asst_7YCY5lfwzhZRG8LaoWqfx1UC"),
+    assistant_id=os.environ.get("TEMPLATE_ASSISTANT_ID", "asst_RVFDTr6emtjcEqwQfNVNYmcm"),
     as_agent=True,
     client=client,
     check_every_ms=1000,
