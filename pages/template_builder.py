@@ -279,7 +279,7 @@ if st.session_state.get("combined_code"):
 
     with col2:
         st.download_button(
-            label="Download teplate",
+            label="Download template",
             data=code,
             file_name=filename,
             mime="text/j2",
