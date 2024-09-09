@@ -11,23 +11,23 @@ packages = [
 
 [tool.poetry.dependencies]
 python = "^3.10, < 3.13"
-streamlit = "^1.37.1"
+streamlit = "^1.38.0"
 infrahub-sdk = {version = "^0", extras = ["all"]}
 watchdog = "^4.0.2"
-langchain = "^0.2.14"
-langchain-community = "^0.2.12"
-openai = "^1.41.0"
-langchain-openai = "^0.1.22"
+langchain = "^0.2.16"
+langchain-community = "^0.2.16"
+openai = "^1.44.0"
+langchain-openai = "^0.1.23"
 streamlit-flow-component = "^1.2.9"
 streamlit-sortables = "^0.2.0"
 st-pages = "^1.0.1"
 
 [tool.poetry.group.dev.dependencies]
-ruff = "^0.6.1"
-mypy = "^1.11.1"
+ruff = "^0.6.4"
+mypy = "^1.11.2"
 yamllint = "^1.35.1"
-towncrier = "^24.7.1"
-pylint = "^3.2.6"
+towncrier = "^24.8.0"
+pylint = "^3.2.7"
 types-pyyaml = "^6.0.12.20240808"
 invoke = "^2.2.0"
 
