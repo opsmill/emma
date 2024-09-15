@@ -35,6 +35,7 @@ def menu():
         with st.expander("Builders", expanded=True, icon="👷"):
             st.page_link("pages/schema_builder.py", label="🛠️ Schema Builder")
             st.page_link("pages/query_builder.py", label="🔍 Query Builder")
+            st.page_link("pages/config_analyzer.py", label="📊 Config Analyzer")
 
 
 def menu_with_redirect():

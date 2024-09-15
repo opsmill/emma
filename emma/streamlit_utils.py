@@ -1,5 +1,5 @@
 import streamlit as st
-from streamlit.delta_generator import DG
+from streamlit.delta_generator import DeltaGenerator as DG
 
 from emma.infrahub import (
     check_reachability,

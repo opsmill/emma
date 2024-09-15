@@ -21,6 +21,9 @@ langchain-openai = "^0.1.22"
 streamlit-flow-component = "^1.2.9"
 streamlit-sortables = "^0.2.0"
 st-pages = "^1.0.1"
+pulse = {git = "https://github.com/opsmill/pulse", rev = "parser"}
+streamlit-ace = "^0.1.1"
+regex = "^2024.9.11"
 
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.6.1"
@@ -30,7 +33,6 @@ towncrier = "^24.7.1"
 pylint = "^3.2.6"
 types-pyyaml = "^6.0.12.20240808"
 invoke = "^2.2.0"
-
 
 [tool.coverage.run]
 branch = true

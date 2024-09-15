@@ -1,0 +1,67 @@
+{
+  "title": "CommunityV3",
+  "description": "SNMP version 3 configuration with enhanced security.",
+  "type": "object",
+  "properties": {
+    "username": {
+      "title": "Username",
+      "type": "string"
+    },
+    "auth_protocol": {
+      "enum": [
+        "None",
+        "MD5",
+        "SHA"
+      ],
+      "title": "Auth Protocol",
+      "type": "string"
+    },
+    "auth_password": {
+      "default": null,
+      "title": "Auth Password",
+      "type": "string"
+    },
+    "privacy_protocol": {
+      "enum": [
+        "None",
+        "DES",
+        "AES"
+      ],
+      "title": "Privacy Protocol",
+      "type": "string"
+    },
+    "privacy_password": {
+      "default": null,
+      "title": "Privacy Password",
+      "type": "string"
+    },
+    "security_level": {
+      "enum": [
+        "noAuthNoPriv",
+        "authPriv",
+        "authNoPriv"
+      ],
+      "title": "Security Level",
+      "type": "string"
+    },
+    "name": {
+      "title": "Name",
+      "type": "string"
+    },
+    "description": {
+      "default": null,
+      "title": "Description",
+      "type": "string"
+    }
+  },
+  "items": null,
+  "required": [
+    "username",
+    "auth_protocol",
+    "privacy_protocol",
+    "security_level",
+    "name"
+  ],
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "additionalProperties": null
+}

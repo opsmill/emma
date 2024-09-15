@@ -1,0 +1,39 @@
+{
+  "title": "NTP Configuration",
+  "description": "NTP server configuration with optional VRF settings.",
+  "type": "object",
+  "properties": {
+    "ntp_servers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "server_ip": {
+            "type": "string",
+            "title": "Server IP",
+            "description": "The IP address of the NTP server."
+          },
+          "use_vrf": {
+            "type": "boolean",
+            "title": "Use VRF",
+            "description": "Whether to use a VRF for the NTP server."
+          },
+          "vrf_name": {
+            "type": "string",
+            "title": "VRF Name",
+            "description": "The name of the VRF to use for the NTP server.",
+            "default": "management"
+          }
+        },
+        "required": [
+          "server_ip"
+        ]
+      }
+    }
+  },
+  "required": [
+    "ntp_servers"
+  ],
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "additionalProperties": false
+}
