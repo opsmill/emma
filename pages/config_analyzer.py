@@ -1,20 +1,15 @@
 import asyncio
 import colorsys
 import html
-import json
 
 import regex as re
 import streamlit as st
-import traceback as tb
-
+from pulse.tasks.generate_jinja2.task import GenerateJinja2Task
+from pulse.tasks.parse_config.task import GenerateDataRegexTask
 from streamlit_ace import st_ace
 
 from emma.streamlit_utils import set_page_config
 from menu import menu_with_redirect
-from pulse.tasks.generate_jinja2.task import GenerateJinja2Task
-from pulse.tasks.parse_config.task import GenerateDataRegexTask
-
-from infrahub_sdk.jinja2 import identify_faulty_jinja_code
 
 llm = GenerateDataRegexTask(model_name="gpt-4o-mini")
 
@@ -220,11 +215,9 @@ def dual_pane_with_highlight(texts, regex_matches):
             pre_match_text = raw_text[last_end : match["start"]]
             highlighted_text_parts.append(html.escape(pre_match_text))
 
-            # Escape the matched text
-            escaped_match = html.escape(match["match"])
-
             # Create the highlighted text with a span tag
-            highlighted_span = f'<span style="background-color: {highlight_color}; color: black; font-weight: bold;">{escaped_match}</span>'
+            highlighted_span = (f'<span style="background-color: {highlight_color};'
+            'color: black; font-weight: bold;">{escaped_match}</span>')
             highlighted_text_parts.append(highlighted_span)
 
             last_end = match["end"]
@@ -241,10 +234,12 @@ def dual_pane_with_highlight(texts, regex_matches):
 
         # Generate the dual-pane view with scroll syncing for this text
         sync_scroll_html = f"""<div style="display: flex; margin-bottom: 20px; height: auto;">
-    <div id="pane1_{idx}" style="width: 50%; border-right: 1px solid #ddd; padding-right: 10px; display: flex; flex-direction: column;">
+    <div id="pane1_{idx}" style="width: 50%; border-right: 1px solid #ddd; padding-right:
+    10px; display: flex; flex-direction: column;">
         <pre style="flex: 1; margin: 0; overflow-y: auto;">{highlighted_text}</pre>
     </div>
-    <div id="pane2_{idx}" style="width: 50%; padding-left: 10px; white-space: pre-wrap; display: flex; flex-direction: column;">
+    <div id="pane2_{idx}" style="width: 50%; padding-left: 10px; white-space: pre-wrap;
+    display: flex; flex-direction: column;">
         <div style="flex: 1; margin: 0; overflow-y: auto;">{extracted_data_html}</div>
     </div>
 </div>
@@ -440,7 +435,7 @@ with tab4:
 
                 st.write("Template is " + "Valid! 🟢" if j2llm.validate_syntax(template) else "INVALID! 🛑")
 
-                for i, (fname, sub_data) in enumerate(st.session_state.extracted_data.items()):
+                for j, (fname, sub_data) in enumerate(st.session_state.extracted_data.items()):
                     if tab_key not in sub_data:
                         continue
 
@@ -452,17 +447,14 @@ with tab4:
                         # st.write(clean_data)
 
                         rendered = j2llm.render_template(template, clean_data)
-                        
+
                         # st.write(rendered)
 
-                        test_data = st.session_state.parsed_configs[i].get(tab_key, [])
+                        test_data = st.session_state.parsed_configs[j].get(tab_key, [])
 
                         test_data = "\n".join(test_data)
 
-                        
-                        test_result = all(
-                            x in test_data for x in rendered.splitlines()
-                        )
+                        test_result = all(x in test_data for x in rendered.splitlines())
 
                         st.write(f"{fname}:\n```\n{rendered}```\nPassed: {'🟢' if test_result else '🛑'}")
                     except Exception as e:
