@@ -36,7 +36,10 @@ class SchemaCheckResponse(BaseModel):
 
 
 def get_instance_address() -> str | None:
-    if "infrahub_address" not in st.session_state or not st.session_state.infrahub_address:
+    if (
+        "infrahub_address" not in st.session_state
+        or not st.session_state.infrahub_address
+    ):
         st.session_state.infrahub_address = os.environ.get("INFRAHUB_ADDRESS")
     return st.session_state.infrahub_address
 
@@ -48,7 +51,9 @@ def get_instance_branch() -> str:
 
 
 @st.cache_resource
-def get_client(address: str | None = None, branch: str | None = None) -> InfrahubClientSync:  # pylint: disable=unused-argument
+def get_client(
+    address: str | None = None, branch: str | None = None
+) -> InfrahubClientSync:  # pylint: disable=unused-argument
     return InfrahubClientSync(address=address)
 
 
@@ -67,14 +72,18 @@ def get_gql_schema(branch: str | None = None) -> dict[str, Any] | None:
     return client.execute_graphql(schema_query)
 
 
-def load_schema(branch: str, schemas: list[dict] | None = None) -> SchemaLoadResponse | None:
+def load_schema(
+    branch: str, schemas: list[dict] | None = None
+) -> SchemaLoadResponse | None:
     client = get_client(branch=branch)
     if check_reachability(client=client):
         return client.schema.load(schemas, branch)
     return None
 
 
-def check_schema(branch: str, schemas: list[dict] | None = None) -> SchemaCheckResponse | None:
+def check_schema(
+    branch: str, schemas: list[dict] | None = None
+) -> SchemaCheckResponse | None:
     client = get_client(branch=branch)
     if check_reachability(client=client):
         success, response = client.schema.check(schemas=schemas, branch=branch)
@@ -121,7 +130,9 @@ def check_reachability(client: InfrahubClientSync) -> bool:
         return False
 
 
-def get_objects_as_df(kind: str, include_id: bool = True, branch: str | None = None) -> pd.DataFrame | None:
+def get_objects_as_df(
+    kind: str, include_id: bool = True, branch: str | None = None
+) -> pd.DataFrame | None:
     client = get_client(branch=branch)
     if not check_reachability(client=client):
         return None
@@ -132,7 +143,12 @@ def get_objects_as_df(kind: str, include_id: bool = True, branch: str | None = N
     objs = client.all(kind=kind, branch=branch)
 
     df = pd.DataFrame(
-        [convert_node_to_dict(obj, include_id=include_id, export_relationships=export_relationships) for obj in objs]
+        [
+            convert_node_to_dict(
+                obj, include_id=include_id, export_relationships=export_relationships
+            )
+            for obj in objs
+        ]
     )
     return df
 
@@ -162,7 +178,11 @@ def convert_node_to_dict(
             rel: RelatedNodeSync = getattr(obj, rel_name)
             if rel.initialized:
                 rel.fetch()
-                data[rel_name] = rel.peer.hfid[0] if rel.peer.hfid and len(rel.peer.hfid) == 1 else rel.peer.id
+                data[rel_name] = (
+                    rel.peer.hfid[0]
+                    if rel.peer.hfid and len(rel.peer.hfid) == 1
+                    else rel.peer.id
+                )
     return data
 
 
@@ -185,7 +205,9 @@ def convert_schema_to_dict(
         "label": node.label,
         "description": node.description,
         "used_by": ", ".join(node.used_by) if hasattr(node, "used_by") else None,
-        "inherit_from": ", ".join(node.inherit_from) if hasattr(node, "inherit_from") else None,
+        "inherit_from": (
+            ", ".join(node.inherit_from) if hasattr(node, "inherit_from") else None
+        ),
         "attributes": [],
         "relationships": [],
     }
@@ -229,7 +251,9 @@ def dict_to_df(data: dict[str, Any]) -> Tuple[pd.DataFrame, pd.DataFrame, pd.Dat
         and relationships dataframes.
     """
     inherit_or_use_label = "Inherit from" if data["inherit_from"] else "Used by"
-    inherit_or_use_value = data["inherit_from"] if data["inherit_from"] else data["used_by"]
+    inherit_or_use_value = (
+        data["inherit_from"] if data["inherit_from"] else data["used_by"]
+    )
 
     main_info = {
         "Name": [data["name"]],
@@ -257,7 +281,9 @@ def get_current_page():
     try:
         current_page = pages[ctx.page_script_hash]
     except KeyError:
-        current_page = [p for p in pages.values() if p["relative_page_hash"] == ctx.page_script_hash][0]
+        current_page = [
+            p for p in pages.values() if p["relative_page_hash"] == ctx.page_script_hash
+        ][0]
     return current_page["page_name"]
 
 
@@ -270,6 +296,7 @@ def handle_reachability_error(redirect: bool | None = True):
     if current_page != "main":
         st.switch_page("main.py")
 
+
 def is_feature_enabled(feature_name):
     """Feature flags implementation"""
     feature_flags = {}
@@ -278,6 +305,7 @@ def is_feature_enabled(feature_name):
         for feature in feature_flags_env.split(","):
             feature_flags[feature.strip()] = True
     return feature_flags.get(feature_name, False)
+
 
 def run_gql_query(query: str, branch: str | None = None) -> dict[str, MainSchemaTypes]:
     client = get_client(branch=branch)
