@@ -1,9 +1,16 @@
 import streamlit as st
 
-from emma.streamlit_utils import ensure_infrahub_address_and_branch, set_page_config
+from emma.streamlit_utils import (
+    ensure_infrahub_address_and_branch,
+    schema_bootstrap_message,
+    set_page_config,
+)
 from menu import menu
 
 set_page_config(title="Homepage")
+
+# Empty schema info goes first
+schema_bootstrap_message()
 
 # Set columns to receive content
 left, right = st.columns([1, 1.6], gap="medium", vertical_alignment="center")

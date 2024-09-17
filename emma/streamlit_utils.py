@@ -9,6 +9,7 @@ from emma.infrahub import (
     get_instance_address,
     get_instance_branch,
     handle_reachability_error,
+    is_current_schema_empty,
 )
 
 
@@ -73,6 +74,19 @@ def input_infrahub_address():
             st.session_state.infrahub_address = new_address
             st.toast(f"Trying to connect to {new_address}")
             st.rerun()
+
+
+def schema_bootstrap_message():
+    if is_current_schema_empty():
+        with st.container(border=True):
+            st.info(
+                """I see that your Infrahub instance is rather empty, a good first step is to create a schema.
+                Click on the button below to get to the schema library and start boostraping your schema!
+                """,
+                icon="ℹ️",
+            )
+            if st.button("📚 Schema Library", use_container_width=True, type="secondary"):
+                st.switch_page("pages/schema_library.py")
 
 
 def ensure_infrahub_address_and_branch():
