@@ -270,6 +270,14 @@ def handle_reachability_error(redirect: bool | None = True):
     if current_page != "main":
         st.switch_page("main.py")
 
+def is_feature_enabled(feature_name):
+    """Feature flags implementation"""
+    feature_flags = {}
+    feature_flags_env = os.getenv("EMMA_FEATURE_FLAGS", "")
+    if feature_flags_env:
+        for feature in feature_flags_env.split(","):
+            feature_flags[feature.strip()] = True
+    return feature_flags.get(feature_name, False)
 
 def run_gql_query(query: str, branch: str | None = None) -> dict[str, MainSchemaTypes]:
     client = get_client(branch=branch)

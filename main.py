@@ -3,7 +3,7 @@ import streamlit as st
 from emma.streamlit_utils import ensure_infrahub_address_and_branch, set_page_config
 from menu import menu
 
-set_page_config(title="Homepage")
+set_page_config(title="Emma - An assistant for Infrahub")
 
 # Set columns to receive content
 left, right = st.columns([1, 1.6], gap="medium", vertical_alignment="center")
@@ -24,6 +24,15 @@ with right:
         Use the sidebar to navigate between different functionalities, such as exploring data, importing data,
         generating schemas, and visualizing schemas.
         """
+    )
+
+    st.info(
+        icon="⚠️",
+        body="""
+            Emma is an experimental and quickly evolving tool developed by the team at OpsMill.
+
+            As such, she may not always work perfectly. Give us feedback if she misbehaves!
+            """,
     )
 
     if "infrahub_address" not in st.session_state:
