@@ -2,9 +2,9 @@ import os
 from enum import Enum
 from os import listdir
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import streamlit as st
-from infrahub_sdk import MainSchemaTypes
 
 from emma.infrahub import (
     get_schema,
@@ -14,6 +14,10 @@ from emma.infrahub import (
 )
 from emma.streamlit_utils import set_page_config
 from menu import menu_with_redirect
+
+if TYPE_CHECKING:
+    from infrahub_sdk import MainSchemaTypes
+
 
 set_page_config(title="Schema Library")
 st.markdown("# Schema Library")
@@ -51,7 +55,7 @@ def check_and_open_readme(path: Path) -> str:
     # Check if the file exists
     if readme_path.exists() and readme_path.is_file() and readme_path.suffix == ".md":
         # Open the file in read mode
-        with open(readme_path, "r") as readme_file:
+        with open(readme_path, "r", encoding="utf8") as readme_file:
             # Read the content of the file
             content: str = readme_file.read()
         return content
