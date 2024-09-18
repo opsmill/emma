@@ -36,7 +36,7 @@ def init_schema_extension_state(schema_extension: str) -> None:
         # FIXME: This is beyond hacking, but I need to define whether base extension is in place or not
         if schema_extension == "base":
             schema: dict[str, Any] | None = get_schema()
-            if "DcimDevice" in schema:
+            if schema is not None and "DcimDevice" in schema.items():
                 st.session_state.extensions_states["base"] = SchemaState.LOADED
         else:
             # TODO: Here we need to evaluate if it's already existing in Infrahub ... somehow

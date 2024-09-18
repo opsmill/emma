@@ -57,10 +57,11 @@ def is_current_schema_empty() -> bool:
 
     result: bool = True
 
-    for node_name, node in schema.items():
-        if node.namespace not in DEFAULT_NAMESPACES:
-            result = False
-            break
+    if schema is not None:
+        for node_name, node in schema.items():
+            if node.namespace not in DEFAULT_NAMESPACES:
+                result = False
+                break
 
     return result
 
