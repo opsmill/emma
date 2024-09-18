@@ -2,7 +2,7 @@ import os
 from enum import Enum
 from os import listdir
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import streamlit as st
 
@@ -14,10 +14,6 @@ from emma.infrahub import (
 )
 from emma.streamlit_utils import set_page_config
 from menu import menu_with_redirect
-
-if TYPE_CHECKING:
-    from infrahub_sdk import MainSchemaTypes
-
 
 set_page_config(title="Schema Library")
 st.markdown("# Schema Library")
@@ -39,7 +35,7 @@ def init_schema_extension_state(schema_extension: str) -> None:
     if schema_extension not in st.session_state.extensions_states:
         # FIXME: This is beyond hacking, but I need to define whether base extension is in place or not
         if schema_extension == "base":
-            schema: dict[str, MainSchemaTypes] = get_schema()
+            schema: dict[str, Any] = get_schema()
             if "DcimDevice" in schema:
                 st.session_state.extensions_states["base"] = SchemaState.LOADED
         else:
@@ -73,7 +69,7 @@ def schema_loading_container(path: Path, schema_extension: str) -> None:
         # Place request
         st.write("Calling Infrahub API...")
         response = load_schema(
-            branch=st.session_state.infrahub_branch, schemas=[item.content for item in schema_content]
+            branch=st.session_state.infrahub_branch, schemas=[item.get("content") for item in schema_content]
         )
         st.write("Computing results...")
 
@@ -124,7 +120,7 @@ def render_schema_extension_content(schema_extension_path: Path, schema_extensio
         key=schema_extension_name,
         disabled=is_button_disabled,
         on_click=on_click_schema_load,
-        args=[schema_extension_name],
+        args=(schema_extension_name),
     )
 
     # Render loading container if needed
@@ -155,12 +151,12 @@ else:
     # First create a box for base that is mandatory
     with st.container(border=True):
         # Init vars
-        schema_extension_name: str = "base"
-        schema_extension_path: Path = Path(f"{st.session_state.schema_library_path}/{schema_extension_name}")
-        init_schema_extension_state(schema_extension_name)
+        schema_base_name: str = "base"
+        schema_base_path: Path = Path(f"{st.session_state.schema_library_path}/{schema_base_name}")
+        init_schema_extension_state(schema_base_name)
 
         # Render container content
-        render_schema_extension_content(schema_extension_path, schema_extension_name)
+        render_schema_extension_content(schema_base_path, schema_base_name)
 
     if st.session_state.extensions_states.get("base") is SchemaState.LOADED:
         # Separate base from the extensions

@@ -52,7 +52,7 @@ def is_current_schema_empty() -> bool:
     branch: str = get_instance_branch()
     if branch is None:
         branch = "main"
-    schema: dict[str, MainSchemaTypes] = fetch_schema(branch)
+    schema: dict[str, Any] = fetch_schema(branch)
     # FIXME: Here the fact that the schema is cached creates issue
 
     result: bool = True
@@ -225,7 +225,7 @@ def load_schemas_from_disk(schemas: list[Path]) -> list[SchemaFile]:
                 schema_file.load_content()
                 schemas_data.append(schema_file)
         else:
-            raise FileNotValidError(name=schema, message=f"Schema path: {schema} does not exist!")
+            raise FileNotValidError(name=str(schema), message=f"Schema path: {schema} does not exist!")
 
     return schemas_data
 
