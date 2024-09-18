@@ -52,7 +52,7 @@ def is_current_schema_empty() -> bool:
     branch: str = get_instance_branch()
     if branch is None:
         branch = "main"
-    schema: dict[str, Any] = fetch_schema(branch)
+    schema: dict[str, Any] | None = fetch_schema(branch)
     # FIXME: Here the fact that the schema is cached creates issue
 
     result: bool = True

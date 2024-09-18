@@ -35,7 +35,7 @@ def init_schema_extension_state(schema_extension: str) -> None:
     if schema_extension not in st.session_state.extensions_states:
         # FIXME: This is beyond hacking, but I need to define whether base extension is in place or not
         if schema_extension == "base":
-            schema: dict[str, Any] = get_schema()
+            schema: dict[str, Any] | None = get_schema()
             if "DcimDevice" in schema:
                 st.session_state.extensions_states["base"] = SchemaState.LOADED
         else:
@@ -69,8 +69,10 @@ def schema_loading_container(path: Path, schema_extension: str) -> None:
         # Place request
         st.write("Calling Infrahub API...")
         response = load_schema(
-            branch=st.session_state.infrahub_branch, schemas=[item.get("content") for item in schema_content]
+            branch=st.session_state.infrahub_branch,
+            schemas=[item["content"] for item in schema_content if "content" in item],
         )
+
         st.write("Computing results...")
 
         # Process the response
@@ -120,7 +122,7 @@ def render_schema_extension_content(schema_extension_path: Path, schema_extensio
         key=schema_extension_name,
         disabled=is_button_disabled,
         on_click=on_click_schema_load,
-        args=(schema_extension_name),
+        args=(schema_extension_name,),
     )
 
     # Render loading container if needed
