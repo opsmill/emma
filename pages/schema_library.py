@@ -2,7 +2,7 @@ import os
 from enum import Enum
 from os import listdir
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 import streamlit as st
 
