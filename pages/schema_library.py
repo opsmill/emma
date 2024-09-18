@@ -33,15 +33,14 @@ if "extensions_states" not in st.session_state:
 def init_schema_extension_state(schema_extension: str) -> None:
     # Check if the extension is already in the session state
     if schema_extension not in st.session_state.extensions_states:
-        # TODO: Here we need to evaluate if it's already existing in Infrahub ... somehow
-        # So if it's the case we could put the proper LOADED state
-        schema: dict[str, MainSchemaTypes] = get_schema()
-
         # FIXME: This is beyond hacking, but I need to define whether base extension is in place or not
         if schema_extension == "base":
+            schema: dict[str, MainSchemaTypes] = get_schema()
             if "DcimDevice" in schema:
                 st.session_state.extensions_states["base"] = SchemaState.LOADED
         else:
+            # TODO: Here we need to evaluate if it's already existing in Infrahub ... somehow
+            # So if it's the case we could put the proper LOADED state
             st.session_state.extensions_states[schema_extension] = SchemaState.NOT_LOADED
 
 
@@ -133,9 +132,13 @@ def render_schema_extension_content(schema_extension_path: Path, schema_extensio
 if not get_schema_library_path():
     st.warning(
         """
-                No `SCHEMA_LIBRARY_PATH` found in your environment variable.
+                For the moment, to have Schema library working you need to clone the repository:
 
-                Please set the variable and reload.
+                    git clone git@github.com:opsmill/schema-library.git
+
+                Then set the path toward that directory:
+
+                    export SCHEMA_LIBRARY_PATH="/path/to/schema/library"
         """,
         icon="⚠️",
     )
