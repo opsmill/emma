@@ -54,7 +54,7 @@ def check_and_open_readme(path: Path) -> str:
         # Open the file in read mode
         with open(readme_path, "r", encoding="utf8") as readme_file:
             # Read the content of the file
-            content: str = readme_file.read()
+            content = readme_file.read()
 
     # Return result
     return content
