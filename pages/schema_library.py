@@ -47,6 +47,7 @@ def init_schema_extension_state(schema_extension: str) -> None:
 # Function that checks if a readme exists in a given folder and return the content if so
 def check_and_open_readme(path: Path) -> str:
     readme_path: Path = Path(f"{path}/README.md")
+    content: str = f"No `README.md` in '{path}'..."
 
     # Check if the file exists
     if readme_path.exists() and readme_path.is_file() and readme_path.suffix == ".md":
@@ -54,13 +55,13 @@ def check_and_open_readme(path: Path) -> str:
         with open(readme_path, "r", encoding="utf8") as readme_file:
             # Read the content of the file
             content: str = readme_file.read()
-        return content
-    else:
-        return f"No `README.md` in '{path}'..."
+
+    # Return result
+    return content
 
 
 def schema_loading_container(path: Path, schema_extension: str) -> None:
-    with st.status(f"Loading schema extension `{schema_extension}` ...", expanded=True) as schema_loading_container:
+    with st.status(f"Loading schema extension `{schema_extension}` ...", expanded=True) as loading_container:
         # Get schema content
         st.write("Opening schema file...")
         schema_content: list[dict] = load_schemas_from_disk(schemas=[path])
@@ -78,11 +79,11 @@ def schema_loading_container(path: Path, schema_extension: str) -> None:
         # Process the response
         if response:
             if response.errors:
-                schema_loading_container.update(label="❌ Load failed ...", state="error", expanded=True)
-                schema_loading_container.error("Infrahub doesn't like it!", icon="🚨")
-                schema_loading_container.exception(response.errors)
+                loading_container.update(label="❌ Load failed ...", state="error", expanded=True)
+                loading_container.error("Infrahub doesn't like it!", icon="🚨")
+                loading_container.exception(response.errors)
             else:
-                schema_loading_container.update(label="✅ Schema loaded!", state="complete", expanded=True)
+                loading_container.update(label="✅ Schema loaded!", state="complete", expanded=True)
                 st.session_state.extensions_states[schema_extension] = SchemaState.LOADED
 
                 if response.schema_updated:
@@ -90,7 +91,7 @@ def schema_loading_container(path: Path, schema_extension: str) -> None:
                     st.write("Generating balloons...")
                     st.balloons()  # 🎉
                 else:
-                    schema_loading_container.info(
+                    loading_container.info(
                         "The schema in Infrahub was already up to date, no changes were required!",
                         icon="ℹ️",
                     )
@@ -100,17 +101,17 @@ def on_click_schema_load(schema_extension: str):
     st.session_state.extensions_states[schema_extension] = SchemaState.LOADING
 
 
-def render_schema_extension_content(schema_extension_path: Path, schema_extension_name: str) -> None:
+def render_schema_extension_content(schema_path: Path, schema_name: str) -> None:
     # Render description for the extension
-    st.write(check_and_open_readme(schema_extension_path))
+    st.write(check_and_open_readme(schema_path))
 
     # Prepare vars for the button
     is_button_disabled: bool = False
     button_label: str = "🚀 Load to Infrahub"
-    if st.session_state.extensions_states.get(schema_extension_name) is SchemaState.LOADING:
+    if st.session_state.extensions_states.get(schema_name) is SchemaState.LOADING:
         is_button_disabled = True
         button_label = "🚀 Load to Infrahub"
-    elif st.session_state.extensions_states.get(schema_extension_name) is SchemaState.LOADED:
+    elif st.session_state.extensions_states.get(schema_name) is SchemaState.LOADED:
         is_button_disabled = True
         button_label = "✅ Already in Infrahub"
 
@@ -119,15 +120,15 @@ def render_schema_extension_content(schema_extension_path: Path, schema_extensio
         label=button_label,
         type="secondary",
         use_container_width=True,
-        key=schema_extension_name,
+        key=schema_name,
         disabled=is_button_disabled,
         on_click=on_click_schema_load,
-        args=(schema_extension_name,),
+        args=(schema_name,),
     )
 
     # Render loading container if needed
-    if st.session_state.extensions_states.get(schema_extension_name) is SchemaState.LOADING:
-        schema_loading_container(path=schema_extension_path, schema_extension=schema_extension_name)
+    if st.session_state.extensions_states.get(schema_name) is SchemaState.LOADING:
+        schema_loading_container(path=schema_path, schema_extension=schema_name)
 
 
 # If we don't have the path then we display warning message

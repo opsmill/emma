@@ -58,7 +58,7 @@ def is_current_schema_empty() -> bool:
     result: bool = True
 
     if schema is not None:
-        for node_name, node in schema.items():
+        for node in schema.values():
             if node.namespace not in DEFAULT_NAMESPACES:
                 result = False
                 break
