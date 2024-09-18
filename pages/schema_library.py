@@ -20,7 +20,7 @@ st.markdown("# Schema Library")
 menu_with_redirect()
 
 
-class SchemaState(Enum):
+class SchemaState(str, Enum):
     NOT_LOADED = "NOT_LOADED"
     LOADING = "LOADING"
     LOADED = "LOADED"
@@ -40,9 +40,9 @@ def init_schema_extension_state(schema_extension: str) -> None:
         # FIXME: This is beyond hacking, but I need to define whether base extension is in place or not
         if schema_extension == "base":
             if "DcimDevice" in schema:
-                st.session_state.extensions_states["base"] = SchemaState.LOADED.value
+                st.session_state.extensions_states["base"] = SchemaState.LOADED
         else:
-            st.session_state.extensions_states[schema_extension] = SchemaState.NOT_LOADED.value
+            st.session_state.extensions_states[schema_extension] = SchemaState.NOT_LOADED
 
 
 # Function that checks if a readme exists in a given folder and return the content if so
@@ -82,7 +82,7 @@ def schema_loading_container(path: Path, schema_extension: str) -> None:
                 schema_loading_container.exception(response.errors)
             else:
                 schema_loading_container.update(label="✅ Schema loaded!", state="complete", expanded=True)
-                st.session_state.extensions_states[schema_extension] = SchemaState.LOADED.value
+                st.session_state.extensions_states[schema_extension] = SchemaState.LOADED
 
                 if response.schema_updated:
                     st.write("Schema loaded successfully!")
@@ -96,7 +96,7 @@ def schema_loading_container(path: Path, schema_extension: str) -> None:
 
 
 def on_click_schema_load(schema_extension: str):
-    st.session_state.extensions_states[schema_extension] = SchemaState.LOADING.value
+    st.session_state.extensions_states[schema_extension] = SchemaState.LOADING
 
 
 def render_schema_extension_content(schema_extension_path: Path, schema_extension_name: str) -> None:
@@ -106,10 +106,10 @@ def render_schema_extension_content(schema_extension_path: Path, schema_extensio
     # Prepare vars for the button
     is_button_disabled: bool = False
     button_label: str = "🚀 Load to Infrahub"
-    if st.session_state.extensions_states.get(schema_extension_name) is SchemaState.LOADING.value:
+    if st.session_state.extensions_states.get(schema_extension_name) is SchemaState.LOADING:
         is_button_disabled = True
         button_label = "🚀 Load to Infrahub"
-    elif st.session_state.extensions_states.get(schema_extension_name) is SchemaState.LOADED.value:
+    elif st.session_state.extensions_states.get(schema_extension_name) is SchemaState.LOADED:
         is_button_disabled = True
         button_label = "✅ Already in Infrahub"
 
@@ -125,7 +125,7 @@ def render_schema_extension_content(schema_extension_path: Path, schema_extensio
     )
 
     # Render loading container if needed
-    if st.session_state.extensions_states.get(schema_extension_name) is SchemaState.LOADING.value:
+    if st.session_state.extensions_states.get(schema_extension_name) is SchemaState.LOADING:
         schema_loading_container(path=schema_extension_path, schema_extension=schema_extension_name)
 
 
@@ -155,7 +155,7 @@ else:
         # Render container content
         render_schema_extension_content(schema_extension_path, schema_extension_name)
 
-    if st.session_state.extensions_states.get("base") is SchemaState.LOADED.value:
+    if st.session_state.extensions_states.get("base") is SchemaState.LOADED:
         # Separate base from the extensions
         st.divider()
 
