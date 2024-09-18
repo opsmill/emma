@@ -61,3 +61,11 @@ docker network connect <infrahub-network> emma-emma-1
 ![Schema visualizer](static/schema_visualizer.png)
 ![Data exporter](static/data_exporter.png)
 ![Schema loader](static/schema_loader.png)
+
+## Experimental Features
+
+To turn on experimental features in Emma, set the following environmental variable with options provided by the OpsMill CS team:
+
+```console
+export EMMA_FEATURE_FLAGS="feature1,feature2"
+```

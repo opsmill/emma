@@ -185,7 +185,7 @@ def convert_schema_to_dict(
         "label": node.label,
         "description": node.description,
         "used_by": ", ".join(node.used_by) if hasattr(node, "used_by") else None,
-        "inherit_from": ", ".join(node.inherit_from) if hasattr(node, "inherit_from") else None,
+        "inherit_from": (", ".join(node.inherit_from) if hasattr(node, "inherit_from") else None),
         "attributes": [],
         "relationships": [],
     }
@@ -269,6 +269,16 @@ def handle_reachability_error(redirect: bool | None = True):
     current_page = get_current_page()
     if current_page != "main":
         st.switch_page("main.py")
+
+
+def is_feature_enabled(feature_name: str) -> bool:
+    """Feature flags implementation"""
+    feature_flags = {}
+    feature_flags_env = os.getenv("EMMA_FEATURE_FLAGS", "")
+    if feature_flags_env:
+        for feature in feature_flags_env.split(","):
+            feature_flags[feature.strip()] = True
+    return feature_flags.get(feature_name, False)
 
 
 def run_gql_query(query: str, branch: str | None = None) -> dict[str, MainSchemaTypes]:

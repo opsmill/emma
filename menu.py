@@ -1,5 +1,6 @@
 import streamlit as st
 
+from emma.infrahub import is_feature_enabled
 from emma.streamlit_utils import (
     add_create_branch_button,
     display_branch_selector,
@@ -31,6 +32,9 @@ def menu():
         st.page_link("pages/data_importer.py", label="📥 Data Importer")
         st.page_link("pages/schema_loader.py", label="📦 Schema Loader")
         st.page_link("pages/schema_visualizer.py", label="👀 Schema Visualizer")
+        # Example usage of feature flags
+        if is_feature_enabled("test_page"):
+            st.page_link("pages/test_page.py", label="⚠️ Test Page")
 
         with st.expander("Builders", expanded=True, icon="👷"):
             st.page_link("pages/schema_builder.py", label="🛠️ Schema Builder")

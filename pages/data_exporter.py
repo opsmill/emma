@@ -92,7 +92,7 @@ else:
             omitted_columns = st.multiselect(
                 "Select optional columns to omit:",
                 options=column_labels_info.optional,
-                help="Choose the colums you want to omit",
+                help="Choose the columns you want to omit",
             )
             filtered_df = dataframe.drop(columns=omitted_columns)
 
