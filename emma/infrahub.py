@@ -271,7 +271,7 @@ def handle_reachability_error(redirect: bool | None = True):
         st.switch_page("main.py")
 
 
-def is_feature_enabled(feature_name):
+def is_feature_enabled(feature_name: str) -> bool:
     """Feature flags implementation"""
     feature_flags = {}
     feature_flags_env = os.getenv("EMMA_FEATURE_FLAGS", "")
