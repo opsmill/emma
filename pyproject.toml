@@ -21,7 +21,7 @@ langchain-openai = "^0.1.22"
 streamlit-flow-component = "^1.2.9"
 streamlit-sortables = "^0.2.0"
 st-pages = "^1.0.1"
-pulse = {git = "https://github.com/opsmill/pulse", rev = "parser"}
+pulse = {path = "../pulse", develop = true }
 streamlit-ace = "^0.1.1"
 regex = "^2024.9.11"
 

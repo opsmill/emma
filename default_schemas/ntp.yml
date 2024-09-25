@@ -1,0 +1,352 @@
+# yaml-language-server: $schema=https://schema.infrahub.app/infrahub/schema/latest.json
+---
+version: '1.0'
+generics:
+  - name: MgmtServerRole
+    namespace: Network
+    description: "Defines a role for a network management server."
+    label: "Server Role"
+    icon: "mdi:account-tie"
+    uniqueness_constraints:
+      - ["name__value"]
+    menu_placement: "NetworkMgmtServer"
+    attributes:
+      - name: name
+        kind: Text
+        unique: true
+        order_weight: 1000
+      - name: description
+        kind: Text
+        order_weight: 1100
+        optional: true
+    relationships:
+      - name: servers
+        label: "Used By"
+        identifier: "mgmtserver__roles"
+        peer: NetworkMgmtServer
+        cardinality: many
+        kind: Attribute
+
+nodes:
+  - name: MgmtServer
+    namespace: Network
+    description: "Generic model for network management server (dns, ntp, and dhcp)."
+    label: "Network Management Servers"
+    uniqueness_constraints:
+      - ["name__value"]
+    display_labels: [name__value]
+    order_by: [name__value]
+    icon: mdi:server-network-outline
+    include_in_menu: true
+    attributes:
+      - name: name
+        kind: Text
+        unique: true
+        order_weight: 1000
+      - name: description
+        kind: Text
+        order_weight: 1100
+        optional: true
+      - name: hostname
+        kind: Text
+        unique: true
+        # https://stackoverflow.com/questions/11809631/fully-qualified-domain-name-validation
+        regex: "(?=^.{1,253}$)(^(((?!-)[a-zA-Z0-9-]{1,63}(?<!-))|((?!-)[a-zA-Z0-9-]{1,63}(?<!-)\\.)+[a-zA-Z]{2,63})$)"
+        order_weight: 1050
+        optional: true
+      - name: status
+        kind: Dropdown
+        choices:
+          - name: provisioning
+            label: Provisioning
+            description: "Server is being provisioned."
+            color: "#A9DFBF"  # light pastel green
+          - name: active
+            label: Active
+            description: "Server is active and operational."
+            color: "#A9CCE3"  # pastel blue
+          - name: maintenance
+            label: Maintenance
+            description: "Server is under maintenance."
+            color: "#FFF2CC"  # pastel yellow
+          - name: disabled
+            label: Disabled
+            description: "Server has been disabled."
+            color: "#D3D3D3"  # light grey
+          - name: deleted
+            label: Deleted
+            description: "Server has been deleted."
+            color: "#FAD7A0"  # pastel orange
+          - name: outage
+            label: Outage
+            description: "Server is currently experiencing an outage."
+            color: "#F4CCCC"  # pastel red
+        order_weight: 1200
+    relationships:
+      - name: owner
+        label: "Managed By"
+        identifier: tenant__mgmtservers
+        peer: OrganizationTenant
+        optional: true
+        cardinality: one
+      - name: ip_addresses
+        identifier: "mgmt_servers__addresses"
+        peer: IpamIPAddress
+        optional: true
+        cardinality: many
+        kind: Component
+      - name: roles
+        label: "Server Roles"
+        optional: false
+        identifier: "mgmtserver__roles"
+        peer: NetworkMgmtServerRole
+        cardinality: many
+        kind: Attribute
+
+  # --------------------  DHCP Servers --------------------
+  - name: DhcpServerRole
+    namespace: Network
+    description: "Represents a Dhcp server in the network."
+    label: "DHCP Server"
+    icon: "eos-icons:ip"
+    menu_placement: "NetworkMgmtServerRole"
+    include_in_menu: false
+    default_filter: name__value
+    display_labels: [name__value]
+    order_by: [name__value]
+    inherit_from:
+      - NetworkMgmtServerRole
+
+  - name: DhcpOption
+    namespace: Network
+    description: "Represents a configurable option within a Dhcp server."
+    label: "Dhcp Option"
+    icon: "gis:globe-options"
+    menu_placement: "NetworkDhcpServerRole"
+    include_in_menu: false
+    default_filter: name__value
+    display_labels: [name__value]
+    order_by: [name__value]
+    attributes:
+      - name: name
+        kind: Text
+        order_weight: 1000
+      - name: description
+        kind: Text
+        optional: true
+        order_weight: 1100
+      - name: option_code
+        kind: Number
+        order_weight: 2000
+      - name: content
+        kind: Text
+        order_weight: 2100
+
+  - name: DhcpPool
+    namespace: Network
+    description: "Represents a range of IP addresses available for DHCP leasing."
+    label: "DHCP Pool"
+    icon: "eos-icons:quota"
+    menu_placement: "NetworkDhcpServerRole"
+    include_in_menu: false
+    default_filter: name__value
+    display_labels: [name__value]
+    order_by: [name__value]
+    attributes:
+      - name: name
+        kind: Text
+        order_weight: 1000
+      - name: description
+        kind: Text
+        optional: true
+        order_weight: 1100
+      - name: start_ip
+        label: "Start IP"
+        kind: Text
+        order_weight: 1000
+        description: "The starting IP address of the DHCP pool range."
+      - name: end_ip
+        label: "End IP"
+        kind: Text
+        order_weight: 1100
+        description: "The ending IP address of the DHCP pool range."
+      - name: range_type
+        label: "Range Type"
+        kind: Text
+        enum: ["Primary", "Secondary"]
+        order_weight: 1200
+    relationships:
+      - name: dhcp_options
+        label: "DHCP Options"
+        peer: NetworkDhcpOption
+        optional: true
+        cardinality: many
+        kind: Component
+        description: "Options applicable to this DHCP pool."
+
+  # --------------------  Admin Servers --------------------
+  - name: AdminServerRole
+    namespace: Network
+    description: "Represents a Admin server in the network."
+    label: "Admin Server"
+    icon: "grommet-icons:user-admin"
+    menu_placement: "NetworkMgmtServerRole"
+    include_in_menu: false
+    default_filter: name__value
+    display_labels: [name__value]
+    order_by: [name__value]
+    inherit_from:
+      - NetworkMgmtServerRole
+  # --------------------  NTP + DNS Servers --------------------
+  - name: NameServerRole
+    namespace: Network
+    description: "Represents a DNS server in the network."
+    label: "DNS Server"
+    icon: "eos-icons:dns"
+    menu_placement: "NetworkMgmtServerRole"
+    include_in_menu: false
+    default_filter: name__value
+    display_labels: [name__value]
+    order_by: [name__value]
+    inherit_from:
+      - NetworkMgmtServerRole
+
+  - name: NTPServerRole
+    namespace: Network
+    description: "Represents a NTP server in the network."
+    label: "NTP Server"
+    icon: "iconoir:time-zone"
+    menu_placement: "NetworkMgmtServerRole"
+    include_in_menu: true
+    default_filter: name__value
+    display_labels: [name__value]
+    order_by: [name__value]
+    inherit_from:
+      - NetworkMgmtServerRole
+    relationships:
+      - name: in_config
+        peer: InfraDevice
+        optional: true
+        inherited: false
+        read_only: false
+        kind: Attribute
+        cardinality: many
+
+
+  # --------------------  Syslog & Archive Servers --------------------
+  - name: SyslogServerRole
+    namespace: Network
+    description: "Represents a Syslog server in the network."
+    label: "Syslog Server"
+    icon: "octicon:log-24"
+    menu_placement: "NetworkMgmtServerRole"
+    include_in_menu: false
+    default_filter: name__value
+    display_labels: [name__value]
+    order_by: [name__value]
+    inherit_from:
+      - NetworkMgmtServerRole
+
+  - name: ArchiveServerRole
+    namespace: Network
+    description: "Represents an Archive server in the network."
+    label: "Archive Server"
+    icon: "octicon:archive-24"
+    menu_placement: "NetworkMgmtServerRole"
+    include_in_menu: false
+    default_filter: name__value
+    display_labels: [name__value]
+    order_by: [name__value]
+    inherit_from:
+      - NetworkMgmtServerRole
+    attributes:
+      - name: connection_type
+        label: "Connection"
+        kind: Text
+        enum: ["ftp", "sftp"]
+        order_weight: 1200
+
+  # --------------------  Radius & ACS Server --------------------
+  - name: RadiusServerRole
+    namespace: Network
+    description: "Represents a RADIUS server in the network."
+    label: "RADIUS Server"
+    icon: "tabler:lock-access"
+    menu_placement: "NetworkMgmtServerRole"
+    include_in_menu: false
+    default_filter: name__value
+    display_labels: [name__value]
+    order_by: [name__value]
+    inherit_from:
+      - NetworkMgmtServerRole
+    attributes:
+      - name: authentication_port
+        kind: Number
+        default_value: 1812
+        order_weight: 1300
+      - name: accounting_port
+        kind: Number
+        default_value: 1813
+        order_weight: 1400
+      - name: secret
+        kind: Password
+        order_weight: 1500
+        optional: false
+      - name: radius_type
+        kind: Dropdown
+        choices:
+          - name: b2c_access
+            label: B2C Access
+            description: "B2C access RADIUS server."
+            color: "#77DD77"
+          - name: system_admin
+            label: System Admin
+            description: "System RADIUS server for admin."
+            color: "#AEC6CF"
+        order_weight: 1600
+
+  - name: AcsServerRole
+    namespace: Network
+    description: "Represents an Access Control Server (ACS) in the network."
+    label: "ACS Server"
+    icon: "mdi:shield-account"
+    menu_placement: "NetworkMgmtServerRole"
+    include_in_menu: false
+    default_filter: name__value
+    display_labels: [name__value]
+    order_by: [name__value]
+    inherit_from:
+      - NetworkMgmtServerRole
+    attributes:
+      - name: port
+        kind: Number
+        default_value: 2000
+        order_weight: 1300
+      - name: secret
+        kind: Text
+        order_weight: 1400
+        optional: true
+      - name: encryption
+        kind: Dropdown
+        choices:
+          - name: none
+            label: None
+            color: "#E6E6FA"  # lavender
+          - name: tls
+            label: TLS
+            color: "#E6E6FA"  # lavender
+        default_value: tls
+        order_weight: 1500
+
+# extensions:
+#   nodes:
+#     - kind: OrganizationTenant
+#       relationships:
+#         - name: network_management_servers
+#           label: "Network Management Servers"
+#           identifier: tenant__mgmtservers
+#           peer: NetworkMgmtServer
+#           optional: true
+#           cardinality: many
+#           kind: Component
+#           order_weight: 2100

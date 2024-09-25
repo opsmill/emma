@@ -18,5 +18,9 @@ development/docker-compose.override.yml
 
 .dir-locals.el
 
-dist/*
-results/*
+dist/
+results/
+test_data
+.mypy_cache
+.ruff_cache
+.streamlit

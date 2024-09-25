@@ -1,13 +1,22 @@
 from typing import Optional
 
-from graphql import GraphQLList, GraphQLNonNull, GraphQLObjectType, build_client_schema, get_introspection_query
+from graphql import (
+    GraphQLList,
+    GraphQLNonNull,
+    GraphQLObjectType,
+    build_client_schema,
+    get_introspection_query,
+)
 from langchain.tools import tool
 
 from emma.infrahub import get_client
 
+
 EXCLUDED_TYPES = (
+    "count",
     "id",
     "is_default",
+    "is_inherited",
     "is_protected",
     "is_visible",
     "updated_at",
@@ -21,7 +30,36 @@ EXCLUDED_TYPES = (
     "subscriber_of_groups",
     "profiles",
     "properties",
+    "__typename",
 )
+
+
+def exclude_keys(d, exclude_list=EXCLUDED_TYPES):
+    if not isinstance(d, dict):
+        return d  # Base case: if it's not a dict, return it as-is
+    return {k: exclude_keys(v, exclude_list) for k, v in d.items() if k not in EXCLUDED_TYPES}
+
+def dict_to_gql_query(d, indent_level=0):
+    indent = "  " * indent_level
+    gql_str = ""
+
+    for key, value in d.items():
+        # Check if filters are present
+        filters = ""
+        if isinstance(value, dict) and '@filters' in value:
+            filter_dict = value.pop('@filters')  # Grab the filters and remove from dict
+            if filter_dict:
+                filters = " (" + " ".join(f'{k}: "{v}"' for k, v in filter_dict.items()) + ")"
+        
+        # If value is a dict and has other nested fields, recurse
+        if isinstance(value, dict):
+            gql_str += f"{indent}{key}{filters} {{\n"
+            gql_str += dict_to_gql_query(value, indent_level + 1)
+            gql_str += f"{indent}}}\n"
+        else:
+            gql_str += f"{indent}{key}\n"
+
+    return gql_str
 
 
 def get_gql_schema(branch: Optional[str] = None) -> Optional[GraphQLObjectType]:
@@ -40,7 +78,7 @@ def generate_query(object_type: GraphQLObjectType, visited_types: Optional[set] 
     if visited_types is None:
         visited_types = set()
 
-    query = ""
+    query_parts = []
     for field_name, field in object_type.fields.items():
         field_type = field.type
 
@@ -51,24 +89,35 @@ def generate_query(object_type: GraphQLObjectType, visited_types: Optional[set] 
         while isinstance(field_type, (GraphQLList, GraphQLNonNull)):
             field_type = field_type.of_type
 
-        # Handle polymorphic fields (unions or interfaces)
+        # Handle object types (e.g., GraphQLObjectType)
         if isinstance(field_type, GraphQLObjectType):
             if field_type.name not in visited_types:
                 visited_types.add(field_type.name)
-                sub_query = generate_query(field_type, visited_types)
-                query += f"{field_name} {{ {sub_query} }} "
+                sub_query = generate_query(field_type, visited_types).strip()
 
+                # If the sub_query isn't empty, include the field
+                if sub_query and sub_query != "node":
+                    if field_name == "node":
+                        query_parts.append(f"{field_name} {{ {sub_query} }} ")
+                    else:
+                        query_parts.append(f"{field_name} {{ {sub_query} }} ")
+
+        # Handle polymorphic fields (unions or interfaces)
         elif hasattr(field_type, "possibleTypes"):
-            # Polymorphic field, handle with fragments
             fragment_queries = []
             for possible_type in field_type.possible_types:
                 fragment_query = generate_query(possible_type, visited_types)
-                fragment_queries.append(f"... on {possible_type.name} {{ {fragment_query} }}")
-            query += f"{field_name} {{ {' '.join(fragment_queries)} }} "
-        else:
-            query += f"{field_name} "
+                if fragment_query.strip():
+                    fragment_queries.append(f"... on {possible_type.name} {{ {fragment_query} }}")
+            if fragment_queries:
+                query_parts.append(f"{field_name} {{ {' '.join(fragment_queries)} }} ")
 
-    return query
+        # Handle scalar fields (e.g., strings, ints)
+        else:
+            query_parts.append(f"{field_name} ")
+
+    # Join all valid parts into a query. If empty, return nothing.
+    return " ".join(query_parts)
 
 
 @tool

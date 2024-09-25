@@ -1,0 +1,839 @@
+# yaml-language-server: $schema=https://schema.infrahub.app/infrahub/schema/latest.json
+---
+version: '1.0'
+generics:
+  - name: Base
+    namespace: Interface
+    description: "Generic Network Interface"
+    label: "Interface"
+    icon: "mdi:ethernet"
+    menu_placement: "InfraDevice"
+    display_labels:
+      - name__value
+      - description__value
+    order_by:
+      - device__name__value
+      - name__value
+    uniqueness_constraints:
+      - ["device", "name__value"]
+    human_friendly_id:
+      - "name__value"
+      - "device__name__value"
+    attributes:
+      - name: name
+        kind: Text
+        description: "Name of the interface"
+        order_weight: 1000
+      - name: description
+        kind: Text
+        optional: true
+        description: "A brief description of the interface"
+        order_weight: 1100
+      - name: mtu
+        label: MTU
+        kind: Number
+        default_value: 1514
+        order_weight: 1300
+      - name: status
+        kind: Dropdown
+        description: "The status of the interface"
+        choices:
+          - name: provisioning
+            label: Provisioning
+            description: "Interface is being provisioned."
+            color: "#A9DFBF"  # light pastel green
+          - name: free
+            label: Free
+            description: "Interface is unused."
+            color: "#CDEACC"  # slightly darker pastel green
+          - name: active
+            label: Active
+            description: "Interface is active and operational."
+            color: "#A9CCE3"  # pastel blue
+          - name: maintenance
+            label: Maintenance
+            description: "Interface is under maintenance."
+            color: "#FFF2CC"  # pastel yellow
+          - name: disabled
+            label: Disabled
+            description: "Interface has been disabled."
+            color: "#D3D3D3"  # light grey
+          - name: deleted
+            label: Deleted
+            description: "Interface has been deleted."
+            color: "#FAD7A0"  # pastel orange
+          - name: outage
+            label: Outage
+            description: "Interface is currently experiencing an outage."
+            color: "#F4CCCC"  # pastel red
+        default_value: "active"
+        order_weight: 1200
+      - name: role
+        kind: Dropdown
+        optional: true
+        description: "The role of the interface in the network"
+        choices:
+          - name: tbd
+            label: To Be Defined & Undefined
+            description: "Temporary status while importing."
+            color: "#F4CCCC"  # pastel red
+          - name: core
+            label: Core Interface
+            description: "Central part of the network."
+            color: "#A9CCE3"  # pastel blue
+          - name: cdn
+            label: CDN
+            description: "CDN facing interface."
+            color: "#CDEACC"  # slightly darker pastel green
+          - name: cgn
+            label: CGN Interface
+            description: "CGN facing interface."
+            color: "#D8E4BC"  # pastel greenish-yellow
+          - name: metro
+            label: Metro Interface
+            description: "Metropolitan area network interface."
+            color: "#AED6F1"  # pastel light blue
+          - name: it_service
+            label: IT Service Interface
+            description: "Interface dedicated to IT services."
+            color: "#A9DFBF"  # pastel green
+          - name: olt
+            label: Optical Line Terminal (OLT) Interface
+            description: "Interface connecting to optical networks."
+            color: "#FAD7A0"  # pastel orange
+          - name: cust
+            label: Customer Interface
+            description: "Interface dedicated to customer connections."
+            color: "#D2B4DE"  # pastel purple
+          - name: lag
+            label: LAG Interface
+            description: "Interface that is part of a Link Aggregation Group (LAG)."
+            color: "#FFCBA4"  # pastel peach
+          - name: access
+            label: Access Interfaces
+            description: "Interface connecting endpoint devices."
+            color: "#B4E0DC"  # pastel teal
+          - name: management
+            label: Management Interface
+            description: "Interface dedicated to device management."
+            color: "#E3DAC9"  # pastel cream
+          - name: peering
+            label: Peering Interface
+            description: "Interface dedicated to peering with other networks."
+            color: "#C4B7E6"  # pastel purple
+          - name: transit
+            label: Transit Interface
+            description: "Interface dedicated to transit traffic between networks."
+            color: "#B2D4E6"  # pastel sky blue
+        order_weight: 1250
+    relationships:
+      - name: device
+        peer: InfraDevice
+        identifier: "device__interface"
+        optional: false
+        cardinality: one
+        # Should be Parent but I want to see it on the main page view after the interface name
+        kind: Attribute
+        order_weight: 1025
+      - name: tags
+        peer: BuiltinTag
+        optional: true
+        cardinality: many
+        kind: Attribute
+        order_weight: 3000
+      - name: encapsulation_type
+        label: Encapsulation(s)
+        peer: InterfaceEncapsulationType
+        optional: true
+        cardinality: many
+        kind: Component
+        order_weight: 2000
+
+
+  - name: Layer2
+    namespace: Interface
+    include_in_menu: false
+    description: "Layer 2 specific attributes for network interfaces"
+    label: "Layer 2 Interface"
+    attributes:
+      - name: l2_mode
+        label: Layer2 Mode
+        kind: Dropdown
+        optional: true
+        choices:
+          - name: access
+            label: Access
+            description: "Access mode"
+          - name: trunk
+            label: Trunk
+            description: "Trunk mode"
+          - name: trunk_all
+            label: Trunk (All)
+            description: "Trunk all mode"
+        description: "Layer 2 mode of the interface"
+        order_weight: 1500
+    relationships:
+      - name: untagged_vlan
+        label: Untagged VLAN
+        peer: InfraVLAN
+        identifier: "layer2interface__untagged_vlan"
+        optional: true
+        cardinality: one
+        kind: Component
+      - name: tagged_vlans
+        label: Tagged VLANs
+        peer: InfraVLAN
+        identifier: "layer2interface__tagged_vlans"
+        optional: true
+        cardinality: many
+        kind: Component
+
+  - name: Layer3
+    namespace: Interface
+    include_in_menu: false
+    description: "Layer 3 specific attributes for network interfaces"
+    label: "Layer 3 Interface"
+    attributes:
+      - name: dot1q_id
+        label: VLAN ID (dot1q)
+        kind: Number
+        description: "Dot1Q VLAN ID"
+        order_weight: 1600
+        optional: true
+      - name: mac_address
+        label: Mac Address
+        kind: Text
+        optional: true
+        order_weight: 1550
+    relationships:
+      - name: ip_address
+        label: IP Addresses
+        peer: IpamIPAddress
+        cardinality: many
+        kind: Attribute
+        optional: true
+        description: "List of IP addresses associated with the interface"
+        order_weight: 1150
+
+  - name: Sub
+    namespace: Interface
+    include_in_menu: false
+    description: "Sub-interface for physical, logical, or aggregate interface"
+    label: "Sub-interface"
+    relationships:
+      - name: parent_interface
+        label: Parent
+        peer: InterfaceBase
+        optional: false
+        cardinality: one
+        kind: Attribute
+        identifier: "interface__parent"
+        description: "Parent interface to which this sub-interface belongs"
+        order_weight: 1050
+
+  # --------------------  Connectivity  --------------------
+  - name: Endpoint
+    namespace: Infra
+    description: "Generic Endpoint to connect two objects together."
+    include_in_menu: false
+    label: "Endpoint"
+    relationships:
+      - name: connected_endpoint
+        peer: InfraEndpoint
+        optional: true
+        cardinality: one
+        kind: Attribute
+        identifier: connected__endpoint
+
+nodes:
+  # --------------------  Interface Encapsulation  --------------------
+  - name: EncapsulationType
+    label: Encapsulation Type
+    namespace: Interface
+    icon: "eos-icons:activate-subscriptions-outlined"
+    menu_placement: InterfaceBase
+    description: "The type of encapsulation used on an interface."
+    default_filter: name__value
+    display_labels:
+      - name__value
+    order_by:
+      - name__value
+    uniqueness_constraints:
+      - ["name__value"]
+    human_friendly_id:
+      - "name__value"
+    attributes:
+      - name: name
+        kind: Text
+        unique: true
+        order_weight: 1000
+      - name: description
+        kind: Text
+        optional: true
+        order_weight: 1100
+      - name: configuration_keyword
+        kind: Text
+        optional: true
+        order_weight: 1200
+    relationships:
+      - name: platform
+        label: "Platform"
+        identifier: encapsulation__platform
+        peer: InfraPlatform
+        optional: true
+        cardinality: one
+        kind: Component
+  # --------------------  Device (Models, Platforms)  --------------------
+  - name: DeviceType
+    namespace: Infra
+    description: "A model of device"
+    label: "Device Type"
+    icon: "mdi:poll"
+    menu_placement: "InfraDevice"
+    default_filter: name__value
+    display_labels:
+      - name__value
+    order_by:
+      - name__value
+    human_friendly_id:
+      - "name__value"
+    attributes:
+      - name: name
+        kind: Text
+        unique: true
+        order_weight: 1000
+      - name: description
+        kind: Text
+        optional: true
+        order_weight: 1100
+      - name: part_number
+        label: Part Number
+        optional: true
+        kind: Text
+        order_weight: 1200
+      - name: height
+        label: "Height (U)"
+        optional: true
+        kind: Number
+        order_weight: 1400
+      - name: minimum_required_rack_depth
+        label: "Minimum Required Rack Depth"
+        kind: Dropdown
+        choices:
+          - name: shallow
+            label: "Shallow"
+            description: "27 inches (686 mm)"
+            color: "#A9CCE3"  # pastel blue
+          - name: moderately_deep
+            label: "Moderately Deep"
+            description: "31 inches (787 mm)"
+            color: "#A9DFBF"  # light pastel green
+          - name: average_depth
+            label: "Average Depth"
+            description: "37 inches (940 mm)"
+            color: "#FAD7A0"  # pastel orange
+          - name: deep
+            label: "Deep"
+            description: "42 inches (1067 mm)"
+            color: "#F4CCCC"  # pastel red
+        order_weight: 1500
+      - name: weight
+        label: "Weight (kg)"
+        optional: true
+        kind: Number
+        order_weight: 1600
+      - name: airflow
+        optional: true
+        kind: Dropdown
+        choices:
+          - name: front-to-back
+            label: Front to Back
+            description: "Front to Back (AFO)"
+            color: "#E6E6FA"  # lavender
+          - name: back-to-front
+            label: Back to Front
+            description: "Back to Front (AFI)"
+            color: "#E6E6FA"  # lavender
+        order_weight: 1650
+    relationships:
+      - name: platform
+        peer: InfraPlatform
+        cardinality: one
+        kind: Attribute
+        order_weight: 1300
+      - name: manufacturer
+        peer: OrganizationManufacturer
+        identifier: manufacturer__devicetype
+        cardinality: one
+        kind: Attribute
+        order_weight: 1250
+      - name: tags
+        peer: BuiltinTag
+        optional: true
+        cardinality: many
+        kind: Attribute
+        order_weight: 3000
+
+  - name: Platform
+    namespace: Infra
+    description: "A Platform represent the type of software running on a device."
+    label: "Platform"
+    icon: "mdi:application-cog-outline"
+    menu_placement: "InfraDevice"
+    default_filter: name__value
+    order_by:
+      - name__value
+    display_labels:
+      - name__value
+    human_friendly_id:
+      - "name__value"
+    attributes:
+      - name: name
+        kind: Text
+        unique: true
+        order_weight: 1000
+      - name: description
+        kind: Text
+        optional: true
+        order_weight: 1100
+      - name: nornir_platform
+        kind: Text
+        optional: true
+        order_weight: 1500
+      - name: napalm_driver
+        kind: Text
+        optional: true
+        order_weight: 1600
+      - name: netmiko_device_type
+        kind: Text
+        optional: true
+        order_weight: 1700
+      - name: ansible_network_os
+        kind: Text
+        optional: true
+        order_weight: 1800
+    relationships:
+      - name: devices
+        peer: InfraDevice
+        optional: true
+        cardinality: many
+        order_weight: 1350
+      - name: manufacturer
+        peer: OrganizationManufacturer
+        identifier: manufacturer__plateforms
+        cardinality: one
+        kind: Attribute
+        order_weight: 1300
+
+  - name: Device
+    namespace: Infra
+    description: "Generic Device object."
+    label: "Device"
+    icon: "mdi:server"
+    default_filter: name__value
+    inherit_from:
+      - "CoreArtifactTarget"
+    order_by:
+      - name__value
+    display_labels:
+      - name__value
+    human_friendly_id:
+      - "name__value"
+    attributes:
+      - name: name
+        kind: Text
+        unique: true
+        order_weight: 1000
+      - name: hostname
+        kind: Text
+        unique: true
+        # https://stackoverflow.com/questions/11809631/fully-qualified-domain-name-validation
+        regex: "(?=^.{1,253}$)(^(((?!-)[a-zA-Z0-9-]{1,63}(?<!-))|((?!-)[a-zA-Z0-9-]{1,63}(?<!-)\\.)+[a-zA-Z]{2,63})$)"
+        order_weight: 1010
+      - name: environment
+        kind: Dropdown
+        description: Environment where the device is used.
+        choices:
+          - name: production
+            label: Production
+            description: Device used in the production environment.
+            color: "#ADD8E6"  # Light Blue
+          - name: lab
+            label: Lab
+            description: Device used in the lab environment.
+            color: "#FFB6C1"  # Light Pink
+        default_value: production
+      - name: description
+        kind: Text
+        optional: true
+        order_weight: 1100
+      - name: serial_number
+        kind: Text
+        optional: true
+        order_weight: 1050
+      - name: software_version
+        kind: Text
+        optional: true
+        order_weight: 1075
+      - name: is_dual_re
+        label: Dual RE
+        kind: Boolean
+        optional: true
+        default_value: false
+        order_weight: 1025
+      - name: status
+        kind: Dropdown
+        choices:
+          - name: provisioning
+            label: Provisioning
+            description: "Device is being provisioned."
+            color: "#A9DFBF"  # light pastel green
+          - name: active
+            label: Active
+            description: "Device is active and operational."
+            color: "#A9CCE3"  # pastel blue
+          - name: maintenance
+            label: Maintenance
+            description: "Device is under maintenance."
+            color: "#FFF2CC"  # pastel yellow
+          - name: disabled
+            label: Disabled
+            description: "Device has been disabled."
+            color: "#D3D3D3"  # light grey
+          - name: deleted
+            label: Deleted
+            description: "Device has been deleted."
+            color: "#FAD7A0"  # pastel orange
+          - name: outage
+            label: Outage
+            description: "Device is currently experiencing an outage."
+            color: "#F4CCCC"  # pastel red
+        default_value: "active"
+        order_weight: 1375
+      - name: role
+        kind: Dropdown
+        optional: true
+        choices:
+          - name: core-router
+            label: Core Router (CR)
+            description: Central part of the network.
+            color: "#7F7FFF"  # violet
+          - name: edge-router
+            label: Edge Router (ER)
+            description: "Network boundary with external networks."
+            color: "#bf7fbf"
+          - name: cpe
+            label: Customer Premise Equipment (CPE)
+            description: "Devices located at the customer's premises."
+            color: "#bf7f7f"
+          - name: firewall
+            label: Firewall (FW)
+            description: "Ensures network security."
+            color: "#ffa07a"
+          - name: hosting-switch
+            label: Hosting Switch (HS)
+            color: "#aeeeee"
+          - name: content-hosting-switch
+            label: Content Hosting Switch (CHS)
+            color: "#E6E6FA"  # lavender
+        order_weight: 1400
+    relationships:
+      - name: location
+        label: Location
+        peer: LocationGeneric
+        optional: false
+        cardinality: one
+        kind: Attribute
+        order_weight: 1500
+      - name: interfaces
+        peer: InterfaceBase
+        identifier: "device__interface"
+        optional: true
+        cardinality: many
+        kind: Component
+        on_delete: cascade
+      - name: asn
+        peer: InfraAutonomousSystem
+        optional: true
+        cardinality: one
+        kind: Attribute
+        order_weight: 1600
+      - name: tags
+        peer: BuiltinTag
+        optional: true
+        cardinality: many
+        kind: Attribute
+        order_weight: 3000
+      - name: primary_address
+        peer: IpamIPAddress
+        label: Primary IP Address
+        optional: true
+        cardinality: one
+        kind: Attribute
+        order_weight: 1700
+        on_delete: cascade
+      - name: device_type
+        peer: InfraDeviceType
+        optional: true
+        cardinality: one
+        kind: Attribute
+        order_weight: 1200
+      - name: platform
+        peer: InfraPlatform
+        optional: true
+        cardinality: one
+        kind: Attribute
+        order_weight: 1250
+      - name: owner
+        peer: OrganizationTenant
+        identifier: device__tenant
+        optional: true
+        cardinality: one
+        order_weight: 1300
+
+  # --------------------  Interfaces  --------------------
+  - name: PhysicalInterface
+    namespace: Infra
+    description: "Physical network port on a device"
+    include_in_menu: false
+    inherit_from:
+      - "InterfaceBase"
+      - "InterfaceLayer2"
+      - "InterfaceLayer3"
+    attributes:
+      - name: encapsulation
+        label: Encapsulation Options
+        kind: List
+        optional: true
+        description: "Encapsulation options for flexible VLAN tagging and flexible Ethernet services."
+        order_weight: 1400
+    relationships:
+      - name: children_interfaces
+        label: "Sub-interface(s)"
+        peer: InterfaceSub
+        optional: true
+        cardinality: many
+        kind: Attribute
+        identifier: "interface__parent"
+        description: "Sub-interfaces of this Physical interface"
+        order_weight: 1900
+      - name: lacp_parent
+        label: "LAG"
+        peer: InterfaceLag
+        identifier: "lag__members"
+        optional: true
+        cardinality: one
+        kind: Attribute
+        description: "LACP Interface using this Physical interface"
+        order_weight: 1800
+
+  - name: Virtual
+    namespace: Interface
+    description: "Virtual interface like VLAN or Loopback"
+    include_in_menu: false
+    inherit_from:
+      - "InterfaceBase"
+      - "InterfaceLayer2"
+      - "InterfaceLayer3"
+    attributes:
+      - name: virtual_type
+        label: Virtual Interface Type
+        kind: Dropdown
+        choices:
+          - name: vlan
+            label: VLAN
+            color: "#E6E6FA"  # lavender
+          - name: loopback
+            label: Loopback
+            color: "#E6E6FA"  # lavender
+          - name: pseudowire-subscriber
+            label: Pseudowire Subscriber (ps)
+            color: "#E6E6FA"  # lavender
+          - name: logical-tunnel
+            label: Logical Tunnel (lt)
+            color: "#E6E6FA"  # lavender
+        description: "Type of virtual interface"
+        order_weight: 1150
+    relationships:
+      - name: children_interfaces
+        label: "Sub-interface(s)"
+        peer: InterfaceSub
+        optional: true
+        cardinality: many
+        kind: Attribute
+        description: "Sub-interfaces of the Virtual interface"
+        order_weight: 1900
+
+  - name: SubLayer2
+    namespace: Interface
+    include_in_menu: false
+    description: "Sub-interface for physical, logical, or aggregate interface"
+    label: "Layer2 Sub-interface"
+    uniqueness_constraints:
+      - ["parent_interface", "name__value"]
+    inherit_from:
+      - "InterfaceBase"
+      - "InterfaceSub"
+      - "InterfaceLayer2"
+
+  - name: SubLayer3
+    namespace: Interface
+    include_in_menu: false
+    description: "Sub-interface for physical, logical, or aggregate interface"
+    label: "Layer3 Sub-interface"
+    uniqueness_constraints:
+      - ["parent_interface", "name__value"]
+    inherit_from:
+      - "InterfaceBase"
+      - "InterfaceSub"
+      - "InterfaceLayer3"
+
+  - name: SubEncapsulation
+    namespace: Interface
+    include_in_menu: false
+    description: "Sub-interface for encapsulation services like CCC, VPLS, etc."
+    label: "Encapsulation Sub-interface"
+    uniqueness_constraints:
+      - ["parent_interface", "name__value"]
+    inherit_from:
+      - "InterfaceBase"
+      - "InterfaceSub"
+    attributes:
+      - name: dot1q_id
+        label: VLAN ID (dot1q)
+        kind: Number
+        description: "Dot1Q VLAN ID"
+        order_weight: 1600
+        optional: true
+
+  - name: Lag
+    namespace: Interface
+    include_in_menu: false
+    description: "LAG interface or aggregate interface"
+    label: "LAG-interface"
+    inherit_from:
+      - "InterfaceBase"
+      - "InterfaceLayer2"
+      - "InterfaceLayer3"
+    attributes:
+      - name: lacp_speed
+        label: "LACP Speed"
+        kind: Dropdown
+        optional: true
+        default_value: 10g  # Default = 10Gbps
+        description: "The speed of the interface"
+        order_weight: 1675
+        choices:
+          - name: 1g
+            label: 1Gbps
+            description: "Speed of 1 Gigabit per second."
+            color: "#A9CCE3"  # pastel blue
+          - name: 10g
+            label: 10Gbps
+            description: "Speed of 10 Gigabits per second."
+            color: "#B0C4DE"  # light steel blue
+          - name: 25g
+            label: 25Gbps
+            description: "Speed of 25 Gigabits per second."
+            color: "#C9A9E3"  # pastel violet
+          - name: 40g
+            label: 40Gbps
+            description: "Speed of 40 Gigabits per second."
+            color: "#D0D9F2"  # light periwinkle
+          - name: 50g
+            label: 50Gbps
+            description: "Speed of 50 Gigabits per second."
+            color: "#AFC7F2"  # pastel cornflower blue
+          - name: 100g
+            label: 100Gbps
+            description: "Speed of 100 Gigabits per second."
+            color: "#C5CAE9"  # pastel blue violet
+          - name: 200g
+            label: 200Gbps
+            description: "Speed of 200 Gigabits per second."
+            color: "#9FA8DA"  # pastel lavender blue
+          - name: 400g
+            label: 400Gbps
+            description: "Speed of 400 Gigabits per second."
+            color: "#B39DDB"  # pastel amethyst
+          - name: mixed
+            label: Mixed Speeds
+            description: "Interface supports mixed speed links."
+            color: "#CBC3E3"  # pastel lavender
+      - name: lacp_rate
+        label: "LACP Rate"
+        kind: Dropdown
+        choices:
+          - name: slow
+            label: Slow
+            color: "#E6E6FA"  # lavender
+          - name: fast
+            label: Fast
+            color: "#E6E6FA"  # lavender
+        default_value: fast
+        description: "LACP rate for the aggregated interface"
+        order_weight: 1700
+      - name: lacp_mode
+        label: LACP Mode
+        kind: Dropdown
+        choices:
+          - name: active
+            label: Active
+            color: "#E6E6FA"  # lavender
+          - name: passive
+            label: Passive
+            color: "#E6E6FA"  # lavender
+          - name: disabled
+            label: Disabled
+            color: "#E6E6FA"  # lavender
+        description: "LACP mode for the aggregated interface"
+        default_value: active
+        order_weight: 1750
+    relationships:
+      - name: member_interfaces
+        label: "Member(s)"
+        peer: InfraPhysicalInterface
+        identifier: "lag__members"
+        cardinality: many
+        kind: Attribute
+        description: "Interfaces that are members of the aggregate"
+        order_weight: 1800
+      - name: children_interfaces
+        label: "Sub-interface(s)"
+        peer: InterfaceSub
+        optional: true
+        cardinality: many
+        kind: Attribute
+        identifier: "interface__parent"
+        description: "Sub-interfaces of the aggregated interface"
+        order_weight: 1900
+
+
+extensions:
+  nodes:
+    # Organization Extensions
+    - kind: OrganizationManufacturer
+      relationships:
+        - name: device_types
+          label: "Device Models"
+          identifier: manufacturer__devicetype
+          peer: InfraDeviceType
+          optional: true
+          cardinality: many
+          kind: Component
+        - name: platforms
+          label: "Device Platforms"
+          identifier: manufacturer__plateforms
+          peer: InfraPlatform
+          optional: true
+          cardinality: many
+          kind: Component
+    - kind: OrganizationTenant
+      relationships:
+        - name: devices
+          label: "Devices"
+          identifier: device__tenant
+          peer: InfraDevice
+          optional: true
+          cardinality: many
+          kind: Component

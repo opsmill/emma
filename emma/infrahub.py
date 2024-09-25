@@ -3,6 +3,7 @@ from enum import Enum
 from typing import TYPE_CHECKING, Any, List, Tuple
 
 import pandas as pd
+import requests
 import streamlit as st
 from graphql import get_introspection_query
 from httpx import HTTPError
@@ -274,3 +275,7 @@ def handle_reachability_error(redirect: bool | None = True):
 def run_gql_query(query: str, branch: str | None = None) -> dict[str, MainSchemaTypes]:
     client = get_client(branch=branch)
     return client.execute_graphql(query, raise_for_error=False)
+
+
+def get_json_schema(root_object: str) -> str:
+    return requests.get(f"{os.environ.get('INFRAHUB_ADDRESS')}/api/schema/json_schema/{root_object}").json()
