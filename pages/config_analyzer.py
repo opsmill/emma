@@ -1,5 +1,6 @@
 import asyncio
 import math
+import difflib
 
 # from streamlit_ace import st_ace
 # from graphql import parse, print_ast
@@ -17,8 +18,7 @@ from emma.analyzer_utils import (
     parse_cisco_config,
     validate_if_df_is_compatible_with_schema,
     upload_data,
-    paginate_list,
-    find_matches_with_locations
+    paginate_list
 )
 from emma.gql_queries import dict_to_gql_query, exclude_keys  # , generate_query, get_gql_schema
 from emma.infrahub import get_json_schema, run_gql_query, get_client
@@ -493,13 +493,11 @@ with tab6:
 
                         test_lines = rendered.splitlines()
 
-                        extra_lines = []
-
                         if test_lines:
                             for line in test_lines:
                                 if line not in test_data:
                                     test_result = False
-                                    extra_lines.append(line)
+                                    break
                             
                             rendered_result = "\n".join(test_lines) + "\n"
                         else:
@@ -507,9 +505,19 @@ with tab6:
 
                         st.write(f"\n```\n{rendered_result}```\nPassed: {'🟢' if test_result else '🛑'}")
 
-                        if extra_lines:
-                            lines = ":red[" + "]\n\n:red[".join(extra_lines) + "]"
-                            st.markdown(f"**Extra lines not found in config:**\n\n{lines}")
+                        
+                        if not test_result:
+                            # Sort both lists of lines before comparing
+                            sorted_test_lines = sorted([x for x in test_lines if x])
+                            sorted_test_data = sorted([x for x in test_data.splitlines() if x])
+
+                            diff = difflib.ndiff(sorted_test_lines, sorted_test_data)
+                            
+                            # Format the output
+                            diff_text = "\n".join(diff)
+                            
+                            # Display the diff
+                            st.code(diff_text, language='diff')
 
                     except Exception as e:
                         st.write(f"Templating failed:\n{e}")
