@@ -6,11 +6,19 @@ Currently, Emma can help you to:
 
 - Import CSV Data into Infrahub
 - Export Data from Infrahub in CSV format
-- Build, Load, and Visualize Infrahub schema
+- Build, Load, and Visualize the Infrahub schema
 
 ![Home page](static/home_page.png)
 
-## Quick Start
+## Getting Started
+
+### curl quickstart
+
+```bash
+curl https://infrahub.opsmill.io/0.16.0-emma | docker compose -f - up -d
+```
+
+Then connect to the WebUI of [Infrahub](http://localhost:8000) and [Emma](http://localhost:8501)
 
 ### Running Locally with Poetry
 
@@ -25,7 +33,7 @@ To run Emma locally using Poetry, follow these steps:
 2. **Run the Application:**
 
  ```console
- streamlit run main.py
+ poetry run streamlit run main.py
  ```
 
 3. **Set Environment Variables:**
