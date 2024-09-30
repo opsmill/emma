@@ -39,6 +39,7 @@ def exclude_keys(d, exclude_list=EXCLUDED_TYPES):
         return d  # Base case: if it's not a dict, return it as-is
     return {k: exclude_keys(v, exclude_list) for k, v in d.items() if k not in EXCLUDED_TYPES}
 
+
 def dict_to_gql_query(d, indent_level=0):
     indent = "  " * indent_level
     gql_str = ""
@@ -46,11 +47,11 @@ def dict_to_gql_query(d, indent_level=0):
     for key, value in d.items():
         # Check if filters are present
         filters = ""
-        if isinstance(value, dict) and '@filters' in value:
-            filter_dict = value.pop('@filters')  # Grab the filters and remove from dict
+        if isinstance(value, dict) and "@filters" in value:
+            filter_dict = value.pop("@filters")  # Grab the filters and remove from dict
             if filter_dict:
                 filters = " (" + " ".join(f'{k}: "{v}"' for k, v in filter_dict.items()) + ")"
-        
+
         # If value is a dict and has other nested fields, recurse
         if isinstance(value, dict):
             gql_str += f"{indent}{key}{filters} {{\n"

@@ -1,0 +1,12 @@
+version: "1.0"
+
+extensions:
+  id: null
+  state: present
+  nodes:
+    - kind: InfraDevice
+      attributes:
+        - name: config_object_store_id
+          kind: Text
+          description: ID for the object store associated with the device.
+      relationships: []

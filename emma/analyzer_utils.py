@@ -354,14 +354,14 @@ def validate_if_df_is_compatible_with_schema(df: pd.DataFrame, target_schema: No
         for attr in target_schema.attributes:
             if attr.name == column and attr.choices:
                 valid_options = [choice["name"] for choice in attr.choices if choice["name"] is not None]
-                
+
                 # Check if values in the column are valid enum options (including catching None)
                 invalid_values = df[~df[column].isin(valid_options)][column]
                 if not invalid_values.empty:
                     errors.append(
                         Message(
                             severity=MessageSeverity.ERROR,
-                            message=f"Invalid value for '{column}' in {schema!r}. Must be one of {valid_options}"
+                            message=f"Invalid value for '{column}' in {schema!r}. Must be one of {valid_options}",
                         )
                     )
 
@@ -384,7 +384,7 @@ def dict_remove_nan_values(dictionary: Dict[str, Any]) -> Dict[str, Any]:
     return {k: v for k, v in dictionary.items() if not pd.isnull(v)}
 
 
-def upload_data(df: pd.DataFrame, schema_kind: str, hostname:str, branch: str) -> int:
+def upload_data(df: pd.DataFrame, schema_kind: str, hostname: str, branch: str) -> int:
     client = get_client(branch=branch)
     nbr_errors = 0
 
