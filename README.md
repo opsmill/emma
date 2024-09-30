@@ -52,7 +52,7 @@ To run Emma using Docker Compose, follow these steps:
 1. **Build and Run the Application:**
 
  ```console
- docker-compose up --build
+ docker compose up --build &
  ```
 
 2. **Connecting to Infrahub Network:**
