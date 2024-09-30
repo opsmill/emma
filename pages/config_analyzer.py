@@ -45,7 +45,7 @@ if "schema_node" not in st.session_state:
     st.session_state.schema_node = None
 if "loaded_configs" not in st.session_state:
     st.session_state.loaded_configs = {}
-    # # Walk through the directory and grab the files
+    # Walk through the directory and grab the files
     # configs = {}
     # for dirpath, _, filenames in os.walk("test_data"):
     #     for filename in filenames:
@@ -54,6 +54,7 @@ if "loaded_configs" not in st.session_state:
 
     #             with open(os.path.join(dirpath, filename)) as f:
     #                 configs[device_name] = f.read()
+    # st.session_state.loaded_configs = configs
 
     # st.session_state.loaded_configs = configs
 if "hostnames" not in st.session_state:

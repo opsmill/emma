@@ -3,6 +3,8 @@ import difflib
 
 import streamlit as st
 
+from streamlit_ace import st_ace
+
 from emma.analyzer_utils import CONFIG_PATTERNS
 from emma.infrahub import run_gql_query
 from emma.gql_queries import exclude_keys, dict_to_gql_query
@@ -52,14 +54,18 @@ def generate_template_tab():
                     template = asyncio.run(j2llm.execute(data, expected))
                     st.session_state.templates[tab_keys[i]] = template
 
-                st.markdown(f"```j2\n{st.session_state.templates.get(tab_key)}\n```")
+            if st.session_state.templates:
 
-                st.write("Template is " + "Valid! 🟢" if j2llm.validate_syntax(template) else "INVALID! 🛑")
+                st.session_state.templates[tab_key] = st.text_area(label="Template", value=st.session_state.templates.get(tab_key, ""), height=int(len(st.session_state.templates[tab_key])//1.6))
+
+                st.write(st.session_state.templates)
+
+                st.write("Template is " + "Valid! 🟢" if j2llm.validate_syntax(st.session_state.templates[tab_key]) else "INVALID! 🛑")
 
                 for j, fname in enumerate(st.session_state.selected_hostnames):
                     st.header(fname, divider=True)
                     try:
-                        query = asyncio.run(st.session_state.schema_node.generate_query_data())
+                        query = asyncio.run(st.session_state.schema_node.generate_query_data(filters={"in_config__name__value": fname}))
 
                         formatted_query = f"{{\n{exclude_keys(dict_to_gql_query(query))}\n}}"
 
@@ -68,7 +74,7 @@ def generate_template_tab():
 
                         data = run_gql_query(formatted_query)
 
-                        rendered = j2llm.render_template(template, data)
+                        rendered = j2llm.render_template(st.session_state.templates[tab_key], data)
 
                         test_data = st.session_state.parsed_configs[j].get(tab_key, [])
 
@@ -76,7 +82,7 @@ def generate_template_tab():
 
                         test_result = True
 
-                        test_lines = rendered.splitlines()
+                        test_lines = [x.strip() for x in rendered.splitlines()]
 
                         if test_lines:
                             for line in test_lines:

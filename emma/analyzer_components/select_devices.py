@@ -38,12 +38,14 @@ def select_devices_tab():
             col = cols[i % 2]  # Alternate between columns
             if col.checkbox(hostname, key=f"hostname_{hostname}"):
                 if hostname not in st.session_state.selected_hostnames:
+                    st.session_state.selected_hostnames.append(hostname)
+
                     queried_device = client.get("InfraDevice", name__value = hostname, include=["config_object_store_id"])
+
+                    # import pdb; pdb.set_trace()
 
                     if hasattr(queried_device, "object_store_id"):
                         config = client.object_store.get(queried_device.config_object_store_id.value)
-
-                        st.session_state.selected_hostnames.append(hostname)
 
                         st.session_state.loaded_configs[hostname] = config
                     else:
