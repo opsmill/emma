@@ -9,7 +9,7 @@ set_page_config(title="Emma - An assistant for Infrahub")
 left, right = st.columns([1, 1.6], gap="medium", vertical_alignment="center")
 
 # Left is for Emma avatar
-left.image(image="static/emma-assist-character.png", caption="Hello, I'm Emma")
+left.image(image="static/emma.png", caption="Hello, I'm Emma")
 
 # Right is for the text
 with right:

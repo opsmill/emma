@@ -13,7 +13,7 @@ from emma.infrahub import (
 
 
 def set_page_config(title: str | None = None, wide: bool | None = True):
-    icon = "static/emma-assist-character.png"
+    icon = "static/emma.png"
     if wide:
         st.set_page_config(page_title=title, page_icon=icon, layout="wide")
     else:
