@@ -108,10 +108,10 @@ def render_schema_extension_content(schema_path: Path, schema_name: str) -> None
     # Prepare vars for the button
     is_button_disabled: bool = False
     button_label: str = "🚀 Load to Infrahub"
-    if st.session_state.extensions_states.get(schema_name) is SchemaState.LOADING:
+    if st.session_state.extensions_states.get(schema_name) == SchemaState.LOADING:
         is_button_disabled = True
         button_label = "🚀 Load to Infrahub"
-    elif st.session_state.extensions_states.get(schema_name) is SchemaState.LOADED:
+    elif st.session_state.extensions_states.get(schema_name) == SchemaState.LOADED:
         is_button_disabled = True
         button_label = "✅ Already in Infrahub"
 
@@ -127,7 +127,7 @@ def render_schema_extension_content(schema_path: Path, schema_name: str) -> None
     )
 
     # Render loading container if needed
-    if st.session_state.extensions_states.get(schema_name) is SchemaState.LOADING:
+    if st.session_state.extensions_states.get(schema_name) == SchemaState.LOADING:
         schema_loading_container(path=schema_path, schema_extension=schema_name)
 
 
@@ -161,7 +161,7 @@ else:
         # Render container content
         render_schema_extension_content(schema_base_path, schema_base_name)
 
-    if st.session_state.extensions_states.get("base") is SchemaState.LOADED:
+    if st.session_state.extensions_states.get("base") == SchemaState.LOADED:
         # Separate base from the extensions
         st.divider()
 
