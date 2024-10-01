@@ -2,9 +2,12 @@ import os
 from enum import Enum
 from os import listdir
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import streamlit as st
+
+if TYPE_CHECKING:
+    from infrahub_sdk.yaml import SchemaFile
 
 from emma.infrahub import (
     get_schema,
@@ -64,14 +67,14 @@ def schema_loading_container(path: Path, schema_extension: str) -> None:
     with st.status(f"Loading schema extension `{schema_extension}` ...", expanded=True) as loading_container:
         # Get schema content
         st.write("Opening schema file...")
-        schema_content: list[dict] = load_schemas_from_disk(schemas=[path])
+        schema_content: list[SchemaFile] = load_schemas_from_disk(schemas=[path])
         st.write("Schema file loaded!")
 
         # Place request
         st.write("Calling Infrahub API...")
         response = load_schema(
             branch=st.session_state.infrahub_branch,
-            schemas=[item["content"] for item in schema_content if "content" in item],
+            schemas=[item.content for item in schema_content],
         )
 
         st.write("Computing results...")
