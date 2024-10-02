@@ -1,5 +1,6 @@
 import os
 from enum import Enum
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, List, Tuple
 
 import pandas as pd
@@ -16,6 +17,8 @@ from infrahub_sdk.exceptions import (
     ServerNotResponsiveError,
 )
 from infrahub_sdk.schema import GenericSchema, NodeSchema, SchemaLoadResponse
+from infrahub_sdk.utils import find_files
+from infrahub_sdk.yaml import SchemaFile
 from pydantic import BaseModel
 from streamlit.runtime.scriptrunner import get_script_run_ctx
 from streamlit.source_util import get_pages
@@ -33,6 +36,40 @@ class InfrahubStatus(str, Enum):
 class SchemaCheckResponse(BaseModel):
     success: bool
     response: dict | None = None
+
+
+class FileNotValidError(Exception):
+    def __init__(self, name: str, message: str = ""):
+        self.message = message or f"Cannot parse '{name}' content."
+        super().__init__(self.message)
+
+
+def is_current_schema_empty() -> bool:
+    DEFAULT_NAMESPACES = ["Core", "Profile", "Builtin", "Ipam", "Lineage"]
+
+    # FIXME: Here the fact that the schema is cached creates issue
+    # e.g. if I trash the schema on Infrahub side I need to reboot emma for this to be taken into account...
+    branch: str = get_instance_branch()
+    if branch is None:
+        branch = "main"
+    schema: dict[str, Any] | None = fetch_schema(branch)
+    # FIXME: Here the fact that the schema is cached creates issue
+
+    result: bool = True
+
+    if schema is not None:
+        for node in schema.values():
+            if node.namespace not in DEFAULT_NAMESPACES:
+                result = False
+                break
+
+    return result
+
+
+def get_schema_library_path() -> str | None:
+    if "schema_library_path" not in st.session_state or not st.session_state.schema_library_path:
+        st.session_state.schema_library_path = os.environ.get("SCHEMA_LIBRARY_PATH")
+    return st.session_state.schema_library_path
 
 
 def get_instance_address() -> str | None:
@@ -57,6 +94,13 @@ def get_schema(branch: str | None = None) -> dict[str, MainSchemaTypes] | None:
     client = get_client(branch=branch)
     if check_reachability(client=client):
         return client.schema.all(branch=branch)
+    return None
+
+
+def fetch_schema(branch: str | None = None) -> dict[str, MainSchemaTypes] | None:
+    client = get_client(branch=branch)
+    if check_reachability(client=client):
+        return client.schema.fetch(branch=branch)
     return None
 
 
@@ -166,6 +210,27 @@ def convert_node_to_dict(
     return data
 
 
+# This is coming from https://github.com/opsmill/infrahub/blob/develop/python_sdk/infrahub_sdk/ctl/schema.py#L33
+# TODO: Maybe move it somewhere else ...
+def load_schemas_from_disk(schemas: list[Path]) -> list[SchemaFile]:
+    schemas_data: list[SchemaFile] = []
+    for schema in schemas:
+        if schema.is_file():
+            schema_file = SchemaFile(location=schema)
+            schema_file.load_content()
+            schemas_data.append(schema_file)
+        elif schema.is_dir():
+            files = find_files(extension=["yaml", "yml", "json"], directory=schema)
+            for item in files:
+                schema_file = SchemaFile(location=item)
+                schema_file.load_content()
+                schemas_data.append(schema_file)
+        else:
+            raise FileNotValidError(name=str(schema), message=f"Schema path: {schema} does not exist!")
+
+    return schemas_data
+
+
 def convert_schema_to_dict(
     node: GenericSchema | NodeSchema,
 ) -> dict[str, Any]:
@@ -185,7 +250,7 @@ def convert_schema_to_dict(
         "label": node.label,
         "description": node.description,
         "used_by": ", ".join(node.used_by) if hasattr(node, "used_by") else None,
-        "inherit_from": ", ".join(node.inherit_from) if hasattr(node, "inherit_from") else None,
+        "inherit_from": (", ".join(node.inherit_from) if hasattr(node, "inherit_from") else None),
         "attributes": [],
         "relationships": [],
     }
@@ -269,6 +334,16 @@ def handle_reachability_error(redirect: bool | None = True):
     current_page = get_current_page()
     if current_page != "main":
         st.switch_page("main.py")
+
+
+def is_feature_enabled(feature_name: str) -> bool:
+    """Feature flags implementation"""
+    feature_flags = {}
+    feature_flags_env = os.getenv("EMMA_FEATURE_FLAGS", "")
+    if feature_flags_env:
+        for feature in feature_flags_env.split(","):
+            feature_flags[feature.strip()] = True
+    return feature_flags.get(feature_name, False)
 
 
 def run_gql_query(query: str, branch: str | None = None) -> dict[str, MainSchemaTypes]:

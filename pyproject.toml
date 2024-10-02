@@ -54,6 +54,8 @@ ignore_missing_imports = true
 line-length = 120
 
 [tool.ruff.lint]
+preview = true
+
 select = [
     "C90",   # mccabe
     "ASYNC", # flake8-async
@@ -70,6 +72,18 @@ select = [
     "YTT",   # flake8-2020
 ]
 
+#https://docs.astral.sh/ruff/formatter/black/
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
+
+[tool.ruff.lint.isort]
+known-first-party = ["emma"]
+
+[tool.ruff.lint.pycodestyle]
+max-line-length = 150
 
 [tool.ruff.lint.mccabe]
 max-complexity = 15

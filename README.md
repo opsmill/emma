@@ -6,11 +6,19 @@ Currently, Emma can help you to:
 
 - Import CSV Data into Infrahub
 - Export Data from Infrahub in CSV format
-- Build, Load, and Visualize Infrahub schema
+- Build, Load, and Visualize the Infrahub schema
 
 ![Home page](static/home_page.png)
 
-## Quick Start
+## Getting Started
+
+### curl quickstart
+
+```bash
+curl https://infrahub.opsmill.io/0.16.0-emma | docker compose -f - up -d
+```
+
+Then connect to the WebUI of [Infrahub](http://localhost:8000) and [Emma](http://localhost:8501)
 
 ### Running Locally with Poetry
 
@@ -25,7 +33,7 @@ To run Emma locally using Poetry, follow these steps:
 2. **Run the Application:**
 
  ```console
- streamlit run main.py
+ poetry run streamlit run main.py
  ```
 
 3. **Set Environment Variables:**
@@ -44,7 +52,7 @@ To run Emma using Docker Compose, follow these steps:
 1. **Build and Run the Application:**
 
  ```console
- docker-compose up --build
+ docker compose up --build &
  ```
 
 2. **Connecting to Infrahub Network:**
@@ -61,3 +69,11 @@ docker network connect <infrahub-network> emma-emma-1
 ![Schema visualizer](static/schema_visualizer.png)
 ![Data exporter](static/data_exporter.png)
 ![Schema loader](static/schema_loader.png)
+
+## Experimental Features
+
+To turn on experimental features in Emma, set the following environmental variable with options provided by the OpsMill CS team:
+
+```console
+export EMMA_FEATURE_FLAGS="feature1,feature2"
+```
