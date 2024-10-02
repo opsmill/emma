@@ -1,5 +1,5 @@
 import streamlit as st
-from streamlit.delta_generator import DG
+from streamlit.delta_generator import DeltaGenerator
 
 from emma.infrahub import (
     check_reachability,
@@ -38,7 +38,7 @@ def set_branch():
     st.session_state.infrahub_branch = st.session_state._infrahub_branch
 
 
-def display_branch_selector(sidebar: DG):
+def display_branch_selector(sidebar: DeltaGenerator):
     # st.session_state._infrahub_branch = None
     branches = get_branches(address=st.session_state.infrahub_address)
     current_branch = get_instance_branch()
@@ -57,7 +57,7 @@ def display_branch_selector(sidebar: DG):
     )
 
 
-def display_infrahub_address(sidebar: DG):
+def display_infrahub_address(sidebar: DeltaGenerator):
     sidebar.selectbox(
         label="Infrahub Address:",
         options=[st.session_state.infrahub_address],
@@ -85,7 +85,7 @@ def schema_bootstrap_message():
                 """,
                 icon="ℹ️",
             )
-            if st.button("📚 Schema Library", use_container_width=True, type="secondary"):
+            if st.button(label="Schema Library", icon="📚", use_container_width=True, type="secondary"):
                 st.switch_page("pages/schema_library.py")
 
 
@@ -140,12 +140,12 @@ def create_branch_dialog():
         st.rerun()
 
 
-def update_infrahub_instance_button(sidebar: DG):
+def update_infrahub_instance_button(sidebar: DeltaGenerator):
     if sidebar.button("Replace Instance"):
         update_infrahub_instance_dialog()
 
 
-def add_create_branch_button(sidebar: DG):
+def add_create_branch_button(sidebar: DeltaGenerator):
     if sidebar.button("Create a new branch"):
         create_branch_dialog()
 
