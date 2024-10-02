@@ -6,9 +6,6 @@ from typing import TYPE_CHECKING, Any
 
 import streamlit as st
 
-if TYPE_CHECKING:
-    from infrahub_sdk.yaml import SchemaFile
-
 from emma.infrahub import (
     get_schema,
     get_schema_library_path,
@@ -17,6 +14,9 @@ from emma.infrahub import (
 )
 from emma.streamlit_utils import set_page_config
 from menu import menu_with_redirect
+
+if TYPE_CHECKING:
+    from infrahub_sdk.yaml import SchemaFile
 
 set_page_config(title="Schema Library")
 st.markdown("# Schema Library")
