@@ -3,7 +3,6 @@ import io
 import json
 import os
 import re
-from typing import Dict, List
 
 import streamlit as st
 import yaml
@@ -12,6 +11,7 @@ from langchain_community.agents.openai_assistant import OpenAIAssistantV2Runnabl
 from langchain_core.agents import AgentFinish
 from openai import OpenAI
 
+from emma.assistant_utils import generate_yaml
 from emma.gql_queries import generate_full_query
 from emma.infrahub import get_gql_schema, handle_reachability_error, run_gql_query
 from emma.streamlit_utils import set_page_config
@@ -112,18 +112,6 @@ Errors:
 ```
 {errors}
 ```"""
-
-
-# YAML generator with custom string presenter
-def generate_yaml(conversation: List[Dict]):
-    def str_presenter(dumper, data):
-        if "\n" in data:
-            return dumper.represent_scalar("tag:yaml.org,2002:str", data, style="|")
-        return dumper.represent_scalar("tag:yaml.org,2002:str", data)
-
-    yaml.add_representer(str, str_presenter)
-    return yaml.dump(conversation, default_flow_style=False)
-
 
 # Set Streamlit page configuration
 set_page_config(title="Query Builder")
