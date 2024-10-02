@@ -22,6 +22,7 @@ def menu():
         # Display current Infrahub Instance
         display_infrahub_address(st.sidebar)
         update_infrahub_instance_button(st.sidebar)
+
         # Display Branch Selector
         display_branch_selector(st.sidebar)  # Always display the branch selector
         add_create_branch_button(st.sidebar)
@@ -31,6 +32,7 @@ def menu():
         st.page_link("pages/data_exporter.py", label="🔭 Data Exporter")
         st.page_link("pages/data_importer.py", label="📥 Data Importer")
         st.page_link("pages/schema_loader.py", label="📦 Schema Loader")
+        st.page_link("pages/schema_library.py", label="📚 Schema Library")
         st.page_link("pages/schema_visualizer.py", label="👀 Schema Visualizer")
         # Example usage of feature flags
         if is_feature_enabled("test_page"):
