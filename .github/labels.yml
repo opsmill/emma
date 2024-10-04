@@ -13,21 +13,6 @@
   color: "f25009"
 
 # ----------------------------------
-# CHANGES
-# ----------------------------------
-- name: "changes/major"
-  description: "Breaking Changes"
-  color: "bfd4f2"
-
-- name: "changes/minor"
-  description: "Feature Enhancements"
-  color: "fef2c0"
-
-- name: "changes/patch"
-  description: "Maintenance tasks"
-  color: "0366d6"
-
-# ----------------------------------
 # TYPE (default)
 # ----------------------------------
 - name: "type/feature"
