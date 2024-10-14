@@ -13,18 +13,18 @@ packages = [
 python = "^3.10, < 3.13"
 streamlit = "^1.37.1"
 infrahub-sdk = {version = "^0", extras = ["all"]}
-watchdog = "^4.0.2"
+watchdog = "^5.0.3"
 langchain = "^0.2.14"
 langchain-community = "^0.2.12"
-openai = "^1.41.0"
+openai = "^1.51.2"
 langchain-openai = "^0.1.22"
-streamlit-flow-component = "^1.2.9"
+streamlit-flow-component = "^1.5.0"
 streamlit-sortables = "^0.2.0"
 st-pages = "^1.0.1"
 jinja2 = "^3.1.4"
 
 [tool.poetry.group.dev.dependencies]
-ruff = "^0.6.1"
+ruff = "^0.6.9"
 mypy = "^1.11.1"
 yamllint = "^1.35.1"
 towncrier = "^24.7.1"
