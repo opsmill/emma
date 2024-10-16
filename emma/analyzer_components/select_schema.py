@@ -1,6 +1,7 @@
 import asyncio
 
 import streamlit as st
+
 from infrahub_sdk import InfrahubNode
 
 from emma.gql_queries import dict_to_gql_query, exclude_keys
@@ -90,19 +91,44 @@ def select_schema_tab():
             client=infrahub_client, schema=st.session_state.schema[selected], branch=st.session_state.infrahub_branch
         )
 
-        full_query = exclude_keys(asyncio.run(st.session_state.schema_node.generate_query_data()))
+        if not hasattr(st.session_state.schema_node, "in_config"):
+            st.error("Sorry, your schema must have an 'in_config' relationship with InfraDevice so that we can capture the relationship with the devices selected.")
 
-        col1, col2 = st.columns(2)
+            st.markdown(f"""Here's an extension that should make it work.
 
-        formatted_query = f"{{\n{dict_to_gql_query(full_query)}\n}}"
+```yml
+version: "1.0"
+extensions:
+id: null
+state: present
+nodes:
+  - kind: {selected}
+    relationships:
+        - name: in_config
+          peer: InfraDevice
+          optional: true
+          inherited: false
+          read_only: false
+          kind: Attribute
+          cardinality: many
+```
 
-        with col1:
-            st.header("Query")
-            st.markdown(f"```gql\n\n{formatted_query}\n```")
+You can also update your {selected} schema to include the relationship, like above.""")
 
-        st.session_state.pulled_data = run_gql_query(formatted_query)
+        else:
+            full_query = exclude_keys(asyncio.run(st.session_state.schema_node.generate_query_data()))
 
-        with col2:
-            st.header("Existing Data")
-            st.write(st.session_state.pulled_data)
-            # st.markdown(display_query_and_data(formatted_query, data), unsafe_allow_html=True)
+            col1, col2 = st.columns(2)
+
+            st.session_state.formatted_query = f"{{\n{dict_to_gql_query(full_query)}\n}}"
+
+            with col1:
+                st.header("Query")
+                st.markdown(f"```gql\n\n{st.session_state.formatted_query}\n```")
+
+            st.session_state.pulled_data = run_gql_query(st.session_state.formatted_query)
+
+            with col2:
+                st.header("Existing Data")
+                st.write(st.session_state.pulled_data)
+                # st.markdown(display_query_and_data(formatted_query, data), unsafe_allow_html=True)

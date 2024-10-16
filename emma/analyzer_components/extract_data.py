@@ -5,7 +5,9 @@ from emma.analyzer_utils import generate_data_regex, display_segments
 
 
 def extra_data_tab():
-    if selected := st.session_state.selected_schema:
+    if not st.session_state.selected_segment:
+        st.markdown("**Sorry, select a segment to process first. Return to select devices and try again.**")
+    elif selected := st.session_state.selected_schema:
         st.write(f"Extracting data for {selected}")
 
         data = [

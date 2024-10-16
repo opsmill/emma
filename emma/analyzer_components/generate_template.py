@@ -3,7 +3,7 @@ import difflib
 
 import streamlit as st
 
-from streamlit_ace import st_ace
+from datetime import datetime
 
 from emma.analyzer_utils import CONFIG_PATTERNS
 from emma.infrahub import run_gql_query
@@ -27,12 +27,11 @@ def generate_template_tab():
             if st.button("Generate Template", key=f"{tab_keys[i]}-generate"):
                 expected = [x.get(tab_key, []) for x in st.session_state.parsed_configs]
 
-                # f"# Example {i+1}\n" +
                 expected = ["\n".join(x) for x in expected if x]
 
                 expected = "```\n\n```txt\n".join(expected)
 
-                data = st.session_state.pulled_data
+                data = {"data": st.session_state.pulled_data}
 
                 with st.expander("Data"):
                     st.write(data)
@@ -54,13 +53,24 @@ def generate_template_tab():
                     template = asyncio.run(j2llm.execute(data, expected))
                     st.session_state.templates[tab_keys[i]] = template
 
-            if st.session_state.templates:
+            if tab_key in st.session_state.templates:
 
                 st.session_state.templates[tab_key] = st.text_area(label="Template", value=st.session_state.templates.get(tab_key, ""), height=int(len(st.session_state.templates[tab_key])//1.6))
 
-                st.write(st.session_state.templates)
+                # st.write(st.session_state.templates)
 
-                st.write("Template is " + "Valid! 🟢" if j2llm.validate_syntax(st.session_state.templates[tab_key]) else "INVALID! 🛑")
+                valid = j2llm.validate_syntax(st.session_state.templates[tab_key])
+
+                st.write("Template is " + "Valid! 🟢" if valid else "INVALID! 🛑")
+
+                if valid:
+                    st.download_button(
+                        label="Download Template",
+                        data=st.session_state.templates.get(tab_key, "Sorry... We didn't actually have a template :/"),
+                        file_name=f"{st.session_state.selected_segment}_emma_generated_{datetime.now().strftime('%d%m%Y')}.j2",
+                        mime="text/j2",
+                    )
+
 
                 for j, fname in enumerate(st.session_state.selected_hostnames):
                     st.header(fname, divider=True)
@@ -72,7 +82,7 @@ def generate_template_tab():
                         with st.expander("Query"):
                             st.markdown(f"```gql\n\n{formatted_query}\n```")
 
-                        data = run_gql_query(formatted_query)
+                        data = {"data": run_gql_query(formatted_query)}
 
                         rendered = j2llm.render_template(st.session_state.templates[tab_key], data)
 

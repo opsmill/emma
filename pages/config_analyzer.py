@@ -43,6 +43,8 @@ if "selected_hostnames" not in st.session_state:
     st.session_state.selected_hostnames = []
 if "schema_node" not in st.session_state:
     st.session_state.schema_node = None
+if "formatted_query" not in st.session_state:
+    st.session_state.formatted_query = ""
 if "loaded_configs" not in st.session_state:
     st.session_state.loaded_configs = {}
     # Walk through the directory and grab the files
@@ -66,8 +68,8 @@ if "schema" not in st.session_state:
         st.session_state.schema = infrahub_client.schema.all()
 
 # Create main tabs for file upload, schema editing, and advanced options
-tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(
-    ["Upload Configs", "Select Schema", "Extract Data", "Upload Data", "View Data", "Generate Template"]
+tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs(
+    ["Select Devices", "Select Schema", "Extract Data", "Upload Data", "View Data", "Generate Template", "Update Repo"]
 )
 
 with tab1:
@@ -87,3 +89,6 @@ with tab5:
 
 with tab6:
     ac.generate_template_tab()
+
+with tab7:
+    ac.update_repo_tab()

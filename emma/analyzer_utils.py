@@ -43,7 +43,7 @@ CONFIG_PATTERNS = {
     # "aaa": r"^aaa\s\S+[\s\S]+?(?=^aaa\s\S+|^!|^$)",
     # "vrf": r"^ip\svrf\s\S+[\s\S]+?(?=^ip\svrf\s\S+|^!|^$)",
     # "banner": r"^banner\s\S+[\s\S]+?(?=^banner\s\S+|^!|^$)",
-    # "dns_settings": r"^(ip domain-lookup|ip domain-name\s+\S+|ip name-server\s+[\d\.\s]+(?:use-vrf\s+\S+)?)",
+    "dns_settings": r"^(ip domain-lookup|ip domain-name\s+\S+|ip name-server\s+[\d\.\s]+(?:use-vrf\s+\S+)?)",
     # "interface": r"^interface\s+\S+[\s\S]+?(?=^interface\s+\S+|^!|^$)",
 }
 

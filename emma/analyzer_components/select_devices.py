@@ -54,7 +54,7 @@ def select_devices_tab():
     if selected_hostnames := st.session_state.selected_hostnames:
         # Process configs for selected hostnames
         raw_texts = [configs[hostname] for hostname in selected_hostnames]
-        parsed_configs = [{k: v for k, v in parse_cisco_config(raw_text).items() if v} for raw_text in raw_texts]
+        parsed_configs = [{k: v for k, v in parse_cisco_config(raw_text).items()} for raw_text in raw_texts]
 
         st.session_state.parsed_configs = parsed_configs  # Store the parsed configs
 
