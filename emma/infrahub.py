@@ -1,7 +1,7 @@
 import os
 from enum import Enum
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, List, Tuple
+from typing import TYPE_CHECKING, Any, List, Tuple, Union
 
 import pandas as pd
 import streamlit as st
@@ -16,6 +16,7 @@ from infrahub_sdk.exceptions import (
     ServerNotReachableError,
     ServerNotResponsiveError,
 )
+from infrahub_sdk.node import RelatedNodeSync, RelationshipManagerSync
 from infrahub_sdk.schema import GenericSchema, NodeSchema, SchemaLoadResponse
 from infrahub_sdk.utils import find_files
 from infrahub_sdk.yaml import SchemaFile
@@ -24,7 +25,7 @@ from streamlit.runtime.scriptrunner import get_script_run_ctx
 from streamlit.source_util import get_pages
 
 if TYPE_CHECKING:
-    from infrahub_sdk.node import Attribute, RelatedNodeSync
+    from infrahub_sdk.node import Attribute
 
 
 class InfrahubStatus(str, Enum):
@@ -184,8 +185,7 @@ def get_objects_as_df(kind: str, include_id: bool = True, branch: str | None = N
 def get_relationships_to_export(node_schema: NodeSchema) -> List[str]:
     export_relationships = []
     for relationship in node_schema.relationships:
-        if relationship.cardinality == "one":
-            export_relationships.append(relationship.name)
+        export_relationships.append(relationship.name)
     return export_relationships
 
 
@@ -201,12 +201,25 @@ def convert_node_to_dict(
         attr: Attribute = getattr(obj, attr_name)
         data[attr_name] = attr.value
 
-    for rel_name in obj._schema.relationship_names:
-        if rel_name in export_relationships:
-            rel: RelatedNodeSync = getattr(obj, rel_name)
+    for rel_name in export_relationships:
+        rel = getattr(obj, rel_name)
+        if rel and isinstance(rel, RelatedNodeSync):
             if rel.initialized:
                 rel.fetch()
-                data[rel_name] = rel.peer.hfid[0] if rel.peer.hfid and len(rel.peer.hfid) == 1 else rel.peer.id
+                data[rel_name] = rel.peer.get_human_friendly_id_as_string() if rel.peer.hfid else rel.peer.id
+        elif rel and isinstance(rel, RelationshipManagerSync):
+            peers: List[dict[str, Any]] = []
+            # FIXME: Seem super dirty
+            if not rel.initialized:
+                rel.fetch()
+            for peer in rel.peers:
+                # TODO: use the store ?
+                # related_node = store.get(key=peer.id, raise_when_missing=False)
+                # if not related_node:
+                peer.fetch()
+                related_node = peer.peer
+                peers.append(related_node.get_human_friendly_id_as_string() if related_node.hfid else related_node.id)
+            data[rel_name] = peers
     return data
 
 

@@ -30,11 +30,11 @@ def convert_df_to_csv(df: pd.DataFrame) -> bytes:
 def get_column_labels(model_schema: MainSchemaTypes) -> ColumnLabels:
     optional_columns = [attr.name for attr in model_schema.attributes if attr.optional]
     optional_columns.extend(
-        [rel.name for rel in model_schema.relationships if rel.cardinality == "one" and rel.optional]
+        [rel.name for rel in model_schema.relationships if rel.optional]
     )
     mandatory_columns = [attr.name for attr in model_schema.attributes if not attr.optional]
     mandatory_columns.extend(
-        [rel.name for rel in model_schema.relationships if rel.cardinality == "one" and not rel.optional]
+        [rel.name for rel in model_schema.relationships if not rel.optional]
     )
     return ColumnLabels(optional=optional_columns, mandatory=mandatory_columns)
 
