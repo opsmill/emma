@@ -1,16 +1,16 @@
-import streamlit as st
 import pandas as pd
+import streamlit as st
 
-from emma.analyzer_utils import validate_if_df_is_compatible_with_schema, upload_data
+from emma.analyzer_utils import upload_data, validate_if_df_is_compatible_with_schema
 
 
-def upload_data_tab():
+def upload_data_tab(): # noqa: PLR0912, C901
     with st.expander("Raw Extracted"):
         st.write(st.session_state.extracted_data)
 
     if not st.session_state.data_to_upload:
         st.session_state.data_to_upload = {
-            device: pd.DataFrame(data[st.session_state.selected_segment])
+            device: pd.DataFrame(data[st.session_state.selected_segment]).dropna(how="all")
             for device, data in st.session_state.extracted_data.items()
         }
 

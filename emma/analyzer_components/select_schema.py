@@ -1,16 +1,15 @@
 import asyncio
 
 import streamlit as st
-
 from infrahub_sdk import InfrahubNode
 
 from emma.gql_queries import dict_to_gql_query, exclude_keys
-from emma.infrahub import run_gql_query, get_client
+from emma.infrahub import get_client, run_gql_query
 
 infrahub_client = get_client(branch=st.session_state.infrahub_branch)
 
 
-def select_schema_tab():
+def select_schema_tab(): # noqa: PLR0915, PLR0912
     excluded_namespaces = (
         "Core",
         "Account",
@@ -92,7 +91,10 @@ def select_schema_tab():
         )
 
         if not hasattr(st.session_state.schema_node, "in_config"):
-            st.error("Sorry, your schema must have an 'in_config' relationship with InfraDevice so that we can capture the relationship with the devices selected.")
+            st.error(
+                "Sorry, your schema must have an 'in_config' relationship with InfraDevice"
+                "so that we can capture the relationship with the devices selected."
+            )
 
             st.markdown(f"""Here's an extension that should make it work.
 

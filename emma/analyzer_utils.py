@@ -1,50 +1,67 @@
 import asyncio
 import colorsys
 import html
-
 from enum import Enum
-from pydantic import BaseModel
-
-from infrahub_sdk.utils import compare_lists
-from infrahub_sdk import NodeSchema
-
-from typing import Dict, Any
-from emma.infrahub import get_client
-from infrahub_sdk.exceptions import GraphQLError
+from typing import Any, Dict
 
 import pandas as pd
-
 import regex as re
 import streamlit as st
+from infrahub_sdk import NodeSchema
+from infrahub_sdk.exceptions import GraphQLError
+from infrahub_sdk.utils import compare_lists
 from pulse.tasks.parse_config.task import GenerateDataRegexTask
+from pydantic import BaseModel
+
+from emma.infrahub import get_client
 
 llm = GenerateDataRegexTask(model_name="gpt-4o-mini")
 
 
 # Define regex patterns to capture raw segments
-CONFIG_PATTERNS = {
-    # "vlan": r"^vlan\s+\d+[\s\S]+?(?=^vlan\s+\d+|^!|^$)",
-    # "ospf": r"^router\sospf\s\d+[\s\S]+?(?=^router\s\S+|^!|^$)",
-    # "eigrp": r"^router\seigrp\s\d+[\s\S]+?(?=^router\s\S+|^!|^$)",
-    # "bgp": r"^router\sbgp\s\d+[\s\S]+?(?=^router\sbgp\s\d+|^!|^$)",
-    # "standard_acl": r"^access-list\s\d+[\s\S]+?(?=^access-list\s\d+|^!|^$)",
-    # "extended_acl": r"^access-list\s\d+\sextended[\s\S]+?(?=^access-list\s\d+|^!|^$)",
-    # "prefix_list": r"^ip\sprefix-list\s\S+[\s\S]+?(?=^ip\sprefix-list\s\S+|^!|^$)",
-    # "route_map": r"^route-map\s\S+[\s\S]+?(?=^route-map\s\S+|^!|^$)",
+CISCO_CONFIG_PATTERNS = {
+    "vlan": r"^vlan\s+\d+[\s\S]+?(?=^vlan\s+\d+|^!|^$)",
+    "ospf": r"^router\sospf\s\d+[\s\S]+?(?=^router\s\S+|^!|^$)",
+    "eigrp": r"^router\seigrp\s\d+[\s\S]+?(?=^router\s\S+|^!|^$)",
+    "bgp": r"^router\sbgp\s\d+[\s\S]+?(?=^router\sbgp\s\d+|^!|^$)",
+    "standard_acl": r"^access-list\s\d+[\s\S]+?(?=^access-list\s\d+|^!|^$)",
+    "extended_acl": r"^access-list\s\d+\sextended[\s\S]+?(?=^access-list\s\d+|^!|^$)",
+    "prefix_list": r"^ip\sprefix-list\s\S+[\s\S]+?(?=^ip\sprefix-list\s\S+|^!|^$)",
+    "route_map": r"^route-map\s\S+[\s\S]+?(?=^route-map\s\S+|^!|^$)",
     "ntp": r"^ntp\sserver\s\S+[\s\S]+?(?=^ntp\sserver\s\S+|^!|^$)",
     "snmp": r"^snmp-server\s.*$",
-    # "logging": r"^logging\s\S+[\s\S]+?(?=^logging\s\S+|^!|^$)",
-    # "line_vty": r"^line\svty\s\d+\s\d+[\s\S]+?(?=^line\s\S+|^!|^$)",
-    # "line_console": r"^line\scon\s\d+[\s\S]+?(?=^line\s\S+|^!|^$)",
-    # "line_aux": r"^line\saux\s\d+[\s\S]+?(?=^line\saux\s\d+|^!|^$)",
-    # "class_map": r"^class-map\s\S+[\s\S]+?(?=^class-map\s\S+|^!|^$)",
-    # "policy_map": r"^policy-map\s\S+[\s\S]+?(?=^policy-map\s\S+|^!|^$)",
-    # "service_policy": r"^service-policy\s\S+[\s\S]+?(?=^service-policy\s\S+|^!|^$)",
-    # "aaa": r"^aaa\s\S+[\s\S]+?(?=^aaa\s\S+|^!|^$)",
-    # "vrf": r"^ip\svrf\s\S+[\s\S]+?(?=^ip\svrf\s\S+|^!|^$)",
-    # "banner": r"^banner\s\S+[\s\S]+?(?=^banner\s\S+|^!|^$)",
+    "logging": r"^logging\s\S+[\s\S]+?(?=^logging\s\S+|^!|^$)",
+    "line_vty": r"^line\svty\s\d+\s\d+[\s\S]+?(?=^line\s\S+|^!|^$)",
+    "line_console": r"^line\scon\s\d+[\s\S]+?(?=^line\s\S+|^!|^$)",
+    "line_aux": r"^line\saux\s\d+[\s\S]+?(?=^line\saux\s\d+|^!|^$)",
+    "class_map": r"^class-map\s\S+[\s\S]+?(?=^class-map\s\S+|^!|^$)",
+    "policy_map": r"^policy-map\s\S+[\s\S]+?(?=^policy-map\s\S+|^!|^$)",
+    "service_policy": r"^service-policy\s\S+[\s\S]+?(?=^service-policy\s\S+|^!|^$)",
+    "aaa": r"^aaa\s\S+[\s\S]+?(?=^aaa\s\S+|^!|^$)",
+    "vrf": r"^ip\svrf\s\S+[\s\S]+?(?=^ip\svrf\s\S+|^!|^$)",
+    "banner": r"^banner\s\S+[\s\S]+?(?=^banner\s\S+|^!|^$)",
     "dns_settings": r"^(ip domain-lookup|ip domain-name\s+\S+|ip name-server\s+[\d\.\s]+(?:use-vrf\s+\S+)?)",
-    # "interface": r"^interface\s+\S+[\s\S]+?(?=^interface\s+\S+|^!|^$)",
+    "interface": r"^interface\s+\S+[\s\S]+?(?=^interface\s+\S+|^!|^$)",
+}
+
+JUNOS_CONFIG_PATHS = {
+    "system": ["system"],
+    "ntp": ["system", "ntp"],
+    "dns": ["system", "name-server"],
+    "services": ["system", "services"],
+    "interfaces": ["interfaces"],
+    "protocols": ["protocols"],
+    "bgp": ["protocols", "bgp"],
+    "ospf": ["protocols", "ospf"],
+    "isis": ["protocols", "isis"],
+    "routing_options": ["routing-options"],
+    "policy_options": ["policy-options"],
+    "firewall": ["firewall"],
+    "security": ["security"],
+    "zones": ["security", "zones"],
+    "snmp": ["snmp"],
+    "routing_instances": ["routing-instances"],
+    "chassis": ["chassis"],
 }
 
 
@@ -59,12 +76,32 @@ class Message(BaseModel):
     message: str
 
 
+GROUP_QUERY = """{
+	CoreStandardGroup {
+		edges {
+			node {
+				display_label
+				group_type { value }
+				members {
+					edges {
+						node {
+							display_label
+							__typename
+						}
+					}
+				}
+			}
+		}
+	}
+}"""
+
+
 # Function to parse Cisco configs and return segments
 def parse_cisco_config(config_text):
     raw_segments = {}
     captured_lines = []
 
-    for label, pattern in CONFIG_PATTERNS.items():
+    for label, pattern in CISCO_CONFIG_PATTERNS.items():
         matches = re.findall(pattern, config_text, re.MULTILINE)
         raw_segments[label] = matches
         for match in matches:
@@ -221,7 +258,7 @@ def dual_pane_with_highlight(texts, regex_matches):
         highlighted_text = "".join(highlighted_text_parts)
 
         # Convert extracted data to HTML string with highlighted keys
-        extracted_data_html = json_to_html(extracted_data, key_to_color)
+        extracted_data_html = json_to_html(extracted_data, key_to_color) if extracted_data else ""
 
         # Generate the dual-pane view with scroll syncing for this text
         sync_scroll_html = f"""<div style="display: flex; margin-bottom: 20px; height: auto;">
@@ -265,7 +302,8 @@ def display_segments(filenames, parsed_configs, regexes=None, raw=False, highlig
         filenames (list): List of config filenames.
         configs (list): List of raw config file contents.
         parsed_configs (list): List of parsed config segments for each file.
-        regexes (dict, optional): Dictionary of regex patterns for extracting data from config segments. Defaults to None.
+        regexes (dict, optional): Dictionary of regex patterns for extracting data from config segments.
+                                  Defaults to None.
         raw (bool): If True, disables regex extraction and shows raw config segments. Defaults to False.
         highlight (bool): If True, enables highlighting of regex matches. Defaults to True.
     """
@@ -292,7 +330,10 @@ def display_segments(filenames, parsed_configs, regexes=None, raw=False, highlig
 
                     st.subheader(f"Segment: {segment_name}")
 
-                    lines = "\n".join(segment_lines) or "No data found."
+                    if isinstance(segment_lines, str):
+                        lines = segment_lines
+                    else:
+                        lines = "\n".join(segment_lines) or "No data found."
 
                     # If raw mode is enabled, show raw content
                     if raw:
@@ -306,8 +347,9 @@ def display_segments(filenames, parsed_configs, regexes=None, raw=False, highlig
                         extracted_data = find_matches_with_locations(regexes, segment_lines)
 
                         extracted_data_clean = [
-                            {key: [entry["match"] for entry in value][0] for key, value in data_entry.items()}
+                            {key: [entry["match"] for entry in value][0] for key, value in data_entry.items() if value}
                             for data_entry in extracted_data
+                            if data_entry
                         ]
 
                         filename = filenames[i]
@@ -396,7 +438,7 @@ def upload_data(df: pd.DataFrame, schema_kind: str, hostname: str, branch: str) 
             including_device = client.get(kind="InfraDevice", name__value=hostname)
             node.add_relationships(relation_to_update="in_config", related_nodes=[including_device.id])
 
-        except GraphQLError as exc:
+        except GraphQLError:
             nbr_errors += 1
 
     return nbr_errors
@@ -407,3 +449,135 @@ def paginate_list(items, page_size, page_number):
     start_index = page_number * page_size
     end_index = start_index + page_size
     return items[start_index:end_index]
+
+
+def parse_junos_config(config_text):
+    def add_to_dict(path, value, config_dict):
+        current = config_dict
+        for key in path[:-1]:
+            if key not in current:
+                current[key] = {}
+            current = current[key]
+        current[path[-1]] = value
+
+    config_dict = {}
+    path = []
+
+    # Remove comments and unnecessary whitespaces
+    config_text = re.sub(r"/\*.*?\*/", "", config_text, flags=re.DOTALL)
+    config_text = re.sub(r"//.*", "", config_text)
+    config_text = config_text.strip()
+
+    for line in config_text.splitlines():
+        clean_line = line.strip()
+
+        if clean_line == "" or clean_line.startswith("#"):
+            continue  # Ignore empty lines and comments
+
+        # Detect block openings
+        if clean_line.endswith("{"):
+            key = clean_line.rstrip("{").strip()
+            path.append(key)
+
+        # Detect block closures
+        elif clean_line == "}":
+            path.pop()
+
+        # Handle key-value pairs
+        elif clean_line.endswith(";"):
+            key_value = clean_line.rstrip(";").split(maxsplit=1)
+            if len(key_value) == 1:
+                key_value.append(None)  # Handle cases like "disable;"
+            add_to_dict(path + [key_value[0]], key_value[1], config_dict)
+
+    if config_dict:
+        return config_dict
+    else:
+        return {"Error": ["Failed to parse config."]}
+
+
+def junos_dict_to_config(config_dict, indent=0):
+    def format_line(key, value, indent_level):
+        # Single-line format: `key value;`
+        return " " * indent_level + f"{key} {value};\n"
+
+    def format_block(key, content, indent_level):
+        # Block format: `key { ... }`
+        return " " * indent_level + f"{key} {{\n{content}{' ' * indent_level}}}\n"
+
+    config_text = ""
+    indent_space = 4  # Junos typically uses 4 spaces per indent level
+
+    if not config_dict:
+        return ""
+
+    if isinstance(config_dict, str):
+        return config_dict
+
+    if isinstance(config_dict, list):
+        # If config_dict is a list, run through each item in the list
+        for single_dict in config_dict:
+            config_text += junos_dict_to_config(single_dict, indent)
+        return config_text
+
+    for key, value in config_dict.items():
+        if isinstance(value, dict):
+            # Recursive block for nested dictionary
+            nested_block = junos_dict_to_config(value, indent + indent_space)
+            config_text += format_block(key, nested_block, indent)
+        elif isinstance(value, list):
+            # If value is a list, add each item in the list as a separate line
+            for item in value:
+                config_text += format_line(key, item, indent)
+        else:
+            # Single key-value pair
+            config_text += format_line(key, value, indent)
+
+    return config_text
+
+
+def extract_junos_segments(config_dict, path_map=JUNOS_CONFIG_PATHS):
+    raw_segments = {}
+    captured_paths = set()  # Track paths we've captured to avoid duplicates
+
+    # Helper function to retrieve nested keys and maintain structure
+    def get_nested_value(d, keys):
+        current = d
+        nested_result = {}
+        temp = nested_result
+
+        for i, key in enumerate(keys):
+            if isinstance(current, dict) and key in current:
+                if i == len(keys) - 1:
+                    temp[key] = current[key]  # Final key gets the actual value
+                else:
+                    temp[key] = {}
+                    temp = temp[key]  # Go deeper into the nested structure
+                current = current[key]
+            else:
+                return None
+        return nested_result
+
+    # Traverse path_map to extract corresponding segments from config_dict
+    for label, path_list in path_map.items():
+        segment = get_nested_value(config_dict, path_list)
+        if segment:
+            raw_segments[label] = segment
+            captured_paths.add(tuple(path_list))
+
+    # Collect uncaptured paths for completeness/debugging
+    uncaptured_segments = []
+
+    def traverse_and_capture(d, path=()):
+        if isinstance(d, dict):
+            for key, value in d.items():
+                new_path = path + (key,)
+                if new_path not in captured_paths:
+                    traverse_and_capture(value, new_path)
+        elif path not in captured_paths:
+            uncaptured_segments.append(d)
+
+    traverse_and_capture(config_dict)
+    raw_segments["uncaptured"] = uncaptured_segments
+
+    return raw_segments

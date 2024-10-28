@@ -1,12 +1,10 @@
 import asyncio
 
 import streamlit as st
-
 from infrahub_sdk import InfrahubNode
 
+from emma.gql_queries import dict_to_gql_query, exclude_keys
 from emma.infrahub import get_client, run_gql_query
-
-from emma.gql_queries import exclude_keys, dict_to_gql_query
 
 infrahub_client = get_client()
 

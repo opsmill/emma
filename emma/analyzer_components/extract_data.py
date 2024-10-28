@@ -1,7 +1,7 @@
 import streamlit as st
-from emma.infrahub import get_json_schema
 
-from emma.analyzer_utils import generate_data_regex, display_segments
+from emma.analyzer_utils import display_segments, generate_data_regex
+from emma.infrahub import get_json_schema
 
 
 def extra_data_tab():
@@ -12,7 +12,7 @@ def extra_data_tab():
 
         data = [
             "\n".join(x[st.session_state.selected_segment])
-            for x in st.session_state.parsed_configs
+            for x in st.session_state.parsed_configs[:10]
             if x[st.session_state.selected_segment]
         ]
 

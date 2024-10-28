@@ -1,10 +1,9 @@
+
 import streamlit as st
 
-import os
-
 import emma.analyzer_components as ac
-
-from emma.infrahub import get_client
+from emma.analyzer_utils import GROUP_QUERY
+from emma.infrahub import get_client, run_gql_query
 from menu import menu_with_redirect
 
 menu_with_redirect()
@@ -15,50 +14,39 @@ infrahub_client = get_client(branch=st.session_state.infrahub_branch)
 st.title("View and Compare Network Configurations")
 
 # Initialize session state for storing filenames and configs
-if "filenames" not in st.session_state:
-    st.session_state.filenames = []
-if "configs" not in st.session_state:
-    st.session_state.configs = []
-if "regexes" not in st.session_state:
-    st.session_state.regexes = {}
-if "parsed_configs" not in st.session_state:
-    st.session_state.parsed_configs = []
-if "templates" not in st.session_state:
-    st.session_state.templates = {}
-if "extracted_data" not in st.session_state:
-    st.session_state.extracted_data = {}
-if "pulled_data" not in st.session_state:
-    st.session_state.pulled_data = {}
-if "gql_query" not in st.session_state:
-    st.session_state.gql_query = {}
-if "selected_segment" not in st.session_state:
-    st.session_state.selected_segment = None
-if "selected_schema" not in st.session_state:
-    st.session_state.selected_schema = None
-if "validation_errors" not in st.session_state:
-    st.session_state.validation_errors = []
-if "data_to_upload" not in st.session_state:
-    st.session_state.data_to_upload = {}
-if "selected_hostnames" not in st.session_state:
-    st.session_state.selected_hostnames = []
-if "schema_node" not in st.session_state:
-    st.session_state.schema_node = None
-if "formatted_query" not in st.session_state:
-    st.session_state.formatted_query = ""
+st.session_state.setdefault("filenames", [])
+st.session_state.setdefault("configs", [])
+st.session_state.setdefault("regexes", {})
+st.session_state.setdefault("parsed_configs", [])
+st.session_state.setdefault("templates", {})
+st.session_state.setdefault("extracted_data", {})
+st.session_state.setdefault("pulled_data", {})
+st.session_state.setdefault("gql_query", {})
+st.session_state.setdefault("selected_segment", None)
+st.session_state.setdefault("selected_schema", None)
+st.session_state.setdefault("validation_errors", [])
+st.session_state.setdefault("data_to_upload", {})
+st.session_state.setdefault("selected_hostnames", [])
+st.session_state.setdefault("schema_node", None)
+st.session_state.setdefault("formatted_query", "")
+
+if "device_groups" not in st.session_state:
+    device_groups = []
+
+    groups = run_gql_query(GROUP_QUERY)
+
+    for group in groups["CoreStandardGroup"]["edges"]:
+        members = [x["node"] for x in group["node"]["members"]["edges"]]
+        if all(x["__typename"] == "InfraDevice" for x in members):
+            device_groups.append(
+                {"name": group["node"]["display_label"], "hosts": [x["display_label"] for x in members]}
+            )
+
+    st.session_state.device_groups = device_groups
+
 if "loaded_configs" not in st.session_state:
     st.session_state.loaded_configs = {}
-    # Walk through the directory and grab the files
-    # configs = {}
-    # for dirpath, _, filenames in os.walk("test_data"):
-    #     for filename in filenames:
-    #         if filename.endswith(".conf"):
-    #             device_name = filename.replace(".conf", "").replace(".", "-")
 
-    #             with open(os.path.join(dirpath, filename)) as f:
-    #                 configs[device_name] = f.read()
-    # st.session_state.loaded_configs = configs
-
-    # st.session_state.loaded_configs = configs
 if "hostnames" not in st.session_state:
     st.session_state.hostnames = infrahub_client.all(kind="InfraDevice")
 

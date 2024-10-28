@@ -1,5 +1,6 @@
-from infrahub_sdk import InfrahubClientSync
 import os
+
+from infrahub_sdk import InfrahubClientSync
 from tqdm import tqdm
 
 client = InfrahubClientSync()
@@ -30,6 +31,6 @@ for dirpath, _, filenames in tqdm(os.walk("test_data")):
                 site="test",
                 type="cisco",
                 config_object_store_id=config_object["identifier"],
-                object_store_id=config_object["identifier"]
+                object_store_id=config_object["identifier"],
             )
             device.save(allow_upsert=True)
