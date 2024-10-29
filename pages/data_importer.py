@@ -1,6 +1,6 @@
 import time
 from enum import Enum
-from typing import List, Union
+from typing import Any, List, Union
 
 import numpy as np
 import pandas as pd
@@ -76,7 +76,7 @@ def preprocess_and_validate_data(
     processed_rows = []
 
     for _, row in df.iterrows():
-        processed_row = {}
+        processed_row: dict[str, Any] = {}
         for column, value in row.items():
             if pd.isnull(value):
                 continue

@@ -8,7 +8,7 @@ import pandas as pd
 import streamlit as st
 from graphql import get_introspection_query
 from httpx import HTTPError
-from infrahub_sdk import InfrahubClientSync
+from infrahub_sdk import Config, InfrahubClientSync
 from infrahub_sdk.branch import BranchData
 from infrahub_sdk.exceptions import (
     AuthenticationError,
@@ -88,7 +88,7 @@ def get_instance_branch() -> str:
 
 @st.cache_resource
 def get_client(address: str | None = None, branch: str | None = None) -> InfrahubClientSync:  # pylint: disable=unused-argument
-    return InfrahubClientSync(address=address)
+    return InfrahubClientSync(address=address, config=Config(timeout=60))
 
 
 @st.cache_data
@@ -172,26 +172,16 @@ def get_objects_as_df(kind: str, include_id: bool = True, branch: str | None = N
     if not check_reachability(client=client):
         return None
 
-    node_schema = client.schema.get(kind=kind, branch=branch)
-    export_relationships = get_relationships_to_export(node_schema=node_schema)
-
     objs = client.all(kind=kind, branch=branch, populate_store=True, prefetch_relationships=True)
 
     df = pd.DataFrame(
-        [convert_node_to_dict(obj, include_id=include_id, export_relationships=export_relationships) for obj in objs]
+        [convert_node_to_dict(obj, include_id=include_id) for obj in objs]
     )
     return df
 
 
-def get_relationships_to_export(node_schema: NodeSchema) -> List[str]:
-    export_relationships = []
-    for relationship in node_schema.relationships:
-        export_relationships.append(relationship.name)
-    return export_relationships
-
-
 def convert_node_to_dict(
-    obj: InfrahubNodeSync, export_relationships: List[str], include_id: bool = True
+    obj: InfrahubNodeSync, include_id: bool = True
 ) -> dict[str, Any]:
     data = {}
 
@@ -202,13 +192,14 @@ def convert_node_to_dict(
         attr: Attribute = getattr(obj, attr_name)
         data[attr_name] = attr.value
 
-    for rel_name in export_relationships:
+    for rel_name in obj._schema.relationship_names:
         rel = getattr(obj, rel_name)
         if rel and isinstance(rel, RelatedNodeSync):
             if rel.initialized:
                 rel.fetch()
+                related_node = obj._client.store.get(key=rel.peer.id, raise_when_missing=False)
                 data[rel_name] = (
-                    rel.peer.get_human_friendly_id_as_string(include_kind=False) if rel.peer.hfid else rel.peer.id
+                    related_node.get_human_friendly_id_as_string(include_kind=False) if related_node.hfid else related_node.id
                 )
         elif rel and isinstance(rel, RelationshipManagerSync):
             peers: List[dict[str, Any]] = []
