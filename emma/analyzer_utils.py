@@ -15,6 +15,13 @@ from pydantic import BaseModel
 
 from emma.infrahub import get_client
 
+import openai
+
+api_key = "EmmaDefaultAuthMakingInfrahubEasierToUse!!!11"
+
+openai.base_url = "https://emma.opsmill.cloud/v1"
+openai.api_key = api_key
+
 llm = GenerateDataRegexTask(model_name="gpt-4o-mini")
 
 
