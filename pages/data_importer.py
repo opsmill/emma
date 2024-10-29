@@ -11,7 +11,7 @@ from infrahub_sdk.utils import compare_lists
 from pandas.errors import EmptyDataError
 from pydantic import BaseModel
 
-from emma.infrahub import get_client, get_schema, handle_reachability_error, is_uuid
+from emma.infrahub import get_client, get_schema, handle_reachability_error, is_uuid, parse_hfid
 from emma.streamlit_utils import set_page_config
 from menu import menu_with_redirect
 
@@ -25,12 +25,6 @@ class MessageSeverity(str, Enum):
 class Message(BaseModel):
     severity: MessageSeverity = MessageSeverity.INFO
     message: str
-
-
-# Could be move to the SDK later on
-def parse_hfid(hfid: str) -> List[str]:
-    """Parse a single HFID string into its components if it contains '__'."""
-    return hfid.split("__") if "__" in hfid else [hfid]
 
 
 def parse_item(item: str) -> Union[str, List[str]]:

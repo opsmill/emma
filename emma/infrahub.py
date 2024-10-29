@@ -377,3 +377,9 @@ def is_uuid(value: str) -> bool:
         return True
     except ValueError:
         return False
+
+
+# Could be move to the SDK later on
+def parse_hfid(hfid: str) -> List[str]:
+    """Parse a single HFID string into its components if it contains '__'."""
+    return hfid.split("__") if "__" in hfid else [hfid]
