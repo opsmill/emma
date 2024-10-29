@@ -1,13 +1,14 @@
 import os
+import uuid
 from enum import Enum
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, List, Tuple, Union
+from typing import TYPE_CHECKING, Any, List, Tuple
 
 import pandas as pd
 import streamlit as st
 from graphql import get_introspection_query
 from httpx import HTTPError
-from infrahub_sdk import InfrahubClientSync, InfrahubNodeSync, MainSchemaTypes
+from infrahub_sdk import InfrahubClientSync
 from infrahub_sdk.branch import BranchData
 from infrahub_sdk.exceptions import (
     AuthenticationError,
@@ -16,8 +17,8 @@ from infrahub_sdk.exceptions import (
     ServerNotReachableError,
     ServerNotResponsiveError,
 )
-from infrahub_sdk.node import RelatedNodeSync, RelationshipManagerSync
-from infrahub_sdk.schema import GenericSchema, NodeSchema, SchemaLoadResponse
+from infrahub_sdk.node import InfrahubNodeSync, RelatedNodeSync, RelationshipManagerSync
+from infrahub_sdk.schema import GenericSchema, MainSchemaTypes, NodeSchema, SchemaLoadResponse
 from infrahub_sdk.utils import find_files
 from infrahub_sdk.yaml import SchemaFile
 from pydantic import BaseModel
@@ -171,10 +172,10 @@ def get_objects_as_df(kind: str, include_id: bool = True, branch: str | None = N
     if not check_reachability(client=client):
         return None
 
-    node_schema = client.schema.get(kind=kind)
+    node_schema = client.schema.get(kind=kind, branch=branch)
     export_relationships = get_relationships_to_export(node_schema=node_schema)
 
-    objs = client.all(kind=kind, branch=branch)
+    objs = client.all(kind=kind, branch=branch, populate_store=True, prefetch_relationships=True)
 
     df = pd.DataFrame(
         [convert_node_to_dict(obj, include_id=include_id, export_relationships=export_relationships) for obj in objs]
@@ -206,19 +207,25 @@ def convert_node_to_dict(
         if rel and isinstance(rel, RelatedNodeSync):
             if rel.initialized:
                 rel.fetch()
-                data[rel_name] = rel.peer.get_human_friendly_id_as_string() if rel.peer.hfid else rel.peer.id
+                data[rel_name] = (
+                    rel.peer.get_human_friendly_id_as_string(include_kind=False) if rel.peer.hfid else rel.peer.id
+                )
         elif rel and isinstance(rel, RelationshipManagerSync):
             peers: List[dict[str, Any]] = []
-            # FIXME: Seem super dirty
+            # FIXME: Seem dirty
             if not rel.initialized:
                 rel.fetch()
             for peer in rel.peers:
-                # TODO: use the store ?
-                # related_node = store.get(key=peer.id, raise_when_missing=False)
-                # if not related_node:
-                peer.fetch()
-                related_node = peer.peer
-                peers.append(related_node.get_human_friendly_id_as_string() if related_node.hfid else related_node.id)
+                # TODO: Should we use the store to speed things up ? Will the HFID be populated ?
+                related_node = obj._client.store.get(key=peer.id, raise_when_missing=False)
+                if not related_node:
+                    peer.fetch()
+                    related_node = peer.peer
+                peers.append(
+                    related_node.get_human_friendly_id_as_string(include_kind=False)
+                    if related_node.hfid
+                    else related_node.id
+                )
             data[rel_name] = peers
     return data
 
@@ -362,3 +369,11 @@ def is_feature_enabled(feature_name: str) -> bool:
 def run_gql_query(query: str, branch: str | None = None) -> dict[str, MainSchemaTypes]:
     client = get_client(branch=branch)
     return client.execute_graphql(query, raise_for_error=False)
+
+
+def is_uuid(value: str) -> bool:
+    try:
+        uuid.UUID(value)
+        return True
+    except ValueError:
+        return False
