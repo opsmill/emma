@@ -47,8 +47,8 @@ def create_column_label_mapping(
 ) -> ColumnMapping:
     """Map column labels with omitted columns."""
     column_labels = [
-        f"{col} (Mandatory)" if col in mandatory_columns and col not in to_omit
-        else f"{col} (Optional)" for col in mandatory_columns + optional_columns
+        f"{col} (Mandatory)" if col in mandatory_columns and col not in to_omit else f"{col} (Optional)"
+        for col in mandatory_columns + optional_columns
     ]
     label_to_col = {label: col for label, col in zip(column_labels, mandatory_columns + optional_columns)}
     return ColumnMapping(labels=column_labels, label_to_col=label_to_col)

@@ -174,15 +174,11 @@ def get_objects_as_df(kind: str, include_id: bool = True, branch: str | None = N
 
     objs = client.all(kind=kind, branch=branch, populate_store=True, prefetch_relationships=True)
 
-    df = pd.DataFrame(
-        [convert_node_to_dict(obj, include_id=include_id) for obj in objs]
-    )
+    df = pd.DataFrame([convert_node_to_dict(obj, include_id=include_id) for obj in objs])
     return df
 
 
-def convert_node_to_dict(
-    obj: InfrahubNodeSync, include_id: bool = True
-) -> dict[str, Any]:
+def convert_node_to_dict(obj: InfrahubNodeSync, include_id: bool = True) -> dict[str, Any]:
     data = {}
 
     if include_id:
@@ -199,7 +195,9 @@ def convert_node_to_dict(
                 rel.fetch()
                 related_node = obj._client.store.get(key=rel.peer.id, raise_when_missing=False)
                 data[rel_name] = (
-                    related_node.get_human_friendly_id_as_string(include_kind=False) if related_node.hfid else related_node.id
+                    related_node.get_human_friendly_id_as_string(include_kind=False)
+                    if related_node.hfid
+                    else related_node.id
                 )
         elif rel and isinstance(rel, RelationshipManagerSync):
             peers: List[dict[str, Any]] = []
