@@ -1,4 +1,5 @@
 import time
+from ast import literal_eval
 from enum import Enum
 from typing import Any, List, Union
 
@@ -43,7 +44,7 @@ def parse_value(value: Union[str, List[str]]) -> Union[str, List[str]]:
 
 def parse_list_value(value: str) -> Union[str, List[Union[str, List[str]]]]:
     """Convert list-like string to a list and parse items as UUIDs or HFIDs."""
-    parsed_value = eval(value)
+    parsed_value = literal_eval(value)
     if isinstance(parsed_value, list):
         return [parse_item(item) for item in parsed_value]
     return value
