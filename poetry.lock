@@ -737,13 +737,13 @@ all = ["flake8 (>=7.1.1)", "mypy (>=1.11.2)", "pytest (>=8.3.2)", "ruff (>=0.6.2
 
 [[package]]
 name = "infrahub-sdk"
-version = "0.13.1"
+version = "1.0.0"
 description = "Python Client to interact with Infrahub"
 optional = false
 python-versions = "<4.0,>=3.9"
 files = [
-    {file = "infrahub_sdk-0.13.1-py3-none-any.whl", hash = "sha256:01c3358101569452d079fd619bf6b10f7635602a6a472e61527ca15c135480e5"},
-    {file = "infrahub_sdk-0.13.1.tar.gz", hash = "sha256:2f0e207366f84f9bc9025ced314e7a34cb3d21cb3fd2713895b365f8bcb7fbbc"},
+    {file = "infrahub_sdk-1.0.0-py3-none-any.whl", hash = "sha256:70eb8b5ef5839fed0faa8ee0f3aae074a616ac9311eb5bfe9f335cb775aa7856"},
+    {file = "infrahub_sdk-1.0.0.tar.gz", hash = "sha256:8b2ca6fe04ecc5c0364c444dcc94647eef3e261629b49430a32edc3d07620149"},
 ]
 
 [package.dependencies]
@@ -1601,8 +1601,8 @@ files = [
 [package.dependencies]
 numpy = [
     {version = ">=1.22.4", markers = "python_version < \"3.11\""},
-    {version = ">=1.26.0", markers = "python_version >= \"3.12\""},
     {version = ">=1.23.2", markers = "python_version == \"3.11\""},
+    {version = ">=1.26.0", markers = "python_version >= \"3.12\""},
 ]
 python-dateutil = ">=2.8.2"
 pytz = ">=2020.1"
@@ -2129,8 +2129,8 @@ astroid = ">=3.3.4,<=3.4.0-dev0"
 colorama = {version = ">=0.4.5", markers = "sys_platform == \"win32\""}
 dill = [
     {version = ">=0.2", markers = "python_version < \"3.11\""},
-    {version = ">=0.3.7", markers = "python_version >= \"3.12\""},
     {version = ">=0.3.6", markers = "python_version >= \"3.11\" and python_version < \"3.12\""},
+    {version = ">=0.3.7", markers = "python_version >= \"3.12\""},
 ]
 isort = ">=4.2.5,<5.13.0 || >5.13.0,<6"
 mccabe = ">=0.6,<0.8"
@@ -3274,4 +3274,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10, < 3.13"
-content-hash = "4b244f85d5b591f572ac3e3e21818fe1b686d2ab85fcbab87d64cecbdd9f4a54"
+content-hash = "ef1403481099f00903bddacbecf2b29935889128cf5a707158258e6be80aec58"
