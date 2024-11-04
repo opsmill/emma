@@ -7,7 +7,7 @@ import pandas as pd
 import streamlit as st
 from graphql import get_introspection_query
 from httpx import HTTPError
-from infrahub_sdk import InfrahubClientSync, InfrahubNodeSync, MainSchemaTypes
+from infrahub_sdk import InfrahubClientSync
 from infrahub_sdk.branch import BranchData
 from infrahub_sdk.exceptions import (
     AuthenticationError,
@@ -16,7 +16,8 @@ from infrahub_sdk.exceptions import (
     ServerNotReachableError,
     ServerNotResponsiveError,
 )
-from infrahub_sdk.schema import GenericSchema, NodeSchema, SchemaLoadResponse
+from infrahub_sdk.node import InfrahubNodeSync
+from infrahub_sdk.schema import GenericSchema, MainSchemaTypes, NodeSchema, SchemaLoadResponse
 from infrahub_sdk.utils import find_files
 from infrahub_sdk.yaml import SchemaFile
 from pydantic import BaseModel
