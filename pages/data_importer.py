@@ -43,12 +43,9 @@ def parse_value(value: Union[str, List[str]]) -> Union[str, List[str]]:
 
 def parse_list_value(value: str) -> Union[str, List[Union[str, List[str]]]]:
     """Convert list-like string to a list and parse items as UUIDs or HFIDs."""
-    try:
-        parsed_value = eval(value)
-        if isinstance(parsed_value, list):
-            return [parse_item(item) for item in parsed_value]
-    except Exception:
-        pass  # Handle invalid format or return as-is upstream
+    parsed_value = eval(value)
+    if isinstance(parsed_value, list):
+        return [parse_item(item) for item in parsed_value]
     return value
 
 
@@ -75,9 +72,9 @@ def preprocess_and_validate_data(
     errors = validate_columns(list(df.columns), target_schema)
     processed_rows = []
 
-    for _, row in df.iterrows():
+    for _, items_row in df.iterrows():
         processed_row: dict[str, Any] = {}
-        for column, value in row.items():
+        for column, value in items_row.items():
             if pd.isnull(value):
                 continue
 
@@ -93,8 +90,8 @@ def preprocess_and_validate_data(
 
         processed_rows.append(processed_row)
 
-    processed_df = pd.DataFrame(processed_rows)
-    return processed_df, errors
+    prepocessed_df = pd.DataFrame(processed_rows)
+    return prepocessed_df, errors
 
 
 set_page_config(title="Import Data")

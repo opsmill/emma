@@ -2744,13 +2744,13 @@ snowflake = ["snowflake-connector-python (>=2.8.0)", "snowflake-snowpark-python[
 
 [[package]]
 name = "streamlit-flow-component"
-version = "1.2.9"
+version = "1.5.0"
 description = "Streamlit Component Wrapper for React Flow"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "streamlit-flow-component-1.2.9.tar.gz", hash = "sha256:11a5ff4fdc5c3a39d5f970ff385b9ff03d75324af3bc587ef5c4425eb55bf521"},
-    {file = "streamlit_flow_component-1.2.9-py3-none-any.whl", hash = "sha256:474f410b115272e2d586d789a98976326c55547349d14933edc943f110f0f7ad"},
+    {file = "streamlit-flow-component-1.5.0.tar.gz", hash = "sha256:0ef30389e7eecb577f6c3a7fc5217bd100a36b8910d00b9124e8bb9f36b630ff"},
+    {file = "streamlit_flow_component-1.5.0-py3-none-any.whl", hash = "sha256:9cbb8bcf342f3d7553070f318956808cf7628c1b403d79481e62061bcb81bba9"},
 ]
 
 [package.dependencies]
