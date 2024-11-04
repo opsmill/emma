@@ -89,7 +89,7 @@ def visualize_schema_flow(generics: List[GenericSchema], nodes: List[NodeSchema]
     selected_id = streamlit_flow(
         key=key,
         state=flow_state,
-        layout=LayeredLayout(direction="right", node_layer_spacing=200),    # TODO: Can those still be use in Style, horizontal_spacing=200, vertical_spacing=150
+        layout=LayeredLayout(direction="right", node_layer_spacing=200),
         fit_view=True,
         show_minimap=True,
         show_controls=True,
