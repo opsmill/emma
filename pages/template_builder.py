@@ -4,7 +4,7 @@ import os
 import re
 
 import streamlit as st
-from infrahub_sdk import GraphQLError
+from infrahub_sdk.exceptions import GraphQLError
 from infrahub_sdk.jinja2 import identify_faulty_jinja_code
 from jinja2 import Template, TemplateSyntaxError
 from langchain_community.agents.openai_assistant import OpenAIAssistantV2Runnable

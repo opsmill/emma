@@ -6,7 +6,7 @@ import re
 
 import streamlit as st
 import yaml
-from infrahub_sdk import GraphQLError
+from infrahub_sdk.exceptions import GraphQLError
 from langchain_community.agents.openai_assistant import OpenAIAssistantV2Runnable
 from langchain_core.agents import AgentFinish
 from openai import OpenAI
