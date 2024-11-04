@@ -5,6 +5,7 @@ from infrahub_sdk.schema import GenericSchema, NodeSchema
 from streamlit_flow import streamlit_flow
 from streamlit_flow.elements import StreamlitFlowEdge, StreamlitFlowNode
 from streamlit_flow.layouts import LayeredLayout
+from streamlit_flow.state import StreamlitFlowState
 
 from emma.infrahub import convert_schema_to_dict, dict_to_df, get_schema, handle_reachability_error
 from emma.streamlit_utils import display_expander, set_page_config
@@ -84,11 +85,11 @@ def visualize_schema_flow(generics: List[GenericSchema], nodes: List[NodeSchema]
             )
 
     # Display the flow graph and get clicked item
+    flow_state = StreamlitFlowState(nodes=flow_nodes, edges=flow_edges)
     selected_id = streamlit_flow(
         key=key,
-        init_nodes=flow_nodes,
-        init_edges=flow_edges,
-        layout=LayeredLayout(direction="right", horizontal_spacing=200, vertical_spacing=150, node_layer_spacing=200),
+        state=flow_state,
+        layout=LayeredLayout(direction="right", node_layer_spacing=200),    # TODO: Can those still be use in Style, horizontal_spacing=200, vertical_spacing=150
         fit_view=True,
         show_minimap=True,
         show_controls=True,
