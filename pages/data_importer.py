@@ -1,8 +1,9 @@
 import time
-import types
+from ast import literal_eval
 from enum import Enum
-from typing import Any, Dict
+from typing import Any, List, Union
 
+import numpy as np
 import pandas as pd
 import streamlit as st
 from infrahub_sdk.exceptions import GraphQLError
@@ -11,7 +12,7 @@ from infrahub_sdk.utils import compare_lists
 from pandas.errors import EmptyDataError
 from pydantic import BaseModel
 
-from emma.infrahub import get_client, get_schema, handle_reachability_error
+from emma.infrahub import get_client, get_schema, handle_reachability_error, is_uuid, parse_hfid
 from emma.streamlit_utils import set_page_config
 from menu import menu_with_redirect
 
@@ -27,43 +28,71 @@ class Message(BaseModel):
     message: str
 
 
-def dict_remove_nan_values(dictionary: Dict[str, Any]) -> Dict[str, Any]:
-    remove = [k for k, v in dictionary.items() if pd.isnull(v)]
-    for k in remove:
-        dictionary.pop(k)
-    return dictionary
+def parse_item(item: str) -> Union[str, List[str]]:
+    """Parse a single item as a UUID, HFID, or leave as-is."""
+    if is_uuid(item):
+        return item
+    return parse_hfid(item)
 
 
-def validate_if_df_is_compatible_with_schema(df: pd.DataFrame, target_schema: NodeSchema, schema: str) -> list[Message]:
+def parse_value(value: Union[str, List[str]]) -> Union[str, List[str]]:
+    """Parse a single value, either a UUID, HFID, or a list."""
+    if isinstance(value, str):
+        return parse_item(value)
+    return value
+
+
+def parse_list_value(value: str) -> Union[str, List[Union[str, List[str]]]]:
+    """Convert list-like string to a list and parse items as UUIDs or HFIDs."""
+    parsed_value = literal_eval(value)
+    if isinstance(parsed_value, list):
+        return [parse_item(item) for item in parsed_value]
+    return value
+
+
+def validate_columns(df_columns: list, target_schema: NodeSchema) -> list[Message]:
+    """Validate missing and additional columns."""
     errors = []
-
-    df_columns = list(df.columns.values)
     _, _, missing_mandatory = compare_lists(list1=df_columns, list2=target_schema.mandatory_input_names)
     for item in missing_mandatory:
-        errors.append(
-            Message(severity=MessageSeverity.ERROR, message=f"mandatory column for {schema!r} missing : {item!r}")
-        )
-        # errors.append(f"**ERROR**: mandatory column for {schema!r} missing : {item!r}\n")
+        errors.append(Message(severity=MessageSeverity.ERROR, message=f"Mandatory column missing: {item!r}"))
 
     _, additional, _ = compare_lists(
         list1=df_columns, list2=target_schema.relationship_names + target_schema.attribute_names
     )
-
     for item in additional:
-        errors.append(Message(severity=MessageSeverity.WARNING, message=f"unable to map {item} for {schema!r}"))
-
-    for column in df_columns:
-        if column in target_schema.relationship_names:
-            for relationship_schema in target_schema.relationships:
-                if relationship_schema.name == column and relationship_schema.cardinality == "many":
-                    errors.append(
-                        Message(
-                            severity=MessageSeverity.ERROR,
-                            message=f"Only relationships with a cardinality of one are supported: {column!r}",
-                        )
-                    )
-
+        errors.append(Message(severity=MessageSeverity.WARNING, message=f"Unable to map {item}"))
     return errors
+
+
+def preprocess_and_validate_data(
+    df: pd.DataFrame,
+    target_schema: NodeSchema,
+) -> tuple[pd.DataFrame, list[Message]]:
+    """Process DataFrame rows to handle HFIDs, UUIDs, and empty lists."""
+    errors = validate_columns(list(df.columns), target_schema)
+    processed_rows = []
+
+    for _, items_row in df.iterrows():
+        processed_row: dict[str, Any] = {}
+        for column, value in items_row.items():
+            if pd.isnull(value):
+                continue
+
+            if column in target_schema.relationship_names:
+                # Process relationships for HFID or UUID
+                if isinstance(value, str) and value.startswith("[") and value.endswith("]"):
+                    processed_row[column] = parse_list_value(value=value)
+                else:
+                    processed_row[column] = parse_value(value=value)
+            elif column in target_schema.attribute_names:
+                # Directly use attribute values
+                processed_row[column] = value
+
+        processed_rows.append(processed_row)
+
+    prepocessed_df = pd.DataFrame(processed_rows)
+    return prepocessed_df, errors
 
 
 set_page_config(title="Import Data")
@@ -75,37 +104,31 @@ if not infrahub_schema:
     handle_reachability_error()
 
 else:
-    option = st.selectbox("Select which type of data you want to import?", options=infrahub_schema.keys())
+    selected_option = st.selectbox("Select which type of data you want to import?", options=infrahub_schema.keys())
 
-    if option:
-        selected_schema = infrahub_schema[option]
-
+    if selected_option:
+        selected_schema = infrahub_schema[selected_option]
         uploaded_file = st.file_uploader("Choose a CSV file", type=["csv"])
 
         if uploaded_file is not None:
             msg = st.toast(f"Loading file {uploaded_file}...")
-            dataframe = None
             try:
                 dataframe = pd.read_csv(filepath_or_buffer=uploaded_file)
+                # Replace any "[]" string with NaN
+                dataframe.replace(["[]", "", '""'], np.nan, inplace=True)
             except EmptyDataError as exc:
                 msg.toast(icon="❌", body=f"{str(exc)}")
-                dataframe = None
-
-            container = st.container(border=True)
-
-            if isinstance(dataframe, types.NoneType) is True:
                 st.stop()
+
             msg.toast("Comparing data to schema...")
-            _errors = validate_if_df_is_compatible_with_schema(
-                df=dataframe, target_schema=selected_schema, schema=option
-            )
+            processed_df, _errors = preprocess_and_validate_data(df=dataframe, target_schema=selected_schema)
+
             if _errors:
-                msg.toast(icon="❌", body=f".csv file is not valid for {option}")
+                msg.toast(icon="❌", body=f".csv file is not valid for {selected_option}")
                 for error in _errors:
                     st.toast(icon="⚠️", body=error.message)
-
-            if not _errors:
-                edited_df = st.data_editor(dataframe, hide_index=True)
+            else:
+                edited_df = st.data_editor(processed_df, hide_index=True)
 
                 if st.button("Import Data"):
                     nbr_errors = 0
@@ -113,18 +136,21 @@ else:
                     st.write()
                     msg.toast(body=f"Loading data for {selected_schema.namespace}{selected_schema.name}")
                     for index, row in edited_df.iterrows():
-                        data = dict_remove_nan_values(dict(row))
-                        node = client.create(kind=option, **data, branch=st.session_state.infrahub_branch)
+                        # Convert row to a dictionary and remove NaN values
+                        data = {
+                            key: value
+                            for key, value in dict(row).items()
+                            if not isinstance(value, float) or pd.notnull(value)
+                        }
+                        node = client.create(kind=selected_option, **data, branch=st.session_state.infrahub_branch)
                         try:
                             node.save(allow_upsert=True)
                             edited_df.at[index, "Status"] = "ONGOING"
                             with st.expander(icon="✅", label=f"Line {index}: Item created with success"):
-                                st.write(f"Node id: {node.id}")  # TODO Add link to node in infrahub
+                                st.write(f"Node id: {node.id}")
                         except GraphQLError as exc:
                             with st.expander(
-                                icon="⚠️",
-                                label=f"Line {index}: Item failed to be import. ",
-                                expanded=False,
+                                icon="⚠️", label=f"Line {index}: Item failed to be imported", expanded=False
                             ):
                                 st.write(f"Error: {exc}")
                             nbr_errors += 1
