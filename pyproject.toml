@@ -14,7 +14,7 @@ python = "^3.10, < 3.13"
 streamlit = "^1.37.1"
 infrahub-sdk = {version = "^1", extras = ["all"]}
 watchdog = "^4.0.2"
-langchain = "^0.2.14"
+langchain = "^0.2.17"
 langchain-community = "^0.2.12"
 openai = "^1.41.0"
 langchain-openai = "^0.1.22"
