@@ -33,8 +33,12 @@ def view_data_tab():
                 st.header("Query")
                 st.markdown(f"```gql\n\n{formatted_query}\n```")
 
-            st.session_state.pulled_data = run_gql_query(formatted_query)
-
             with col2:
                 st.header("Data")
+
+                try:
+                    st.session_state.pulled_data = run_gql_query(formatted_query)
+                except:
+                    st.write("Sorry, the query failed.")
+
                 st.write(st.session_state.pulled_data)

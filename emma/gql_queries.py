@@ -74,7 +74,7 @@ def get_gql_schema(branch: Optional[str] = None) -> Optional[GraphQLObjectType]:
     return None
 
 
-def generate_query(object_type: GraphQLObjectType, visited_types: Optional[set] = None) -> str: # noqa: PLR0912
+def generate_query(object_type: GraphQLObjectType, visited_types: Optional[set] = None) -> str:  # noqa: PLR0912
     if visited_types is None:
         visited_types = set()
 

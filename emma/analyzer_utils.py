@@ -4,6 +4,7 @@ import html
 from enum import Enum
 from typing import Any, Dict
 
+import openai
 import pandas as pd
 import regex as re
 import streamlit as st
@@ -14,8 +15,6 @@ from pulse.tasks.parse_config.task import GenerateDataRegexTask
 from pydantic import BaseModel
 
 from emma.infrahub import get_client
-
-import openai
 
 api_key = "EmmaDefaultAuthMakingInfrahubEasierToUse!!!11"
 
@@ -269,9 +268,8 @@ def dual_pane_with_highlight(texts, regex_matches):
 
         # Generate the dual-pane view with scroll syncing for this text
         sync_scroll_html = f"""<div style="display: flex; margin-bottom: 20px; height: auto;">
-    <div id="pane1_{idx}" style="width: 50%; border-right: 1px solid #ddd; padding-right:
-    10px; display: flex; flex-direction: column;">
-        <pre style="flex: 1; margin: 0; overflow-y: auto;">{highlighted_text}</pre>
+    <div id="pane1_{idx}" style="width: 50%; border-right: 1px solid #ddd; padding-right: 10px; display: flex; flex-direction: column;">
+        <pre style="flex: 1; margin: 0; overflow-y: auto; white-space: pre-wrap; background-color: #f4f4f4; padding: 10px; border-radius: 4px;">{highlighted_text}</pre>
     </div>
     <div id="pane2_{idx}" style="width: 50%; padding-left: 10px; white-space: pre-wrap;
     display: flex; flex-direction: column;">
@@ -504,41 +502,37 @@ def parse_junos_config(config_text):
 
 
 def junos_dict_to_config(config_dict, indent=0):
+    indent_space = 4  # Junos typically uses 4 spaces per indent level
+
     def format_line(key, value, indent_level):
-        # Single-line format: `key value;`
         return " " * indent_level + f"{key} {value};\n"
 
     def format_block(key, content, indent_level):
-        # Block format: `key { ... }`
         return " " * indent_level + f"{key} {{\n{content}{' ' * indent_level}}}\n"
 
     config_text = ""
-    indent_space = 4  # Junos typically uses 4 spaces per indent level
-
-    if not config_dict:
-        return ""
-
-    if isinstance(config_dict, str):
-        return config_dict
 
     if isinstance(config_dict, list):
-        # If config_dict is a list, run through each item in the list
-        for single_dict in config_dict:
-            config_text += junos_dict_to_config(single_dict, indent)
-        return config_text
+        config_dict = {d["key"]: d["value"] for d in config_dict}
 
-    for key, value in config_dict.items():
-        if isinstance(value, dict):
-            # Recursive block for nested dictionary
-            nested_block = junos_dict_to_config(value, indent + indent_space)
-            config_text += format_block(key, nested_block, indent)
-        elif isinstance(value, list):
-            # If value is a list, add each item in the list as a separate line
-            for item in value:
-                config_text += format_line(key, item, indent)
-        else:
-            # Single key-value pair
-            config_text += format_line(key, value, indent)
+    if isinstance(config_dict, dict):
+        for key, value in config_dict.items():
+            if isinstance(value, dict):
+                # For nested dicts, format each as a block
+                nested_content = junos_dict_to_config(value, indent + indent_space)
+                config_text += format_block(key, nested_content, indent)
+            elif isinstance(value, list):
+                # For lists, format each item individually
+                for item in value:
+                    config_text += (
+                        format_line(key, item, indent) if isinstance(item, str) else junos_dict_to_config(item, indent)
+                    )
+            else:
+                # Simple key-value pairs
+                config_text += format_line(key, value, indent)
+    elif isinstance(config_dict, str):
+        # Direct string if input is a string instead of a dict
+        config_text += config_dict + "\n"
 
     return config_text
 
@@ -569,7 +563,12 @@ def extract_junos_segments(config_dict, path_map=JUNOS_CONFIG_PATHS):
     for label, path_list in path_map.items():
         segment = get_nested_value(config_dict, path_list)
         if segment:
-            raw_segments[label] = segment
+            # If it's a list or dict, we convert each item to config text strings
+            if isinstance(segment, list):
+                raw_segments[label] = [junos_dict_to_config(item) for item in segment]
+            elif isinstance(segment, dict):
+                # Break down each entry into separate strings
+                raw_segments[label] = [junos_dict_to_config({k: v}) for k, v in segment.items()]
             captured_paths.add(tuple(path_list))
 
     # Collect uncaptured paths for completeness/debugging

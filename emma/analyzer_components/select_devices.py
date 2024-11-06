@@ -42,7 +42,7 @@ def load_config(hostname):
             st.error(f"Error loading config for {hostname}: {e}")
 
 
-def select_devices_tab(): # noqa: PLR0915, PLR0912, C901
+def select_devices_tab():  # noqa: PLR0915, PLR0912, C901
     # Platform and group selections (disabled if configs are uploaded)
     st.session_state.selected_platform = st.selectbox("Choose platform", ["iOS", "JunOS"])
 
@@ -72,13 +72,27 @@ def select_devices_tab(): # noqa: PLR0915, PLR0912, C901
             parsed_configs = [parse_cisco_config(raw_text) for raw_text in raw_texts]
 
         elif st.session_state.selected_platform == "JunOS":
+            # Step 1: Parse raw texts into config dictionaries
             parsed_config_dicts = [parse_junos_config(raw_text) for raw_text in raw_texts]
-            parsed_configs = [
-                {k: junos_dict_to_config(v).splitlines() for k, v in extract_junos_segments(raw).items()}
-                for raw in parsed_config_dicts
-            ]
+
+            parsed_configs = []
+
+            for conf in parsed_config_dicts:
+                segmented_conf = {}
+                for key in conf.keys():
+                    if isinstance(conf[key], dict):
+                        clean_conf_dict = [{"key": k, "value": v} for k, v in conf[key].items()]
+
+                    else:
+                        clean_conf_dict = [{"key": key, "value": conf[key]}]
+
+                    lines = [f"{x['key']} {{ \n{junos_dict_to_config(x['value'], 2)}\n}}" for x in clean_conf_dict]
+
+                    segmented_conf[key] = lines
+                parsed_configs.append(segmented_conf)
 
             st.session_state.parsed_configs = parsed_configs
+
     else:
         # Get the list of hostnames
         devices = st.session_state.hostnames

@@ -4,13 +4,13 @@ import streamlit as st
 from emma.analyzer_utils import upload_data, validate_if_df_is_compatible_with_schema
 
 
-def upload_data_tab(): # noqa: PLR0912, C901
+def upload_data_tab():  # noqa: PLR0912, C901
     with st.expander("Raw Extracted"):
         st.write(st.session_state.extracted_data)
 
     if not st.session_state.data_to_upload:
         st.session_state.data_to_upload = {
-            device: pd.DataFrame(data[st.session_state.selected_segment]).dropna(how="all")
+            device: pd.DataFrame(data[st.session_state.selected_segment]).dropna(how="all", ignore_index=True)
             for device, data in st.session_state.extracted_data.items()
         }
 
@@ -82,16 +82,34 @@ def upload_data_tab(): # noqa: PLR0912, C901
 
             # Validate the data against the schema
             validation_errors = validate_if_df_is_compatible_with_schema(
-                df=df, target_schema=st.session_state.schema[selected_schema], schema=selected_schema
+                df=df.drop(columns=["Delete"], errors="ignore"),
+                target_schema=st.session_state.schema[selected_schema],
+                schema=selected_schema,
             )
 
             # Display the device name and data editor with enums in the config
             st.header(device)
 
-            # Capture the updated DataFrame from data_editor to sync with applied default values
-            st.session_state.data_to_upload[device] = st.data_editor(
-                df, key=f"{device}-editor", column_config=column_config
+            # Assume your DataFrame (df) is already loaded/created
+            df["Delete"] = False  # New column for deletion marking
+
+            # Display the editor with the delete checkboxes
+            updated_df = st.data_editor(
+                df,
+                key=f"{device}-editor",
+                column_config=column_config,  # Keep your column config intact
             )
+
+            # Delete rows marked when button is clicked
+            if st.button(f"Delete Selected Rows for {device}"):
+                # Filter out rows marked for deletion
+                updated_df = updated_df[updated_df["Delete"] is False]
+
+                # Update session state with the filtered DataFrame
+                st.success("Selected rows deleted!")
+
+            # Update session state with the filtered DataFrame
+            st.session_state.data_to_upload[device] = updated_df
 
             # Display validation errors if any
             if validation_errors:
