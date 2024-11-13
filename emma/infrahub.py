@@ -195,7 +195,7 @@ def convert_node_to_dict(obj: InfrahubNodeSync, include_id: bool = True) -> dict
                 rel.fetch()
                 related_node = obj._client.store.get(key=rel.peer.id, raise_when_missing=False)
                 data[rel_name] = (
-                    related_node.get_human_friendly_id_as_string(include_kind=False)
+                    related_node.get_human_friendly_id_as_string(include_kind=True)
                     if related_node.hfid
                     else related_node.id
                 )
@@ -211,7 +211,7 @@ def convert_node_to_dict(obj: InfrahubNodeSync, include_id: bool = True) -> dict
                     peer.fetch()
                     related_node = peer.peer
                 peers.append(
-                    related_node.get_human_friendly_id_as_string(include_kind=False)
+                    related_node.get_human_friendly_id_as_string(include_kind=True)
                     if related_node.hfid
                     else related_node.id
                 )

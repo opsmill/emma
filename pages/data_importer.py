@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 import streamlit as st
 from infrahub_sdk.exceptions import GraphQLError
-from infrahub_sdk.schema import NodeSchema
+from infrahub_sdk.schema import NodeSchema, GenericSchema
 from infrahub_sdk.utils import compare_lists
 from pandas.errors import EmptyDataError
 from pydantic import BaseModel
@@ -28,25 +28,31 @@ class Message(BaseModel):
     message: str
 
 
-def parse_item(item: str) -> Union[str, List[str]]:
+def parse_item(item: str, is_generic: bool) -> Union[str, List[str]]:
     """Parse a single item as a UUID, HFID, or leave as-is."""
     if is_uuid(item):
         return item
-    return parse_hfid(item)
+    if is_generic:
+        # Throw up
+        tmp_hfid = parse_hfid(item)
+        kind = tmp_hfid[0]
+        obj = get_client().get(kind=kind, hfid=tmp_hfid[1:])
+        return obj.id
+    return parse_hfid(item)[1:]
 
 
-def parse_value(value: Union[str, List[str]]) -> Union[str, List[str]]:
+def parse_value(value: Union[str, List[str]], is_generic: bool) -> Union[str, List[str]]:
     """Parse a single value, either a UUID, HFID, or a list."""
     if isinstance(value, str):
-        return parse_item(value)
+        return parse_item(item=value, is_generic=is_generic)
     return value
 
 
-def parse_list_value(value: str) -> Union[str, List[Union[str, List[str]]]]:
+def parse_list_value(value: str, is_generic: bool) -> Union[str, List[Union[str, List[str]]]]:
     """Convert list-like string to a list and parse items as UUIDs or HFIDs."""
     parsed_value = literal_eval(value)
     if isinstance(parsed_value, list):
-        return [parse_item(item) for item in parsed_value]
+        return [parse_item(item=item, is_generic=is_generic) for item in parsed_value]
     return value
 
 
@@ -80,11 +86,17 @@ def preprocess_and_validate_data(
                 continue
 
             if column in target_schema.relationship_names:
+                relation_schema = target_schema.get_relationship(column)
+                peer_schema = get_client().schema.get(kind=relation_schema.peer)
+                is_generic = False
+                if isinstance(peer_schema, GenericSchema):
+                    is_generic = True
                 # Process relationships for HFID or UUID
                 if isinstance(value, str) and value.startswith("[") and value.endswith("]"):
-                    processed_row[column] = parse_list_value(value=value)
+                    processed_row[column] = parse_list_value(value=value, is_generic=is_generic)
                 else:
-                    processed_row[column] = parse_value(value=value)
+                    processed_row[column] = parse_value(value=value, is_generic=is_generic)
+
             elif column in target_schema.attribute_names:
                 # Directly use attribute values
                 processed_row[column] = value
