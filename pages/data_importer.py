@@ -35,8 +35,7 @@ def parse_item(item: str, is_generic: bool) -> Union[str, List[str]]:
     if is_generic:
         # Throw up
         tmp_hfid = parse_hfid(item)
-        kind = tmp_hfid[0]
-        obj = get_client().get(kind=kind, hfid=tmp_hfid[1:])
+        obj = get_client().get(kind=tmp_hfid[0], hfid=tmp_hfid[1:])
         return obj.id
     return parse_hfid(item)[1:]
 
