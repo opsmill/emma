@@ -7,12 +7,12 @@ import numpy as np
 import pandas as pd
 import streamlit as st
 from infrahub_sdk.exceptions import GraphQLError
-from infrahub_sdk.schema import NodeSchema, GenericSchema
+from infrahub_sdk.schema import GenericSchema, NodeSchema
 from infrahub_sdk.utils import compare_lists
 from pandas.errors import EmptyDataError
 from pydantic import BaseModel
 
-from emma.infrahub import get_client, get_schema, handle_reachability_error, is_uuid, parse_hfid
+from emma.infrahub import get_client, get_instance_branch, get_schema, handle_reachability_error, is_uuid, parse_hfid
 from emma.streamlit_utils import set_page_config
 from menu import menu_with_redirect
 
@@ -35,7 +35,7 @@ def parse_item(item: str, is_generic: bool) -> Union[str, List[str]]:
     if is_generic:
         # Throw up
         tmp_hfid = parse_hfid(item)
-        obj = get_client().get(kind=tmp_hfid[0], hfid=tmp_hfid[1:])
+        obj = get_client().get(kind=tmp_hfid[0], hfid=tmp_hfid[1:], branch=get_instance_branch())
         return obj.id
     return parse_hfid(item)[1:]
 
@@ -86,7 +86,7 @@ def preprocess_and_validate_data(
 
             if column in target_schema.relationship_names:
                 relation_schema = target_schema.get_relationship(column)
-                peer_schema = get_client().schema.get(kind=relation_schema.peer)
+                peer_schema = get_client().schema.get(kind=relation_schema.peer, branch=get_instance_branch())
                 is_generic = False
                 if isinstance(peer_schema, GenericSchema):
                     is_generic = True
