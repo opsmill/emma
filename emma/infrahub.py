@@ -201,11 +201,11 @@ def convert_node_to_dict(obj: InfrahubNodeSync, include_id: bool = True) -> dict
                 )
         elif rel and isinstance(rel, RelationshipManagerSync):
             peers: List[dict[str, Any]] = []
-            # FIXME: Seem dirty
             if not rel.initialized:
                 rel.fetch()
             for peer in rel.peers:
-                # TODO: Should we use the store to speed things up ? Will the HFID be populated ?
+                # FIXME: We are using the store to avoid doing to many queries to Infrahub
+                # but we could end up doing store+infrahub if the store is not populated
                 related_node = obj._client.store.get(key=peer.id, raise_when_missing=False)
                 if not related_node:
                     peer.fetch()
@@ -356,8 +356,8 @@ def is_feature_enabled(feature_name: str) -> bool:
 
 
 def run_gql_query(query: str, branch: str | None = None) -> dict[str, MainSchemaTypes]:
-    client = get_client(branch=branch)
-    return client.execute_graphql(query, raise_for_error=False)
+    client = get_client()
+    return client.execute_graphql(query, branch=branch, raise_for_error=False)
 
 
 def is_uuid(value: str) -> bool:

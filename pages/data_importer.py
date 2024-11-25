@@ -32,11 +32,12 @@ def parse_item(item: str, is_generic: bool) -> Union[str, List[str]]:
     """Parse a single item as a UUID, HFID, or leave as-is."""
     if is_uuid(item):
         return item
+    # FIXME: If the relationship is toward Generic we will retrieve the ID as we can't use HFID with a relationship to Generic
     if is_generic:
-        # Throw up
         tmp_hfid = parse_hfid(item)
         obj = get_client().get(kind=tmp_hfid[0], hfid=tmp_hfid[1:], branch=get_instance_branch())
         return obj.id
+    # If it's not a Generic we gonna parse the HFID
     return parse_hfid(item)[1:]
 
 
@@ -143,7 +144,7 @@ else:
 
                 if st.button("Import Data"):
                     nbr_errors = 0
-                    client = get_client(branch=st.session_state.infrahub_branch)
+                    client = get_client()
                     st.write()
                     msg.toast(body=f"Loading data for {selected_schema.namespace}{selected_schema.name}")
                     for index, row in edited_df.iterrows():
@@ -153,7 +154,7 @@ else:
                             for key, value in dict(row).items()
                             if not isinstance(value, float) or pd.notnull(value)
                         }
-                        node = client.create(kind=selected_option, **data, branch=st.session_state.infrahub_branch)
+                        node = client.create(kind=selected_option, **data, branch=get_instance_branch())
                         try:
                             node.save(allow_upsert=True)
                             edited_df.at[index, "Status"] = "ONGOING"
