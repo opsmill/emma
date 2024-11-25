@@ -15,7 +15,7 @@ streamlit = "^1.37.1"
 infrahub-sdk = {version = "^1", extras = ["all"]}
 watchdog = "^4.0.2"
 langchain = "^0.2.17"
-langchain-community = "^0.2.12"
+langchain-community = "^0.2.19"
 openai = "^1.41.0"
 langchain-openai = "^0.1.22"
 streamlit-flow-component = "^1.2.9"
