@@ -7,12 +7,12 @@ import numpy as np
 import pandas as pd
 import streamlit as st
 from infrahub_sdk.exceptions import GraphQLError
-from infrahub_sdk.schema import NodeSchema
+from infrahub_sdk.schema import GenericSchema, NodeSchema
 from infrahub_sdk.utils import compare_lists
 from pandas.errors import EmptyDataError
 from pydantic import BaseModel
 
-from emma.infrahub import get_client, get_schema, handle_reachability_error, is_uuid, parse_hfid
+from emma.infrahub import get_client, get_instance_branch, get_schema, handle_reachability_error, is_uuid, parse_hfid
 from emma.streamlit_utils import set_page_config
 from menu import menu_with_redirect
 
@@ -28,25 +28,31 @@ class Message(BaseModel):
     message: str
 
 
-def parse_item(item: str) -> Union[str, List[str]]:
+def parse_item(item: str, is_generic: bool) -> Union[str, List[str]]:
     """Parse a single item as a UUID, HFID, or leave as-is."""
     if is_uuid(item):
         return item
-    return parse_hfid(item)
+    # FIXME: If the relationship is toward Generic we will retrieve the ID as we can't use HFID with a relationship to Generic
+    if is_generic:
+        tmp_hfid = parse_hfid(item)
+        obj = get_client().get(kind=tmp_hfid[0], hfid=tmp_hfid[1:], branch=get_instance_branch())
+        return obj.id
+    # If it's not a Generic we gonna parse the HFID
+    return parse_hfid(item)[1:]
 
 
-def parse_value(value: Union[str, List[str]]) -> Union[str, List[str]]:
+def parse_value(value: Union[str, List[str]], is_generic: bool) -> Union[str, List[str]]:
     """Parse a single value, either a UUID, HFID, or a list."""
     if isinstance(value, str):
-        return parse_item(value)
+        return parse_item(item=value, is_generic=is_generic)
     return value
 
 
-def parse_list_value(value: str) -> Union[str, List[Union[str, List[str]]]]:
+def parse_list_value(value: str, is_generic: bool) -> Union[str, List[Union[str, List[str]]]]:
     """Convert list-like string to a list and parse items as UUIDs or HFIDs."""
     parsed_value = literal_eval(value)
     if isinstance(parsed_value, list):
-        return [parse_item(item) for item in parsed_value]
+        return [parse_item(item=item, is_generic=is_generic) for item in parsed_value]
     return value
 
 
@@ -80,11 +86,17 @@ def preprocess_and_validate_data(
                 continue
 
             if column in target_schema.relationship_names:
+                relation_schema = target_schema.get_relationship(column)
+                peer_schema = get_client().schema.get(kind=relation_schema.peer, branch=get_instance_branch())
+                is_generic = False
+                if isinstance(peer_schema, GenericSchema):
+                    is_generic = True
                 # Process relationships for HFID or UUID
                 if isinstance(value, str) and value.startswith("[") and value.endswith("]"):
-                    processed_row[column] = parse_list_value(value=value)
+                    processed_row[column] = parse_list_value(value=value, is_generic=is_generic)
                 else:
-                    processed_row[column] = parse_value(value=value)
+                    processed_row[column] = parse_value(value=value, is_generic=is_generic)
+
             elif column in target_schema.attribute_names:
                 # Directly use attribute values
                 processed_row[column] = value
@@ -132,7 +144,7 @@ else:
 
                 if st.button("Import Data"):
                     nbr_errors = 0
-                    client = get_client(branch=st.session_state.infrahub_branch)
+                    client = get_client()
                     st.write()
                     msg.toast(body=f"Loading data for {selected_schema.namespace}{selected_schema.name}")
                     for index, row in edited_df.iterrows():
@@ -142,7 +154,7 @@ else:
                             for key, value in dict(row).items()
                             if not isinstance(value, float) or pd.notnull(value)
                         }
-                        node = client.create(kind=selected_option, **data, branch=st.session_state.infrahub_branch)
+                        node = client.create(kind=selected_option, **data, branch=get_instance_branch())
                         try:
                             node.save(allow_upsert=True)
                             edited_df.at[index, "Status"] = "ONGOING"
