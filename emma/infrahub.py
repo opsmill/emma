@@ -93,14 +93,14 @@ def get_client(address: str | None = None, branch: str | None = None) -> Infrahu
 
 @st.cache_data
 def get_schema(branch: str | None = None) -> dict[str, MainSchemaTypes] | None:
-    client = get_client(branch=branch)
+    client = get_client()
     if check_reachability(client=client):
         return client.schema.all(branch=branch)
     return None
 
 
 def fetch_schema(branch: str | None = None) -> dict[str, MainSchemaTypes] | None:
-    client = get_client(branch=branch)
+    client = get_client()
     if check_reachability(client=client):
         return client.schema.fetch(branch=branch)
     return None
@@ -108,20 +108,20 @@ def fetch_schema(branch: str | None = None) -> dict[str, MainSchemaTypes] | None
 
 @st.cache_data
 def get_gql_schema(branch: str | None = None) -> dict[str, Any] | None:
-    client = get_client(branch=branch)
+    client = get_client()
     schema_query = get_introspection_query()
-    return client.execute_graphql(schema_query)
+    return client.client.execute_graphql(query=schema_query, branch_name=branch)
 
 
 def load_schema(branch: str, schemas: list[dict] | None = None) -> SchemaLoadResponse | None:
-    client = get_client(branch=branch)
+    client = get_client()
     if check_reachability(client=client):
         return client.schema.load(schemas, branch)
     return None
 
 
 def check_schema(branch: str, schemas: list[dict] | None = None) -> SchemaCheckResponse | None:
-    client = get_client(branch=branch)
+    client = get_client()
     if check_reachability(client=client):
         success, response = client.schema.check(schemas=schemas, branch=branch)
         schema_check = SchemaCheckResponse(success=success, response=response)
@@ -168,7 +168,7 @@ def check_reachability(client: InfrahubClientSync) -> bool:
 
 
 def get_objects_as_df(kind: str, include_id: bool = True, branch: str | None = None) -> pd.DataFrame | None:
-    client = get_client(branch=branch)
+    client = get_client()
     if not check_reachability(client=client):
         return None
 
@@ -357,7 +357,7 @@ def is_feature_enabled(feature_name: str) -> bool:
 
 def run_gql_query(query: str, branch: str | None = None) -> dict[str, MainSchemaTypes]:
     client = get_client()
-    return client.execute_graphql(query, branch=branch, raise_for_error=False)
+    return client.execute_graphql(query, branch_name=branch, raise_for_error=False)
 
 
 def is_uuid(value: str) -> bool:
