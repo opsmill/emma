@@ -1,26 +1,30 @@
-import os
 from enum import Enum
-from os import listdir
-from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 import streamlit as st
 
+from emma.github import (
+    get_readme,
+    get_schema_library_path,
+    load_schemas_from_github,
+)
 from emma.infrahub import (
     get_schema,
-    get_schema_library_path,
     load_schema,
-    load_schemas_from_disk,
 )
 from emma.streamlit_utils import set_page_config
 from menu import menu_with_redirect
 
-if TYPE_CHECKING:
-    from infrahub_sdk.yaml import SchemaFile
-
 set_page_config(title="Schema Library")
 st.markdown("# Schema Library")
 menu_with_redirect()
+
+# Load the schema paths to be used for loading schemas
+SCHEMAS = {
+    "base",
+    "experimental",
+    "extensions",
+}
 
 
 class SchemaState(str, Enum):
@@ -48,33 +52,24 @@ def init_schema_extension_state(schema_extension: str) -> None:
 
 
 # Function that checks if a readme exists in a given folder and return the content if so
-def check_and_open_readme(path: Path) -> str:
-    readme_path: Path = Path(f"{path}/README.md")
-    content: str = f"No `README.md` in '{path}'..."
+def check_and_open_readme(path: str) -> str:
+    content = get_readme(path)
 
-    # Check if the file exists
-    if readme_path.exists() and readme_path.is_file() and readme_path.suffix == ".md":
-        # Open the file in read mode
-        with open(readme_path, "r", encoding="utf8") as readme_file:
-            # Read the content of the file
-            content = readme_file.read()
-
-    # Return result
-    return content
+    return content if content else ""
 
 
-def schema_loading_container(path: Path, schema_extension: str) -> None:
+def schema_loading_container(schema_extension: str) -> None:
     with st.status(f"Loading schema extension `{schema_extension}` ...", expanded=True) as loading_container:
         # Get schema content
         st.write("Opening schema file...")
-        schema_content: list[SchemaFile] = load_schemas_from_disk(schemas=[path])
+        schema_content: list[dict[Any, Any]] = load_schemas_from_github(name=schema_extension)
         st.write("Schema file loaded!")
 
         # Place request
         st.write("Calling Infrahub API...")
         response = load_schema(
             branch=st.session_state.infrahub_branch,
-            schemas=[item.content for item in schema_content],
+            schemas=schema_content,
         )
 
         st.write("Computing results...")
@@ -104,9 +99,9 @@ def on_click_schema_load(schema_extension: str):
     st.session_state.extensions_states[schema_extension] = SchemaState.LOADING
 
 
-def render_schema_extension_content(schema_path: Path, schema_name: str) -> None:
+def render_schema_extension_content(schema_name: str) -> None:
     # Render description for the extension
-    st.write(check_and_open_readme(schema_path))
+    st.write(check_and_open_readme(schema_name))
 
     # Prepare vars for the button
     is_button_disabled: bool = False
@@ -131,38 +126,19 @@ def render_schema_extension_content(schema_path: Path, schema_name: str) -> None
 
     # Render loading container if needed
     if st.session_state.extensions_states.get(schema_name) == SchemaState.LOADING:
-        schema_loading_container(path=schema_path, schema_extension=schema_name)
+        schema_loading_container(schema_name)
 
 
-# If we don't have the path then we display warning message
-if not get_schema_library_path():
-    st.warning(
-        """
-                For the moment, to have Schema library working you need to clone the repository:
+st.write(
+    """You can find below a few schema we crafted at Opsmill. This will give you the
+    main building blocks to kickoff your automation journey. You can decide to use one, none or all of them!"""
+)
 
-                    git clone git@github.com:opsmill/schema-library.git
-
-                Then set the path toward that directory:
-
-                    export SCHEMA_LIBRARY_PATH="/path/to/schema/library"
-        """,
-        icon="⚠️",
-    )
-else:
-    st.write(
-        """You can find below a few schema we crafted at Opsmill. This will give you the
-        main building blocks to kickoff your automation journey. You can decide to use one, none or all of them!"""
-    )
-
-    # First create a box for base that is mandatory
-    with st.container(border=True):
-        # Init vars
-        schema_base_name: str = "base"
-        schema_base_path: Path = Path(f"{st.session_state.schema_library_path}/{schema_base_name}")
-        init_schema_extension_state(schema_base_name)
-
-        # Render container content
-        render_schema_extension_content(schema_base_path, schema_base_name)
+# First create a box for base that is mandatory
+with st.container(border=True):
+    # Render container content
+    schema_base_name = "base"
+    render_schema_extension_content(schema_base_name)
 
     if st.session_state.extensions_states.get("base") == SchemaState.LOADED:
         # Separate base from the extensions
@@ -170,18 +146,9 @@ else:
 
         # Then box containing all extensions
         with st.container():
-            # Init vars
-            EXTENSIONS_FOLDER: str = "extensions"
-            extensions_folder_path: Path = Path(f"{st.session_state.schema_library_path}/{EXTENSIONS_FOLDER}")
-
             # Loop over the extension directory
-            for schema_extension_name in listdir(extensions_folder_path):  # TODO: Maybe review that...
+            for schema_extension_name in get_schema_library_path("extensions"):
                 with st.container(border=True):
-                    # Init vars
-                    init_schema_extension_state(schema_extension_name)
-                    schema_extension_path: Path = Path(f"{extensions_folder_path}/{schema_extension_name}")
+                    init_schema_extension_state(schema_extension_name.name)
 
-                    # Each extension is packaged as a folder ...
-                    if os.path.isdir(schema_extension_path):
-                        # Render container content
-                        render_schema_extension_content(schema_extension_path, schema_extension_name)
+                    render_schema_extension_content(schema_extension_name.path)

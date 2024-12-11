@@ -1,6 +1,9 @@
 ---
 extends: default
 
+ignore:
+  - ".venv"
+
 rules:
   new-lines: disable
   comments-indentation: disable
