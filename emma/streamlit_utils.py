@@ -1,3 +1,5 @@
+import asyncio
+
 import streamlit as st
 from streamlit.delta_generator import DeltaGenerator
 
@@ -11,6 +13,10 @@ from emma.infrahub import (
     handle_reachability_error,
     is_current_schema_empty,
 )
+
+
+def run_async(coroutine):
+    return asyncio.run(coroutine)
 
 
 def set_page_config(title: str | None = None, wide: bool | None = True):

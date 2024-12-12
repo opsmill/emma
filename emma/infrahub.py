@@ -1,6 +1,8 @@
+import asyncio
 import os
 import uuid
 from enum import Enum
+from functools import wraps
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, List, Tuple
 
@@ -8,7 +10,7 @@ import pandas as pd
 import streamlit as st
 from graphql import get_introspection_query
 from httpx import HTTPError
-from infrahub_sdk import Config, InfrahubClientSync
+from infrahub_sdk import Config, InfrahubClient, InfrahubClientSync
 from infrahub_sdk.branch import BranchData
 from infrahub_sdk.exceptions import (
     AuthenticationError,
@@ -17,7 +19,14 @@ from infrahub_sdk.exceptions import (
     ServerNotReachableError,
     ServerNotResponsiveError,
 )
-from infrahub_sdk.node import InfrahubNodeSync, RelatedNodeSync, RelationshipManagerSync
+from infrahub_sdk.node import (
+    InfrahubNode,
+    InfrahubNodeSync,
+    RelatedNode,
+    RelatedNodeSync,
+    RelationshipManager,
+    RelationshipManagerSync,
+)
 from infrahub_sdk.schema import GenericSchema, MainSchemaTypes, NodeSchema, SchemaLoadResponse
 from infrahub_sdk.utils import find_files
 from infrahub_sdk.yaml import SchemaFile
@@ -44,6 +53,13 @@ class FileNotValidError(Exception):
     def __init__(self, name: str, message: str = ""):
         self.message = message or f"Cannot parse '{name}' content."
         super().__init__(self.message)
+
+
+def run_async(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        return asyncio.run(func(*args, **kwargs))
+    return wrapper
 
 
 def is_current_schema_empty() -> bool:
@@ -89,6 +105,14 @@ def get_instance_branch() -> str:
 @st.cache_resource
 def get_client(address: str | None = None, branch: str | None = None) -> InfrahubClientSync:  # pylint: disable=unused-argument
     return InfrahubClientSync(address=address, config=Config(timeout=60))
+
+
+@st.cache_resource
+def get_client_async(address: str | None = None, branch: str | None = None) -> InfrahubClient:
+    @run_async
+    async def _get_client():
+        return InfrahubClient(address=address, config=Config(timeout=60))
+    return _get_client()
 
 
 @st.cache_data
@@ -147,6 +171,13 @@ def get_version(client: InfrahubClientSync) -> str:
     query = "query { InfrahubInfo { version }}"
     response = client.execute_graphql(query=query, raise_for_error=True)
     return response["InfrahubInfo"]["version"]
+
+
+@run_async
+async def create_and_save(kind: str, data: dict, branch: str):
+    node = await get_client_async().create(kind=kind, **data, branch=branch)
+    await node.save(allow_upsert=True)
+    return node
 
 
 def check_reachability(client: InfrahubClientSync) -> bool:

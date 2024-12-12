@@ -1,3 +1,4 @@
+import asyncio
 import time
 from ast import literal_eval
 from enum import Enum
@@ -6,14 +7,24 @@ from typing import Any, List, Union
 import numpy as np
 import pandas as pd
 import streamlit as st
+from infrahub_sdk import InfrahubClient
 from infrahub_sdk.exceptions import GraphQLError
 from infrahub_sdk.schema import GenericSchema, NodeSchema
 from infrahub_sdk.utils import compare_lists
 from pandas.errors import EmptyDataError
 from pydantic import BaseModel
 
-from emma.infrahub import get_client, get_instance_branch, get_schema, handle_reachability_error, is_uuid, parse_hfid
-from emma.streamlit_utils import set_page_config
+from emma.infrahub import (
+    create_and_save,
+    get_client,
+    get_client_async,
+    get_instance_branch,
+    get_schema,
+    handle_reachability_error,
+    is_uuid,
+    parse_hfid,
+)
+from emma.streamlit_utils import run_async, set_page_config
 from menu import menu_with_redirect
 
 
@@ -144,7 +155,7 @@ else:
 
                 if st.button("Import Data"):
                     nbr_errors = 0
-                    client = get_client()
+                    client = get_client_async()
                     st.write()
                     msg.toast(body=f"Loading data for {selected_schema.namespace}{selected_schema.name}")
                     for index, row in edited_df.iterrows():
@@ -154,18 +165,18 @@ else:
                             for key, value in dict(row).items()
                             if not isinstance(value, float) or pd.notnull(value)
                         }
-                        node = client.create(kind=selected_option, **data, branch=get_instance_branch())
-                        try:
-                            node.save(allow_upsert=True)
-                            edited_df.at[index, "Status"] = "ONGOING"
-                            with st.expander(icon="✅", label=f"Line {index}: Item created with success"):
-                                st.write(f"Node id: {node.id}")
-                        except GraphQLError as exc:
-                            with st.expander(
-                                icon="⚠️", label=f"Line {index}: Item failed to be imported", expanded=False
-                            ):
-                                st.write(f"Error: {exc}")
-                            nbr_errors += 1
+                        node = create_and_save(kind=selected_option, data=data, branch=get_instance_branch())
+                        # try:
+                        #     run_async(node.save(allow_upsert=True))
+                        #     edited_df.at[index, "Status"] = "ONGOING"
+                        #     with st.expander(icon="✅", label=f"Line {index}: Item created with success"):
+                        #         st.write(f"Node id: {node.id}")
+                        # except GraphQLError as exc:
+                        #     with st.expander(
+                        #         icon="⚠️", label=f"Line {index}: Item failed to be imported", expanded=False
+                        #     ):
+                        #         st.write(f"Error: {exc}")
+                        #     nbr_errors += 1
 
                     time.sleep(2)
                     if nbr_errors > 0:
