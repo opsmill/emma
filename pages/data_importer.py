@@ -7,24 +7,19 @@ from typing import Any, List, Union
 import numpy as np
 import pandas as pd
 import streamlit as st
-from infrahub_sdk import InfrahubClient
-from infrahub_sdk.exceptions import GraphQLError
-from infrahub_sdk.schema import GenericSchema, NodeSchema
+from infrahub_sdk.schema import GenericSchema, MainSchemaTypes, NodeSchema
 from infrahub_sdk.utils import compare_lists
 from pandas.errors import EmptyDataError
 from pydantic import BaseModel
 
 from emma.infrahub import (
     create_and_save,
-    get_client,
+    get_cached_schema,
     get_client_async,
     get_instance_branch,
-    get_schema,
-    handle_reachability_error,
-    is_uuid,
-    parse_hfid,
 )
-from emma.streamlit_utils import run_async, set_page_config
+from emma.streamlit_utils import handle_reachability_error, set_page_config
+from emma.utils import is_uuid, parse_hfid
 from menu import menu_with_redirect
 
 
@@ -43,13 +38,15 @@ def parse_item(item: str, is_generic: bool) -> Union[str, List[str]]:
     """Parse a single item as a UUID, HFID, or leave as-is."""
     if is_uuid(item):
         return item
-    # FIXME: If the relationship is toward Generic we will retrieve the ID as we can't use HFID with a relationship to Generic
+    # FIXME: Need feature in thee SDK to avoid this
+    # If the relationship is toward Generic we will retrieve the ID as we can't use HFID with a relationship to Generic
     if is_generic:
-        tmp_hfid = parse_hfid(item)
-        obj = get_client().get(kind=tmp_hfid[0], hfid=tmp_hfid[1:], branch=get_instance_branch())
+        tmp_hfid = parse_hfid(hfid=item)
+        client = asyncio.run(get_client_async())
+        obj = asyncio.run(client.get(kind=tmp_hfid[0], hfid=tmp_hfid[1:], branch=get_instance_branch()))
         return obj.id
     # If it's not a Generic we gonna parse the HFID
-    return parse_hfid(item)[1:]
+    return parse_hfid(hfid=item)[1:]
 
 
 def parse_value(value: Union[str, List[str]], is_generic: bool) -> Union[str, List[str]]:
@@ -85,6 +82,7 @@ def validate_columns(df_columns: list, target_schema: NodeSchema) -> list[Messag
 def preprocess_and_validate_data(
     df: pd.DataFrame,
     target_schema: NodeSchema,
+    infrahub_schema: dict[str, MainSchemaTypes] | None,
 ) -> tuple[pd.DataFrame, list[Message]]:
     """Process DataFrame rows to handle HFIDs, UUIDs, and empty lists."""
     errors = validate_columns(list(df.columns), target_schema)
@@ -98,7 +96,7 @@ def preprocess_and_validate_data(
 
             if column in target_schema.relationship_names:
                 relation_schema = target_schema.get_relationship(column)
-                peer_schema = get_client().schema.get(kind=relation_schema.peer, branch=get_instance_branch())
+                peer_schema = infrahub_schema[relation_schema.peer]
                 is_generic = False
                 if isinstance(peer_schema, GenericSchema):
                     is_generic = True
@@ -122,7 +120,7 @@ set_page_config(title="Import Data")
 st.markdown("# Import Data from CSV file")
 menu_with_redirect()
 
-infrahub_schema = get_schema(branch=st.session_state.infrahub_branch)
+infrahub_schema = get_cached_schema(branch=st.session_state.infrahub_branch)
 if not infrahub_schema:
     handle_reachability_error()
 
@@ -144,7 +142,7 @@ else:
                 st.stop()
 
             msg.toast("Comparing data to schema...")
-            processed_df, _errors = preprocess_and_validate_data(df=dataframe, target_schema=selected_schema)
+            processed_df, _errors = preprocess_and_validate_data(df=dataframe, target_schema=selected_schema, infrahub_schema=infrahub_schema)
 
             if _errors:
                 msg.toast(icon="❌", body=f".csv file is not valid for {selected_option}")
@@ -155,7 +153,7 @@ else:
 
                 if st.button("Import Data"):
                     nbr_errors = 0
-                    client = get_client_async()
+                    client = asyncio.run(get_client_async())
                     st.write()
                     msg.toast(body=f"Loading data for {selected_schema.namespace}{selected_schema.name}")
                     for index, row in edited_df.iterrows():

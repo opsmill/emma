@@ -1,22 +1,37 @@
 import asyncio
+from typing import TYPE_CHECKING
 
 import streamlit as st
 from streamlit.delta_generator import DeltaGenerator
+from streamlit.runtime.scriptrunner import get_script_run_ctx
+from streamlit.source_util import get_pages
 
 from emma.infrahub import (
-    check_reachability,
+    check_reachability_async,
     create_branch,
     get_branches,
-    get_client,
+    get_client_async,
     get_instance_address,
     get_instance_branch,
-    handle_reachability_error,
     is_current_schema_empty,
 )
 
+if TYPE_CHECKING:
+    from infrahub_sdk import InfrahubClient
 
-def run_async(coroutine):
-    return asyncio.run(coroutine)
+
+def get_current_page():
+    """This is a snippet from Zachary Blackwood using his st_pages package per
+    https://discuss.streamlit.io/t/how-can-i-learn-what-page-i-am-looking-at/56980
+    for getting the page name without having the script run twice as it does using
+    """
+    pages = get_pages("")
+    ctx = get_script_run_ctx()
+    try:
+        current_page = pages[ctx.page_script_hash]
+    except KeyError:
+        current_page = [p for p in pages.values() if p["relative_page_hash"] == ctx.page_script_hash][0]
+    return current_page["page_name"]
 
 
 def set_page_config(title: str | None = None, wide: bool | None = True):
@@ -104,29 +119,35 @@ def ensure_infrahub_address_and_branch():
                 Please set the Infrahub Address.
         """)
         input_infrahub_address()
-
     # Check if infrahub_address is set and get the client
     if "infrahub_address" in st.session_state and st.session_state.infrahub_address:
         address = st.session_state.infrahub_address
-        # display_infrahub_address(st.sidebar)  # Always display the Infrahub address input
         try:
-            client = get_client(address=address)
-            is_reachable = check_reachability(client=client)
+            client: InfrahubClient = asyncio.run(get_client_async(address=address))
+            is_reachable = asyncio.run(check_reachability_async(client=client))
 
-            # If reachable, show success message and version info
             if not is_reachable:
                 handle_reachability_error()
                 input_infrahub_address()
                 st.stop()
 
         except ValueError as e:
-            # display_expander(name="Detail", content=str(e))
             st.session_state.infrahub_error_message = str(e)
             handle_reachability_error()
             input_infrahub_address()
             st.stop()
     else:
         st.stop()
+
+
+def handle_reachability_error(redirect: bool | None = True):
+    st.toast(icon="🚨", body=f"Error: {st.session_state.infrahub_error_message}")
+    st.cache_data.clear()  # TODO: Maybe something less violent ?
+    if not redirect:
+        st.stop()
+    current_page = get_current_page()
+    if current_page != "main":
+        st.switch_page("main.py")
 
 
 @st.dialog("Set or Update Infrahub Instance")

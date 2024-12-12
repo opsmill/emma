@@ -1,6 +1,5 @@
 import streamlit as st
 
-from emma.infrahub import is_feature_enabled
 from emma.streamlit_utils import (
     add_create_branch_button,
     display_branch_selector,
@@ -8,6 +7,7 @@ from emma.streamlit_utils import (
     display_logo,
     update_infrahub_instance_button,
 )
+from emma.utils import is_feature_enabled
 
 
 def menu():
@@ -33,15 +33,15 @@ def menu():
         st.page_link("pages/data_importer.py", label="📥 Data Importer")
         st.page_link("pages/schema_loader.py", label="📦 Schema Loader")
         st.page_link("pages/schema_library.py", label="📚 Schema Library")
-        st.page_link("pages/schema_visualizer.py", label="👀 Schema Visualizer")
+        # st.page_link("pages/schema_visualizer.py", label="👀 Schema Visualizer")
         # Example usage of feature flags
         if is_feature_enabled("test_page"):
             st.page_link("pages/test_page.py", label="⚠️ Test Page")
 
-        with st.expander("Builders", expanded=True, icon="👷"):
-            st.page_link("pages/schema_builder.py", label="🛠️ Schema Builder")
-            st.page_link("pages/query_builder.py", label="🔍 Query Builder")
-            st.page_link("pages/template_builder.py", label="📝 Template Builder")
+        # with st.expander("Builders", expanded=True, icon="👷"):
+        #     st.page_link("pages/schema_builder.py", label="🛠️ Schema Builder")
+        #     st.page_link("pages/query_builder.py", label="🔍 Query Builder")
+        #     st.page_link("pages/template_builder.py", label="📝 Template Builder")
 
 
 def menu_with_redirect():
