@@ -1,5 +1,4 @@
 import asyncio
-from typing import TYPE_CHECKING
 
 import streamlit as st
 from streamlit.delta_generator import DeltaGenerator
@@ -15,9 +14,6 @@ from emma.infrahub import (
     get_instance_branch,
     is_current_schema_empty,
 )
-
-if TYPE_CHECKING:
-    from infrahub_sdk import InfrahubClient
 
 
 def get_current_page():
@@ -123,7 +119,7 @@ def ensure_infrahub_address_and_branch():
     if "infrahub_address" in st.session_state and st.session_state.infrahub_address:
         address = st.session_state.infrahub_address
         try:
-            client: InfrahubClient = asyncio.run(get_client_async(address=address))
+            client = asyncio.run(get_client_async(address=address))
             is_reachable = asyncio.run(check_reachability_async(client=client))
 
             if not is_reachable:

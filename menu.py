@@ -38,10 +38,11 @@ def menu():
         if is_feature_enabled("test_page"):
             st.page_link("pages/test_page.py", label="⚠️ Test Page")
 
-        # with st.expander("Builders", expanded=True, icon="👷"):
-        #     st.page_link("pages/schema_builder.py", label="🛠️ Schema Builder")
-        #     st.page_link("pages/query_builder.py", label="🔍 Query Builder")
-        #     st.page_link("pages/template_builder.py", label="📝 Template Builder")
+        with st.expander("AI Builders", expanded=True, icon="👷"):
+            st.page_link("pages/schema_builder.py", label="🛠️ Schema Builder")
+            if is_feature_enabled("alpha_builders"):
+                st.page_link("pages/query_builder.py", label="🔍 Query Builder")
+                st.page_link("pages/template_builder.py", label="📝 Template Builder")
 
 
 def menu_with_redirect():

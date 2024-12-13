@@ -124,11 +124,7 @@ def process_and_save_with_batch(edited_df: pd.DataFrame, selected_option: str, b
 
     # Process rows and add them to the batch
     for index, row in edited_df.iterrows():
-        data = {
-            key: value
-            for key, value in dict(row).items()
-            if not isinstance(value, float) or pd.notnull(value)
-        }
+        data = {key: value for key, value in dict(row).items() if not isinstance(value, float) or pd.notnull(value)}
         try:
             create_and_add_to_batch(
                 client=client,
@@ -140,9 +136,7 @@ def process_and_save_with_batch(edited_df: pd.DataFrame, selected_option: str, b
             edited_df.at[index, "Status"] = "ONGOING"
         except Exception as exc:
             nbr_errors += 1
-            with st.expander(
-                icon="⚠️", label=f"Line {index}: Item failed to be imported", expanded=False
-            ):
+            with st.expander(icon="⚠️", label=f"Line {index}: Item failed to be imported", expanded=False):
                 st.write(f"Error: {exc}")
 
     # Execute the batch
@@ -185,7 +179,9 @@ else:
                 st.stop()
 
             msg.toast("Comparing data to schema...")
-            processed_df, _errors = preprocess_and_validate_data(df=dataframe, target_schema=selected_schema, infrahub_schema=infrahub_schema)
+            processed_df, _errors = preprocess_and_validate_data(
+                df=dataframe, target_schema=selected_schema, infrahub_schema=infrahub_schema
+            )
 
             if _errors:
                 msg.toast(icon="❌", body=f".csv file is not valid for {selected_option}")
@@ -199,7 +195,5 @@ else:
                     st.write()
                     msg.toast(body=f"Loading data for {selected_schema.namespace}{selected_schema.name}")
                     process_and_save_with_batch(
-                        edited_df=edited_df,
-                        selected_option=selected_option,
-                        branch=get_instance_branch()
+                        edited_df=edited_df, selected_option=selected_option, branch=get_instance_branch()
                     )
