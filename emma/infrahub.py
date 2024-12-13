@@ -10,6 +10,7 @@ import streamlit as st
 from graphql import get_introspection_query
 from httpx import HTTPError
 from infrahub_sdk import Config, InfrahubClient
+from infrahub_sdk.batch import InfrahubBatch
 from infrahub_sdk.branch import BranchData
 from infrahub_sdk.exceptions import (
     AuthenticationError,
@@ -284,6 +285,53 @@ async def create_and_save(kind: str, data: dict, branch: str):
     return node
 
 
+@run_async
+async def create_and_add_to_batch(  # noqa: PLR0913, PLR0917
+    client: InfrahubClient,
+    branch: str,
+    kind_name: str,
+    data: dict,
+    batch: InfrahubBatch,
+    allow_upsert: bool = True,
+) -> InfrahubNode:
+    """Creates an object and adds it to a batch for deferred saving."""
+    # client: InfrahubClient = await get_client_async()
+    try:
+        obj = await client.create(branch=branch, kind=kind_name, data=data)
+        batch.add(task=obj.save, allow_upsert=allow_upsert, node=obj)
+        return obj
+    except Exception as exc:
+        st.error(f"Failed to add to batch: [{kind_name}] '{data}'. Error: {exc}")
+        raise
+
+
+@run_async
+async def execute_batch(batch: InfrahubBatch) -> None:
+    """Executes a batch and provides feedback for each task."""
+    try:
+        async for node, _ in batch.execute():
+            object_reference = None
+            if node.hfid:
+                object_reference = node.get_human_friendly_id_as_string()
+            elif node._schema.default_filter:
+                accessors = node._schema.default_filter.split("__")
+                object_reference = ""
+
+                for i, accessor in enumerate(accessors):
+                    value = getattr(node, accessor).value
+                    object_reference += value
+                    if i < len(accessors) - 1:
+                        object_reference += "__"
+            if object_reference:
+                st.success(f"Created: [{node._schema.kind}] '{object_reference}'")
+            else:
+                st.success(f"Created: [{node._schema.kind}]")
+    except GraphQLError as exc:
+        st.error(f"Batch execution failed due to GraphQL error: {exc}")
+    except Exception as exc:
+        st.error(f"Batch execution failed due to unexpected error: {exc}")
+
+
 async def get_version_async(client: InfrahubClient) -> str:
     query = "query { InfrahubInfo { version }}"
     response = await client.execute_graphql(query=query, raise_for_error=True)
@@ -359,7 +407,7 @@ async def get_branches(address: str | None = None) -> dict[str, BranchData] | No
 async def create_branch(branch_name: str) -> BranchData | None:
     client: InfrahubClient = await get_client_async()
     if await check_reachability_async(client=client):
-        return client.branch.create(branch_name=branch_name)
+        return await client.branch.create(branch_name=branch_name)
     return None
 
 

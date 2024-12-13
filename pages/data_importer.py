@@ -1,5 +1,4 @@
 import asyncio
-import time
 from ast import literal_eval
 from enum import Enum
 from typing import Any, List, Union
@@ -13,7 +12,8 @@ from pandas.errors import EmptyDataError
 from pydantic import BaseModel
 
 from emma.infrahub import (
-    create_and_save,
+    create_and_add_to_batch,
+    execute_batch,
     get_cached_schema,
     get_client_async,
     get_instance_branch,
@@ -116,6 +116,49 @@ def preprocess_and_validate_data(
     return prepocessed_df, errors
 
 
+def process_and_save_with_batch(edited_df: pd.DataFrame, selected_option: str, branch: str):
+    nbr_errors = 0
+
+    client = asyncio.run(get_client_async())
+    batch = asyncio.run(client.create_batch())
+
+    # Process rows and add them to the batch
+    for index, row in edited_df.iterrows():
+        data = {
+            key: value
+            for key, value in dict(row).items()
+            if not isinstance(value, float) or pd.notnull(value)
+        }
+        try:
+            create_and_add_to_batch(
+                client=client,
+                branch=branch,
+                kind_name=selected_option,
+                data=data,
+                batch=batch,
+            )
+            edited_df.at[index, "Status"] = "ONGOING"
+        except Exception as exc:
+            nbr_errors += 1
+            with st.expander(
+                icon="⚠️", label=f"Line {index}: Item failed to be imported", expanded=False
+            ):
+                st.write(f"Error: {exc}")
+
+    # Execute the batch
+    if batch.num_tasks > 0:
+        try:
+            execute_batch(batch=batch)
+        except Exception:
+            nbr_errors += 1
+
+    # Display final toast message
+    if nbr_errors > 0:
+        msg.toast(icon="❌", body=f"Loading completed with {nbr_errors} errors")
+    else:
+        msg.toast(icon="✅", body="Loading completed with success")
+
+
 set_page_config(title="Import Data")
 st.markdown("# Import Data from CSV file")
 menu_with_redirect()
@@ -153,31 +196,10 @@ else:
 
                 if st.button("Import Data"):
                     nbr_errors = 0
-                    client = asyncio.run(get_client_async())
                     st.write()
                     msg.toast(body=f"Loading data for {selected_schema.namespace}{selected_schema.name}")
-                    for index, row in edited_df.iterrows():
-                        # Convert row to a dictionary and remove NaN values
-                        data = {
-                            key: value
-                            for key, value in dict(row).items()
-                            if not isinstance(value, float) or pd.notnull(value)
-                        }
-                        node = create_and_save(kind=selected_option, data=data, branch=get_instance_branch())
-                        # try:
-                        #     run_async(node.save(allow_upsert=True))
-                        #     edited_df.at[index, "Status"] = "ONGOING"
-                        #     with st.expander(icon="✅", label=f"Line {index}: Item created with success"):
-                        #         st.write(f"Node id: {node.id}")
-                        # except GraphQLError as exc:
-                        #     with st.expander(
-                        #         icon="⚠️", label=f"Line {index}: Item failed to be imported", expanded=False
-                        #     ):
-                        #         st.write(f"Error: {exc}")
-                        #     nbr_errors += 1
-
-                    time.sleep(2)
-                    if nbr_errors > 0:
-                        msg.toast(icon="❌", body=f"Loading completed with {nbr_errors} errors")
-                    else:
-                        msg.toast(icon="✅", body="Loading completed with success")
+                    process_and_save_with_batch(
+                        edited_df=edited_df,
+                        selected_option=selected_option,
+                        branch=get_instance_branch()
+                    )
