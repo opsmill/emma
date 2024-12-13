@@ -2,7 +2,8 @@ import base64
 
 import streamlit as st
 import yaml
-from github import Github, UnknownObjectException
+from github import Github
+from github.ContentFile import ContentFile
 
 
 @st.cache_resource
@@ -17,22 +18,17 @@ def get_schema_library():
     return repo
 
 
-# TODO: Look into potentially passing in the latest commit hash so it will refresh if the repo is at a different hash
 @st.cache_data
 def get_schema_library_path(path=""):
     schema_library = get_schema_library()
     return schema_library.get_contents(path)
 
 
-@st.cache_data
-def get_readme(path: str):
-    schema_library = get_schema_library()
-    try:
-        readme = schema_library.get_contents(f"{path}/README.md")
-    except UnknownObjectException:
+def get_readme(schema_dir: list[ContentFile]):
+    readme = [file for file in schema_dir if file.name.lower() == "readme.md"]
+    if not readme:
         return None
-
-    return base64.b64decode(readme.content).decode("utf-8")
+    return base64.b64decode(readme[0].content).decode("utf-8")
 
 
 def read_github_yaml(yaml_file) -> dict:
@@ -40,11 +36,9 @@ def read_github_yaml(yaml_file) -> dict:
     return yaml.safe_load(raw_content)
 
 
-@st.cache_data
-def load_schemas_from_github(name: str):
-    schemas = get_schema_library_path(name)
+def load_schemas_from_github(schema_files: list[ContentFile]):
     schemas_data: list[dict] = []
-    for schema in schemas:
+    for schema in schema_files:
         if schema.type == "file" and schema.name.endswith((".yaml", ".yml")):
             schemas_data.append(read_github_yaml(schema))
         # elif schema.type == "dir":

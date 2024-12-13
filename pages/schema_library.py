@@ -2,6 +2,7 @@ from enum import Enum
 from typing import Any
 
 import streamlit as st
+from github.ContentFile import ContentFile
 
 from emma.github import (
     get_readme,
@@ -18,13 +19,6 @@ from menu import menu_with_redirect
 set_page_config(title="Schema Library")
 st.markdown("# Schema Library")
 menu_with_redirect()
-
-# Load the schema paths to be used for loading schemas
-SCHEMAS = {
-    "base",
-    "experimental",
-    "extensions",
-}
 
 
 class SchemaState(str, Enum):
@@ -43,7 +37,7 @@ def init_schema_extension_state(schema_extension: str) -> None:
         # FIXME: This is beyond hacking, but I need to define whether base extension is in place or not
         if schema_extension == "base":
             schema: dict[str, Any] | None = get_schema()
-            if schema is not None and "DcimDevice" in schema.items():
+            if schema is not None and "DcimDevice" in schema:
                 st.session_state.extensions_states["base"] = SchemaState.LOADED
         else:
             # TODO: Here we need to evaluate if it's already existing in Infrahub ... somehow
@@ -52,17 +46,17 @@ def init_schema_extension_state(schema_extension: str) -> None:
 
 
 # Function that checks if a readme exists in a given folder and return the content if so
-def check_and_open_readme(path: str) -> str:
-    content = get_readme(path)
+def check_and_open_readme(schema_dir: list[ContentFile]) -> str:
+    content = get_readme(schema_dir)
 
     return content if content else ""
 
 
-def schema_loading_container(schema_extension: str) -> None:
+def schema_loading_container(schema_extension: str, schema_dir: list[ContentFile]) -> None:
     with st.status(f"Loading schema extension `{schema_extension}` ...", expanded=True) as loading_container:
         # Get schema content
         st.write("Opening schema file...")
-        schema_content: list[dict[Any, Any]] = load_schemas_from_github(name=schema_extension)
+        schema_content: list[dict[Any, Any]] = load_schemas_from_github(schema_dir)
         st.write("Schema file loaded!")
 
         # Place request
@@ -100,8 +94,11 @@ def on_click_schema_load(schema_extension: str):
 
 
 def render_schema_extension_content(schema_name: str) -> None:
+    # Load the files in the directory
+    schema_dir_files = get_schema_library_path(schema_name)
+
     # Render description for the extension
-    st.write(check_and_open_readme(schema_name))
+    st.write(check_and_open_readme(schema_dir_files))
 
     # Prepare vars for the button
     is_button_disabled: bool = False
@@ -126,7 +123,7 @@ def render_schema_extension_content(schema_name: str) -> None:
 
     # Render loading container if needed
     if st.session_state.extensions_states.get(schema_name) == SchemaState.LOADING:
-        schema_loading_container(schema_name)
+        schema_loading_container(schema_name, schema_dir_files)
 
 
 st.write(
@@ -137,18 +134,19 @@ st.write(
 # First create a box for base that is mandatory
 with st.container(border=True):
     # Render container content
-    schema_base_name = "base"
-    render_schema_extension_content(schema_base_name)
+    init_schema_extension_state("base")
+    render_schema_extension_content("base")
 
-    if st.session_state.extensions_states.get("base") == SchemaState.LOADED:
-        # Separate base from the extensions
-        st.divider()
+if st.session_state.extensions_states.get("base") == SchemaState.LOADED:
+    # Separate base from the extensions
+    st.divider()
 
-        # Then box containing all extensions
-        with st.container():
-            # Loop over the extension directory
-            for schema_extension_name in get_schema_library_path("extensions"):
-                with st.container(border=True):
-                    init_schema_extension_state(schema_extension_name.name)
+    # Then box containing all extensions
+    with st.container():
+        # Loop over the extension directory
+        for schema_extension in get_schema_library_path("extensions"):
+            with st.container(border=True):
+                # Passing in the path (`extensions/<...>`) to the session state for namespacing
+                init_schema_extension_state(schema_extension.path)
 
-                    render_schema_extension_content(schema_extension_name.path)
+                render_schema_extension_content(schema_extension.path)
