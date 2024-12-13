@@ -34,6 +34,15 @@ def lint_mypy(context: Context):
 
 
 @task
+def lint_pylint(context: Context):
+    """Run pylint against Emma pages."""
+    print(" - Check code with pylint")
+    exec_cmd = "pylint emma pages *.py"
+    with context.cd(MAIN_DIRECTORY_PATH):
+        context.run(exec_cmd)
+
+
+@task
 def lint_ruff(context: Context):
     """Run Linter to check all Python files."""
     print(" - Check code with ruff")
@@ -48,3 +57,4 @@ def lint_all(context: Context):
     lint_yaml(context)
     lint_ruff(context)
     lint_mypy(context)
+    lint_pylint(context)

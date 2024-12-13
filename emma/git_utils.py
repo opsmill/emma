@@ -16,8 +16,8 @@ def get_repo():
 
     if st.session_state.repo["exists"]:
         return Repo(st.session_state.repo["local_path"])
-    else:
-        repo = Repo.clone_from(SCHEMA_LIBRARY_REPO, st.session_state.repo["local_path"], depth=1)
-        st.session_state.repo["exists"] = True
-        st.session_state.repo["last_pull"] = datetime.now(pytz.UTC)
-        return repo
+
+    repo = Repo.clone_from(SCHEMA_LIBRARY_REPO, st.session_state.repo["local_path"], depth=1)
+    st.session_state.repo["exists"] = True
+    st.session_state.repo["last_pull"] = datetime.now(pytz.UTC)
+    return repo
