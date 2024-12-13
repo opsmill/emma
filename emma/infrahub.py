@@ -68,12 +68,6 @@ def is_current_schema_empty() -> bool:
     return result
 
 
-def get_schema_library_path() -> str | None:
-    if "schema_library_path" not in st.session_state or not st.session_state.schema_library_path:
-        st.session_state.schema_library_path = os.environ.get("SCHEMA_LIBRARY_PATH")
-    return st.session_state.schema_library_path
-
-
 def get_instance_address() -> str | None:
     if "infrahub_address" not in st.session_state or not st.session_state.infrahub_address:
         st.session_state.infrahub_address = os.environ.get("INFRAHUB_ADDRESS")
