@@ -82,7 +82,7 @@ def validate_columns(df_columns: list, target_schema: NodeSchema) -> list[Messag
 def preprocess_and_validate_data(
     df: pd.DataFrame,
     target_schema: NodeSchema,
-    infrahub_schema: dict[str, MainSchemaTypes] | None,
+    infrahub_schema: dict[str, MainSchemaTypes],
 ) -> tuple[pd.DataFrame, list[Message]]:
     """Process DataFrame rows to handle HFIDs, UUIDs, and empty lists."""
     errors = validate_columns(list(df.columns), target_schema)

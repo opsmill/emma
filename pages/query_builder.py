@@ -12,9 +12,9 @@ from langchain_core.agents import AgentFinish
 from openai import OpenAI
 
 from emma.assistant_utils import generate_yaml
-from emma.gql_queries import generate_full_query
-from emma.infrahub import get_gql_schema, handle_reachability_error, run_gql_query
-from emma.streamlit_utils import set_page_config
+from emma.gql_queries import generate_full_query, get_gql_schema
+from emma.infrahub import run_gql_query
+from emma.streamlit_utils import handle_reachability_error, set_page_config
 from menu import menu_with_redirect
 
 api_key = "EmmaDefaultAuthMakingInfrahubEasierToUse!!!11"
