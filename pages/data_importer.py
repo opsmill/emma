@@ -194,8 +194,5 @@ else:
                 if st.button("Import Data"):
                     msg.toast(body=f"Loading data for {selected_schema.namespace}{selected_schema.name}")
                     process_and_save_with_batch(
-                        data_frame=edited_df,
-                        kind=selected_option,
-                        branch=get_instance_branch(),
-                        st_msg=msg
+                        data_frame=edited_df, kind=selected_option, branch=get_instance_branch(), st_msg=msg
                     )
