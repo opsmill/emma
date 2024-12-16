@@ -25,10 +25,10 @@ jinja2 = "^3.1.4"
 
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.8.0"
-mypy = "^1.13.0"
 yamllint = "^1.35.1"
 towncrier = "^24.7.1"
-pylint = "^3.2.6"
+pylint = "*"
+mypy = "*"
 types-pyyaml = "^6.0.12.20240808"
 invoke = "^2.2.0"
 
@@ -56,21 +56,90 @@ line-length = 120
 [tool.ruff.lint]
 preview = true
 
+task-tags = ["FIXME", "TODO", "XXX"]
+
 select = [
-    "C90",   # mccabe
+    "ANN",   # flake8-annotations
     "ASYNC", # flake8-async
+    "B",     # flake8-bugbear
+    "C4",    # flake8-comprehensions
+    "C90",   # mccabe complexity
+    "DJ",    # flake8-django
     "DTZ",   # flake8-datetimez
-    "E",     # style errors
-    "F",     # flakes
-    "I",     # isort
+    "E",     # pycodestyle errors
+    "EXE",   # flake8-executable
+    "F",     # pyflakes
+    "FURB",  # refurb
+    "I",     # isort-like checks
     "ICN",   # flake8-import-conventions
+    "INP",   # flake8-no-pep420
+    "N",     # pep8-naming
+    "PERF",  # Perflint
+    "PIE",   # flake8-pie
+    "PL",    # pylint
+    "PTH",   # flake8-use-pathlib
+    "PYI",   # flake8-pyi
+    "Q",     # flake8-quotes
+    "RET",   # flake8-return
+    "RUF",   # Ruff specific rules
+    "S",     # flake8-bandit
+    "SIM",   # flake8-simplify
     "TCH",   # flake8-type-checking
     "T10",   # flake8-debugger
-    "PL",    # pylint
-    "Q",     # flake8-quotes
-    "W",     # pycodestyle
+    "UP",    # pyupgrade
+    "W",     # pycodestyle warnings
     "YTT",   # flake8-2020
 ]
+
+ignore = [
+    ##################################################################################################
+    # The ignored rules below should be removed once the code has been updated, they are included    #
+    # like this so that we can reactivate them one by one. Alternatively ignored after further       #
+    # investigation if they are deemed to not make sense.                                            #
+    ##################################################################################################
+    "B008",    #  Do not perform function call `typer.Option` in argument defaults; instead, perform the call within the function, or read the default from a module-level singleton variable
+    "B904",    # Within an `except` clause, raise exceptions with `raise ... from err` or `raise ... from None` to distinguish them from errors in exception handling
+    "C408",    # Unnecessary `dict` call (rewrite as a literal)
+    "FURB110", # Replace ternary `if` expression with `or` operator
+    "FURB113", # Use `lines.extend((" " * self.indentation + "}", "}"))` instead of repeatedly calling `lines.append()`
+    "FURB177", # Prefer `Path.cwd()` over `Path().resolve()` for current-directory lookups
+    "N802",    # Function name should be lowercase
+    "N806",    # Variable in function should be lowercase
+    "PERF203", # `try`-`except` within a loop incurs performance overhead
+    "PERF401", # Use a list comprehension to create a transformed list
+    "PLC0206", # Extracting value from dictionary without calling `.items()`
+    "PLR0912", # Too many branches
+    "PLR0913", # Too many arguments in function definition
+    "PLR0917", # Too many positional arguments
+    "PLR2004", # Magic value used in comparison
+    "PLR6201", # Use a `set` literal when testing for membership
+    "PLR6301", # Method could be a function, class method, or static method
+    "PLW0603", # Using the global statement to update `SETTINGS` is discouraged
+    "PLW1641", # Object does not implement `__hash__` method
+    "PTH100",  # `os.path.abspath()` should be replaced by `Path.resolve()`
+    "PTH109",  # `os.getcwd()` should be replaced by `Path.cwd()`
+    "RET504",  # Unnecessary assignment to `data` before `return` statement
+    "RUF005",  # Consider `[*path, str(key)]` instead of concatenation
+    "RUF015",  # Prefer `next(iter(input_data["variables"].keys()))` over single element slice
+    "RUF029",  # Function is declared `async`, but doesn't `await` or use `async` features.
+    "S108",    # Probable insecure usage of temporary file or directory
+    "S311",    # Standard pseudo-random generators are not suitable for cryptographic purposes
+    "S701",    # By default, jinja2 sets `autoescape` to `False`. Consider using `autoescape=True`
+    "SIM102",  # Use a single `if` statement instead of nested `if` statements
+    "SIM105",  # Use `contextlib.suppress(KeyError)` instead of `try`-`except`-`pass`
+    "SIM108",  # Use ternary operator `key_str = f"{value[ALIAS_KEY]}: {key}" if ALIAS_KEY in value and value[ALIAS_KEY] else key` instead of `if`-`else`-block
+    "SIM110",  # Use `return any(getattr(item, resource_field) == resource_id for item in getattr(self, RESOURCE_MAP[resource_type]))` instead of `for` loop
+    "SIM114",  # Combine `if` branches using logical `or` operator
+    "SIM117",  # Use a single `with` statement with multiple contexts instead of nested `with` statements
+    "SIM118",  # Use `key in dict` instead of `key in dict.keys)
+    "SIM910",  # Use `data.get(key)` instead of `data.get(key, None)`
+    "TCH003",  # Move standard library import `collections.abc.Iterable` into a type-checking block
+    "UP006",   # Use `dict` instead of `Dict` for type annotation
+    "UP007",   # Use X | Y for type annotations
+    "UP031",   # Use format specifiers instead of percent format
+    "UP035",   # `typing.Dict` is deprecated, use `dict` instead
+]
+
 
 #https://docs.astral.sh/ruff/formatter/black/
 [tool.ruff.format]
@@ -91,23 +160,20 @@ max-complexity = 15
 [tool.ruff.lint.per-file-ignores]
 
 [tool.pylint.general]
-extension-pkg-whitelist = [
-    "pydantic",
-    "ujson",
-]
+extension-pkg-whitelist = ["pydantic", "ujson"]
 
 [tool.pylint.format]
 disable = "logging-fstring-interpolation"
 
 [tool.pylint.basic]
 # No docstrings required for private methods (Pylint default), or for test_ functions.
-no-docstring-rgx="^(_|test_)"
+no-docstring-rgx = "^(_|test_)"
 
 [tool.pylint.messages_control]
 # Line length is enforced by Black, so pylint doesn't need to check it.
 # Pylint and Black disagree about how to format multi-line arrays; Black wins.
-# assigning-non-slot,no-member,unsupported-membership-test,unsubscriptable-object,unsupported-assignment-operation,not-an-iterable
-# are disabled because of our move to pydantic 2, pylint does not seem to respect the type hint for pydantic 2 model fields.
+# Rules already covered by RUFF
+# - too-many-statements
 disable = """,
     line-too-long,
     missing-module-docstring,
@@ -120,20 +186,15 @@ disable = """,
     keyword-arg-before-vararg,
     too-few-public-methods,
     too-many-instance-attributes,
+    too-many-positional-arguments,
+    too-many-statements,
     fixme,
     consider-using-f-string,
     protected-access,
     import-self,
     wrong-import-order,
-    assigning-non-slot,
-    no-member,
-    unsupported-membership-test,
-    unsubscriptable-object,
-    unsupported-assignment-operation,
-    not-an-iterable,
-    too-many-return-statements,
-    unnecessary-comprehension,
     multiple-statements,
+    unnecessary-comprehension
     """
 
 [tool.pylint.miscellaneous]
@@ -144,7 +205,6 @@ notes = """,
 
 [tool.pylint.similarities]
 min-similarity-lines = 20
-
 
 [tool.towncrier]
 package = "emma"
