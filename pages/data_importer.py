@@ -81,11 +81,11 @@ def validate_columns(df_columns: list, target_schema: NodeSchema) -> list[Messag
 
 def preprocess_and_validate_data(
     df: pd.DataFrame,
-    target_schema: NodeSchema,
-    infrahub_schema: dict[str, MainSchemaTypes],
+    schema: NodeSchema,
+    branch_schemas: dict[str, MainSchemaTypes],
 ) -> tuple[pd.DataFrame, list[Message]]:
     """Process DataFrame rows to handle HFIDs, UUIDs, and empty lists."""
-    errors = validate_columns(list(df.columns), target_schema)
+    errors = validate_columns(list(df.columns), schema)
     processed_rows = []
 
     for _, items_row in df.iterrows():
@@ -94,9 +94,9 @@ def preprocess_and_validate_data(
             if pd.isnull(value):
                 continue
 
-            if column in target_schema.relationship_names:
-                relation_schema = target_schema.get_relationship(column)
-                peer_schema = infrahub_schema[relation_schema.peer]
+            if column in schema.relationship_names:
+                relation_schema = schema.get_relationship(column)
+                peer_schema = branch_schemas[relation_schema.peer]
                 is_generic = False
                 if isinstance(peer_schema, GenericSchema):
                     is_generic = True
@@ -106,7 +106,7 @@ def preprocess_and_validate_data(
                 else:
                     processed_row[column] = parse_value(value=value, is_generic=is_generic)
 
-            elif column in target_schema.attribute_names:
+            elif column in schema.attribute_names:
                 # Directly use attribute values
                 processed_row[column] = value
 
@@ -116,25 +116,25 @@ def preprocess_and_validate_data(
     return prepocessed_df, errors
 
 
-def process_and_save_with_batch(edited_df: pd.DataFrame, selected_option: str, branch: str):
+def process_and_save_with_batch(data_frame: pd.DataFrame, kind: str, branch: str):
     nbr_errors = 0
 
     client = asyncio.run(get_client_async())
     batch = asyncio.run(client.create_batch())
 
     # Process rows and add them to the batch
-    for index, row in edited_df.iterrows():
+    for index, row in data_frame.iterrows():
         data = {key: value for key, value in dict(row).items() if not isinstance(value, float) or pd.notnull(value)}
         try:
             create_and_add_to_batch(
                 client=client,
                 branch=branch,
-                kind_name=selected_option,
+                kind_name=kind,
                 data=data,
                 batch=batch,
             )
-            edited_df.at[index, "Status"] = "ONGOING"
-        except Exception as exc:
+            data_frame.at[index, "Status"] = "ONGOING"
+        except Exception as exc:  # pylint: disable=broad-exception-caught
             nbr_errors += 1
             with st.expander(icon="⚠️", label=f"Line {index}: Item failed to be imported", expanded=False):
                 st.write(f"Error: {exc}")
@@ -143,7 +143,7 @@ def process_and_save_with_batch(edited_df: pd.DataFrame, selected_option: str, b
     if batch.num_tasks > 0:
         try:
             execute_batch(batch=batch)
-        except Exception:
+        except Exception:  # pylint: disable=broad-exception-caught
             nbr_errors += 1
 
     # Display final toast message
@@ -180,7 +180,7 @@ else:
 
             msg.toast("Comparing data to schema...")
             processed_df, _errors = preprocess_and_validate_data(
-                df=dataframe, target_schema=selected_schema, infrahub_schema=infrahub_schema
+                df=dataframe, schema=selected_schema, branch_schemas=infrahub_schema
             )
 
             if _errors:
@@ -191,9 +191,7 @@ else:
                 edited_df = st.data_editor(processed_df, hide_index=True)
 
                 if st.button("Import Data"):
-                    nbr_errors = 0
-                    st.write()
                     msg.toast(body=f"Loading data for {selected_schema.namespace}{selected_schema.name}")
                     process_and_save_with_batch(
-                        edited_df=edited_df, selected_option=selected_option, branch=get_instance_branch()
+                        data_frame=edited_df, kind=selected_option, branch=get_instance_branch()
                     )

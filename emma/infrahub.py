@@ -58,13 +58,13 @@ def run_async(func):
         except RuntimeError:
             # No event loop, run the async function with asyncio.run
             return asyncio.run(func(*args, **kwargs))
-        else:
-            # If an event loop is running, run the coroutine and await its result
-            if loop.is_running():
-                coroutine = func(*args, **kwargs)
-                return asyncio.run_coroutine_threadsafe(coroutine, loop).result()
-            else:
-                return loop.run_until_complete(func(*args, **kwargs))
+
+        # If an event loop is running, run the coroutine and await its result
+        if loop.is_running():
+            coroutine = func(*args, **kwargs)
+            return asyncio.run_coroutine_threadsafe(coroutine, loop).result()
+
+        return loop.run_until_complete(func(*args, **kwargs))
 
     return wrapper
 
@@ -255,8 +255,7 @@ def dict_to_df(data: dict[str, Any]) -> Tuple[pd.DataFrame, pd.DataFrame, pd.Dat
 async def get_client_async(address: str | None = None, branch: str | None = None) -> InfrahubClient:
     if branch:
         return InfrahubClient(address=address, config=Config(timeout=60, default_branch=branch))
-    else:
-        return InfrahubClient(address=address, config=Config(timeout=60))
+    return InfrahubClient(address=address, config=Config(timeout=60))
 
 
 @st.cache_data
@@ -280,8 +279,13 @@ async def create_and_save(kind: str, data: dict, branch: str):
             node = await client.create(kind=kind, branch=branch, **data)
             await node.save(allow_upsert=True)
             st.success(f"{node.id} created with success (with {data})")
-        except Exception as exc:
-            st.error(f"Error creating or saving node: {exc}")
+        except ValueError as exc:
+            st.error(f"Failed to create: [{kind}] '{data}'. Error: {exc}")
+            raise
+        except GraphQLError as exc:
+            st.error(f"Failed to create: [{kind}] '{data}'. Error: {exc}")
+            raise
+
     return node
 
 
@@ -300,8 +304,8 @@ async def create_and_add_to_batch(  # noqa: PLR0913, PLR0917
         obj = await client.create(branch=branch, kind=kind_name, data=data)
         batch.add(task=obj.save, allow_upsert=allow_upsert, node=obj)
         return obj
-    except Exception as exc:
-        st.error(f"Failed to add to batch: [{kind_name}] '{data}'. Error: {exc}")
+    except ValueError as exc:
+        st.error(f"Failed to create: [{kind_name}] '{data}'. Error: {exc}")
         raise
 
 
@@ -328,7 +332,7 @@ async def execute_batch(batch: InfrahubBatch) -> None:
                 st.success(f"Created: [{node._schema.kind}]")
     except GraphQLError as exc:
         st.error(f"Batch execution failed due to GraphQL error: {exc}")
-    except Exception as exc:
+    except Exception as exc:  # pylint: disable=broad-exception-caught
         st.error(f"Batch execution failed due to unexpected error: {exc}")
 
 
@@ -391,7 +395,7 @@ async def check_schema(branch: str, schemas: list[dict] | None = None) -> Schema
 
 @run_async
 async def get_branches(address: str | None = None) -> dict[str, BranchData] | None:
-    client: InfrahubClient = await get_client_async()
+    client: InfrahubClient = await get_client_async(address=address)
     if await check_reachability_async(client=client):
         return await client.branch.all()
     return None
