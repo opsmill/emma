@@ -174,8 +174,8 @@ else:
                 dataframe = pd.read_csv(filepath_or_buffer=uploaded_file)
                 # Replace any "[]" string with NaN
                 dataframe.replace(["[]", "", '""'], np.nan, inplace=True)
-            except EmptyDataError as exc:
-                msg.toast(icon="❌", body=f"{str(exc)}")
+            except EmptyDataError as exc_error:
+                msg.toast(icon="❌", body=f"{str(exc_error)}")
                 st.stop()
 
             msg.toast("Comparing data to schema...")
