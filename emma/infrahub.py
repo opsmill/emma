@@ -85,7 +85,6 @@ def get_client(address: str | None = None, branch: str | None = None) -> Infrahu
     return InfrahubClientSync(address=address, config=Config(timeout=60))
 
 
-@st.cache_data
 def get_schema(branch: str | None = None) -> dict[str, MainSchemaTypes] | None:
     client = get_client()
     if check_reachability(client=client):

@@ -58,12 +58,12 @@ if not st.session_state.repo["local_path"]:
 def init_schema_extension_state(schema_extension: str) -> None:
     # Check if the extension is already in the session state
     if schema_extension not in st.session_state.extensions_states:
-        existing_schemas = get_schema()
-        schema_kinds = st.session_state.schema_kinds.get(schema_extension, set())
-        if schema_kinds and schema_kinds.issubset(existing_schemas):
-            st.session_state.extensions_states[schema_extension] = SchemaState.LOADED
-        else:
-            st.session_state.extensions_states[schema_extension] = SchemaState.NOT_LOADED
+        st.session_state.extensions_states[schema_extension] = SchemaState.NOT_LOADED
+
+    schema_kinds = st.session_state.schema_kinds.get(schema_extension)
+    existing_schemas = get_schema()
+    if schema_kinds.issubset(existing_schemas):
+        st.session_state.extensions_states[schema_extension] = SchemaState.LOADED
 
 
 # Function that checks if a readme exists in a given folder and return the content if so
@@ -130,7 +130,7 @@ def render_schema_extension_content(schema_path: Path, schema_name: str, schema_
     button_label: str = "🚀 Load to Infrahub"
     if st.session_state.extensions_states.get(schema_name) == SchemaState.LOADING:
         is_button_disabled = True
-        button_label = "🚀 Load to Infrahub"
+        button_label = "🚀 Loading schema into Infrahub"
     elif st.session_state.extensions_states.get(schema_name) == SchemaState.LOADED:
         is_button_disabled = True
         button_label = "✅ Already in Infrahub"
@@ -161,6 +161,7 @@ def register_schema_kinds(schema_extension: str, schemas: list[Any]) -> None:
     for schema in schemas:
         if schema_extension not in st.session_state.schema_kinds:
             st.session_state.schema_kinds[schema_extension] = set()
+
         schema_types = chain(schema.content.get("nodes", []), schema.content.get("generics", []))
         for node in schema_types:
             schema_kind = f"{node['namespace']}{node['name']}"
