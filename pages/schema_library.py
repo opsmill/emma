@@ -55,7 +55,7 @@ def check_and_open_readme(path: Path) -> str:
     # Check if the file exists
     if readme_path.exists() and readme_path.is_file() and readme_path.suffix == ".md":
         # Open the file in read mode
-        with open(readme_path, "r", encoding="utf8") as readme_file:
+        with open(readme_path, encoding="utf8") as readme_file:
             # Read the content of the file
             content = readme_file.read()
 

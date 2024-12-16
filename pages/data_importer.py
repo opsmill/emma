@@ -176,7 +176,7 @@ else:
                 # Replace any "[]" string with NaN
                 dataframe.replace(["[]", "", '""'], np.nan, inplace=True)
             except EmptyDataError as exc_error:
-                msg.toast(icon="❌", body=f"{str(exc_error)}")
+                msg.toast(icon="❌", body=f"{exc_error!s}")
                 st.stop()
 
             msg.toast("Comparing data to schema...")
