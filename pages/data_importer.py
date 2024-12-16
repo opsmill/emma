@@ -10,6 +10,7 @@ from infrahub_sdk.schema import GenericSchema, MainSchemaTypes, NodeSchema
 from infrahub_sdk.utils import compare_lists
 from pandas.errors import EmptyDataError
 from pydantic import BaseModel
+from streamlit.delta_generator import DeltaGenerator
 
 from emma.infrahub import (
     create_and_add_to_batch,
@@ -116,7 +117,7 @@ def preprocess_and_validate_data(
     return prepocessed_df, errors
 
 
-def process_and_save_with_batch(data_frame: pd.DataFrame, kind: str, branch: str):
+def process_and_save_with_batch(data_frame: pd.DataFrame, kind: str, branch: str, st_msg: DeltaGenerator):
     nbr_errors = 0
 
     client = asyncio.run(get_client_async())
@@ -148,9 +149,9 @@ def process_and_save_with_batch(data_frame: pd.DataFrame, kind: str, branch: str
 
     # Display final toast message
     if nbr_errors > 0:
-        msg.toast(icon="❌", body=f"Loading completed with {nbr_errors} errors")
+        st_msg.toast(icon="❌", body=f"Loading completed with {nbr_errors} errors")
     else:
-        msg.toast(icon="✅", body="Loading completed with success")
+        st_msg.toast(icon="✅", body="Loading completed with success")
 
 
 set_page_config(title="Import Data")
@@ -193,5 +194,8 @@ else:
                 if st.button("Import Data"):
                     msg.toast(body=f"Loading data for {selected_schema.namespace}{selected_schema.name}")
                     process_and_save_with_batch(
-                        data_frame=edited_df, kind=selected_option, branch=get_instance_branch()
+                        data_frame=edited_df,
+                        kind=selected_option,
+                        branch=get_instance_branch(),
+                        st_msg=msg
                     )

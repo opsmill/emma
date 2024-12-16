@@ -290,7 +290,7 @@ async def create_and_save(kind: str, data: dict, branch: str):
 
 
 @run_async
-async def create_and_add_to_batch(  # noqa: PLR0913, PLR0917
+async def create_and_add_to_batch(  # noqa: PLR0913, PLR0917  # pylint: disable=too-many-arguments
     client: InfrahubClient,
     branch: str,
     kind_name: str,
