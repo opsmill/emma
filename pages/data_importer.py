@@ -1,4 +1,4 @@
-import time
+import asyncio
 from ast import literal_eval
 from enum import Enum
 from typing import Any, List, Union
@@ -6,14 +6,21 @@ from typing import Any, List, Union
 import numpy as np
 import pandas as pd
 import streamlit as st
-from infrahub_sdk.exceptions import GraphQLError
-from infrahub_sdk.schema import GenericSchema, NodeSchema
+from infrahub_sdk.schema import GenericSchema, MainSchemaTypes, NodeSchema
 from infrahub_sdk.utils import compare_lists
 from pandas.errors import EmptyDataError
 from pydantic import BaseModel
+from streamlit.delta_generator import DeltaGenerator
 
-from emma.infrahub import get_client, get_instance_branch, get_schema, handle_reachability_error, is_uuid, parse_hfid
-from emma.streamlit_utils import set_page_config
+from emma.infrahub import (
+    create_and_add_to_batch,
+    execute_batch,
+    get_cached_schema,
+    get_client_async,
+    get_instance_branch,
+)
+from emma.streamlit_utils import handle_reachability_error, set_page_config
+from emma.utils import is_uuid, parse_hfid
 from menu import menu_with_redirect
 
 
@@ -32,13 +39,15 @@ def parse_item(item: str, is_generic: bool) -> Union[str, List[str]]:
     """Parse a single item as a UUID, HFID, or leave as-is."""
     if is_uuid(item):
         return item
-    # FIXME: If the relationship is toward Generic we will retrieve the ID as we can't use HFID with a relationship to Generic
+    # FIXME: Need feature in thee SDK to avoid this
+    # If the relationship is toward Generic we will retrieve the ID as we can't use HFID with a relationship to Generic
     if is_generic:
-        tmp_hfid = parse_hfid(item)
-        obj = get_client().get(kind=tmp_hfid[0], hfid=tmp_hfid[1:], branch=get_instance_branch())
+        tmp_hfid = parse_hfid(hfid=item)
+        client = asyncio.run(get_client_async())
+        obj = asyncio.run(client.get(kind=tmp_hfid[0], hfid=tmp_hfid[1:], branch=get_instance_branch()))
         return obj.id
     # If it's not a Generic we gonna parse the HFID
-    return parse_hfid(item)[1:]
+    return parse_hfid(hfid=item)[1:]
 
 
 def parse_value(value: Union[str, List[str]], is_generic: bool) -> Union[str, List[str]]:
@@ -73,10 +82,11 @@ def validate_columns(df_columns: list, target_schema: NodeSchema) -> list[Messag
 
 def preprocess_and_validate_data(
     df: pd.DataFrame,
-    target_schema: NodeSchema,
+    schema: NodeSchema,
+    branch_schemas: dict[str, MainSchemaTypes],
 ) -> tuple[pd.DataFrame, list[Message]]:
     """Process DataFrame rows to handle HFIDs, UUIDs, and empty lists."""
-    errors = validate_columns(list(df.columns), target_schema)
+    errors = validate_columns(list(df.columns), schema)
     processed_rows = []
 
     for _, items_row in df.iterrows():
@@ -85,9 +95,9 @@ def preprocess_and_validate_data(
             if pd.isnull(value):
                 continue
 
-            if column in target_schema.relationship_names:
-                relation_schema = target_schema.get_relationship(column)
-                peer_schema = get_client().schema.get(kind=relation_schema.peer, branch=get_instance_branch())
+            if column in schema.relationship_names:
+                relation_schema = schema.get_relationship(column)
+                peer_schema = branch_schemas[relation_schema.peer]
                 is_generic = False
                 if isinstance(peer_schema, GenericSchema):
                     is_generic = True
@@ -97,7 +107,7 @@ def preprocess_and_validate_data(
                 else:
                     processed_row[column] = parse_value(value=value, is_generic=is_generic)
 
-            elif column in target_schema.attribute_names:
+            elif column in schema.attribute_names:
                 # Directly use attribute values
                 processed_row[column] = value
 
@@ -107,11 +117,48 @@ def preprocess_and_validate_data(
     return prepocessed_df, errors
 
 
+def process_and_save_with_batch(data_frame: pd.DataFrame, kind: str, branch: str, st_msg: DeltaGenerator):
+    nbr_errors = 0
+
+    client = asyncio.run(get_client_async())
+    batch = asyncio.run(client.create_batch())
+
+    # Process rows and add them to the batch
+    for index, row in data_frame.iterrows():
+        data = {key: value for key, value in dict(row).items() if not isinstance(value, float) or pd.notnull(value)}
+        try:
+            create_and_add_to_batch(
+                client=client,
+                branch=branch,
+                kind_name=kind,
+                data=data,
+                batch=batch,
+            )
+            data_frame.at[index, "Status"] = "ONGOING"
+        except Exception as exc:  # pylint: disable=broad-exception-caught
+            nbr_errors += 1
+            with st.expander(icon="⚠️", label=f"Line {index}: Item failed to be imported", expanded=False):
+                st.write(f"Error: {exc}")
+
+    # Execute the batch
+    if batch.num_tasks > 0:
+        try:
+            execute_batch(batch=batch)
+        except Exception:  # pylint: disable=broad-exception-caught
+            nbr_errors += 1
+
+    # Display final toast message
+    if nbr_errors > 0:
+        st_msg.toast(icon="❌", body=f"Loading completed with {nbr_errors} errors")
+    else:
+        st_msg.toast(icon="✅", body="Loading completed with success")
+
+
 set_page_config(title="Import Data")
 st.markdown("# Import Data from CSV file")
 menu_with_redirect()
 
-infrahub_schema = get_schema(branch=st.session_state.infrahub_branch)
+infrahub_schema = get_cached_schema(branch=st.session_state.infrahub_branch)
 if not infrahub_schema:
     handle_reachability_error()
 
@@ -128,12 +175,14 @@ else:
                 dataframe = pd.read_csv(filepath_or_buffer=uploaded_file)
                 # Replace any "[]" string with NaN
                 dataframe.replace(["[]", "", '""'], np.nan, inplace=True)
-            except EmptyDataError as exc:
-                msg.toast(icon="❌", body=f"{str(exc)}")
+            except EmptyDataError as exc_error:
+                msg.toast(icon="❌", body=f"{exc_error!s}")
                 st.stop()
 
             msg.toast("Comparing data to schema...")
-            processed_df, _errors = preprocess_and_validate_data(df=dataframe, target_schema=selected_schema)
+            processed_df, _errors = preprocess_and_validate_data(
+                df=dataframe, schema=selected_schema, branch_schemas=infrahub_schema
+            )
 
             if _errors:
                 msg.toast(icon="❌", body=f".csv file is not valid for {selected_option}")
@@ -143,32 +192,7 @@ else:
                 edited_df = st.data_editor(processed_df, hide_index=True)
 
                 if st.button("Import Data"):
-                    nbr_errors = 0
-                    client = get_client()
-                    st.write()
                     msg.toast(body=f"Loading data for {selected_schema.namespace}{selected_schema.name}")
-                    for index, row in edited_df.iterrows():
-                        # Convert row to a dictionary and remove NaN values
-                        data = {
-                            key: value
-                            for key, value in dict(row).items()
-                            if not isinstance(value, float) or pd.notnull(value)
-                        }
-                        node = client.create(kind=selected_option, **data, branch=get_instance_branch())
-                        try:
-                            node.save(allow_upsert=True)
-                            edited_df.at[index, "Status"] = "ONGOING"
-                            with st.expander(icon="✅", label=f"Line {index}: Item created with success"):
-                                st.write(f"Node id: {node.id}")
-                        except GraphQLError as exc:
-                            with st.expander(
-                                icon="⚠️", label=f"Line {index}: Item failed to be imported", expanded=False
-                            ):
-                                st.write(f"Error: {exc}")
-                            nbr_errors += 1
-
-                    time.sleep(2)
-                    if nbr_errors > 0:
-                        msg.toast(icon="❌", body=f"Loading completed with {nbr_errors} errors")
-                    else:
-                        msg.toast(icon="✅", body="Loading completed with success")
+                    process_and_save_with_batch(
+                        data_frame=edited_df, kind=selected_option, branch=get_instance_branch(), st_msg=msg
+                    )

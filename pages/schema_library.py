@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Any
 import streamlit as st
 
 from emma.infrahub import (
-    get_schema,
+    get_cached_schema,
     get_schema_library_path,
     load_schema,
     load_schemas_from_disk,
@@ -38,7 +38,7 @@ def init_schema_extension_state(schema_extension: str) -> None:
     if schema_extension not in st.session_state.extensions_states:
         # FIXME: This is beyond hacking, but I need to define whether base extension is in place or not
         if schema_extension == "base":
-            schema: dict[str, Any] | None = get_schema()
+            schema: dict[str, Any] | None = get_cached_schema()
             if schema is not None and "DcimDevice" in schema.items():
                 st.session_state.extensions_states["base"] = SchemaState.LOADED
         else:
@@ -55,7 +55,7 @@ def check_and_open_readme(path: Path) -> str:
     # Check if the file exists
     if readme_path.exists() and readme_path.is_file() and readme_path.suffix == ".md":
         # Open the file in read mode
-        with open(readme_path, "r", encoding="utf8") as readme_file:
+        with open(readme_path, encoding="utf8") as readme_file:
             # Read the content of the file
             content = readme_file.read()
 

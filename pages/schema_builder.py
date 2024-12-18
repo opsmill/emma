@@ -10,8 +10,8 @@ from langchain_community.agents.openai_assistant import OpenAIAssistantV2Runnabl
 from openai import OpenAI
 
 from emma.assistant_utils import generate_yaml
-from emma.infrahub import check_schema, get_schema, handle_reachability_error
-from emma.streamlit_utils import set_page_config
+from emma.infrahub import check_schema, get_cached_schema
+from emma.streamlit_utils import handle_reachability_error, set_page_config
 from menu import menu_with_redirect
 
 api_key = "EmmaDefaultAuthMakingInfrahubEasierToUse!!!11"
@@ -174,7 +174,7 @@ if st.sidebar.button("New Chat", disabled=buttons_disabled):
     st.rerun()
 
 if "infrahub_schema_fid" not in st.session_state:
-    infrahub_schema = get_schema(st.session_state.infrahub_branch)
+    infrahub_schema = get_cached_schema(st.session_state.infrahub_branch)
     if not infrahub_schema:
         handle_reachability_error()
     else:
