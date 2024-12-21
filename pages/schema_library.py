@@ -61,7 +61,7 @@ def init_schema_extension_state(schema_extension: str) -> None:
         st.session_state.extensions_states[schema_extension] = SchemaState.NOT_LOADED
 
     schema_kinds = st.session_state.schema_kinds.get(schema_extension)
-    existing_schemas = get_schema()
+    existing_schemas = get_schema(refresh=True)
     if schema_kinds.issubset(existing_schemas):
         st.session_state.extensions_states[schema_extension] = SchemaState.LOADED
 
@@ -128,10 +128,10 @@ def render_schema_extension_content(schema_path: Path, schema_name: str, schema_
     # Prepare vars for the button
     is_button_disabled: bool = False
     button_label: str = "🚀 Load to Infrahub"
-    if st.session_state.extensions_states.get(schema_name) == SchemaState.LOADING:
+    if st.session_state.extensions_states[schema_name] == SchemaState.LOADING:
         is_button_disabled = True
         button_label = "🚀 Loading schema into Infrahub"
-    elif st.session_state.extensions_states.get(schema_name) == SchemaState.LOADED:
+    elif st.session_state.extensions_states[schema_name] == SchemaState.LOADED:
         is_button_disabled = True
         button_label = "✅ Already in Infrahub"
 
@@ -147,7 +147,7 @@ def render_schema_extension_content(schema_path: Path, schema_name: str, schema_
     )
 
     # Render loading container if needed
-    if st.session_state.extensions_states.get(schema_name) == SchemaState.LOADING:
+    if st.session_state.extensions_states[schema_name] == SchemaState.LOADING:
         schema_loading_container(schema_files=schema_files, schema_extension=schema_name)
 
 
@@ -203,7 +203,7 @@ with st.container(border=True):
 
 with st.container(border=True):
     st.write("# Extensions")
-    if st.session_state.extensions_states.get("base") == SchemaState.LOADED:
+    if st.session_state.extensions_states["base"] == SchemaState.LOADED:
         # Separate base from the extensions
         st.divider()
 
