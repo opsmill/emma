@@ -20,3 +20,6 @@ development/docker-compose.override.yml
 
 dist/*
 results/*
+
+# Ignore schema-library
+schema-library

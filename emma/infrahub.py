@@ -91,12 +91,6 @@ def is_current_schema_empty() -> bool:
     return result
 
 
-def get_schema_library_path() -> str | None:
-    if "schema_library_path" not in st.session_state or not st.session_state.schema_library_path:
-        st.session_state.schema_library_path = os.environ.get("SCHEMA_LIBRARY_PATH")
-    return st.session_state.schema_library_path
-
-
 def get_instance_address() -> str | None:
     if "infrahub_address" not in st.session_state or not st.session_state.infrahub_address:
         st.session_state.infrahub_address = os.environ.get("INFRAHUB_ADDRESS")
@@ -263,10 +257,10 @@ def get_cached_schema(branch: str | None = None) -> dict[str, MainSchemaTypes] |
     return asyncio.run(get_schema_async(branch=branch))
 
 
-async def get_schema_async(branch: str | None = None) -> dict[str, MainSchemaTypes] | None:
+async def get_schema_async(branch: str | None = None, refresh: bool = False) -> dict[str, MainSchemaTypes] | None:
     client: InfrahubClient = await get_client_async()
     if await check_reachability_async(client=client):
-        return await client.schema.all(branch=branch)
+        return await client.schema.all(branch=branch, refresh=refresh)
     return None
 
 
