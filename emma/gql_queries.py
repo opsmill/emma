@@ -3,7 +3,7 @@ from typing import Optional
 from graphql import GraphQLList, GraphQLNonNull, GraphQLObjectType, build_client_schema, get_introspection_query
 from langchain.tools import tool
 
-from emma.infrahub import get_client
+from emma.infrahub import run_gql_query
 
 EXCLUDED_TYPES = (
     "id",
@@ -25,12 +25,11 @@ EXCLUDED_TYPES = (
 
 
 def get_gql_schema(branch: Optional[str] = None) -> Optional[GraphQLObjectType]:
-    client = get_client(branch=branch)
     schema_query = get_introspection_query()
-    introspection_result = client.execute_graphql(schema_query)
+    introspection_result = run_gql_query(query=schema_query, branch=branch)
 
     if introspection_result:
-        schema = build_client_schema(introspection_result)
+        schema = build_client_schema(introspection=introspection_result)
         return schema.query_type  # Return the root query object directly
 
     return None

@@ -7,8 +7,8 @@ from streamlit_flow.elements import StreamlitFlowEdge, StreamlitFlowNode
 from streamlit_flow.layouts import LayeredLayout
 from streamlit_flow.state import StreamlitFlowState
 
-from emma.infrahub import convert_schema_to_dict, dict_to_df, get_schema, handle_reachability_error
-from emma.streamlit_utils import display_expander, set_page_config
+from emma.infrahub import convert_schema_to_dict, dict_to_df, get_cached_schema
+from emma.streamlit_utils import display_expander, handle_reachability_error, set_page_config
 from menu import menu_with_redirect
 
 set_page_config(title="Schema Visualizer")
@@ -146,7 +146,7 @@ def display_node_info(selected_id: str, generics: List[GenericSchema], nodes: Li
 
 
 # Fetch schema data based on the branch
-infrahub_schema = get_schema(branch=st.session_state.infrahub_branch)
+infrahub_schema = get_cached_schema(branch=st.session_state.infrahub_branch)
 
 if not infrahub_schema:
     handle_reachability_error()

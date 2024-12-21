@@ -6,8 +6,8 @@ import streamlit as st
 from pydantic import BaseModel
 from streamlit_sortables import sort_items
 
-from emma.infrahub import get_objects_as_df, get_schema, handle_reachability_error
-from emma.streamlit_utils import set_page_config
+from emma.infrahub import get_cached_schema, get_objects_as_df
+from emma.streamlit_utils import handle_reachability_error, set_page_config
 from menu import menu_with_redirect
 
 
@@ -70,8 +70,9 @@ set_page_config(title="Data Exporter")
 st.markdown("# Data Exporter")
 menu_with_redirect()
 
-infrahub_schema = get_schema(branch=st.session_state.infrahub_branch)
+infrahub_schema = get_cached_schema(branch=st.session_state.infrahub_branch)
 if not infrahub_schema:
+    st.session_state.infrahub_error_message = "No schema"
     handle_reachability_error()
 else:
     selected_option = st.selectbox("Select which model you want to explore?", infrahub_schema.keys())
@@ -81,6 +82,7 @@ else:
         with st.spinner("Loading data, please wait..."):
             st.session_state["dataframe"] = fetch_data(selected_option, st.session_state.infrahub_branch)
             if isinstance(st.session_state["dataframe"], types.NoneType):
+                st.session_state.infrahub_error_message = "No dataframe"
                 handle_reachability_error(redirect=False)
             else:
                 st.session_state["reordered_df"] = st.session_state["dataframe"]  # Reset reordered_df

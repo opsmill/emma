@@ -12,7 +12,7 @@ from infrahub_sdk.yaml import SchemaFile
 
 from emma.git_utils import SCHEMA_LIBRARY_REFRESH_INTERVAL, get_repo
 from emma.infrahub import (
-    get_schema,
+    get_schema_async,
     load_schema,
     load_schemas_from_disk,
 )
@@ -61,7 +61,7 @@ def init_schema_extension_state(schema_extension: str) -> None:
         st.session_state.extensions_states[schema_extension] = SchemaState.NOT_LOADED
 
     schema_kinds = st.session_state.schema_kinds.get(schema_extension)
-    existing_schemas = get_schema(refresh=True)
+    existing_schemas = get_schema_async(refresh=True)
     if schema_kinds.issubset(existing_schemas):
         st.session_state.extensions_states[schema_extension] = SchemaState.LOADED
 
@@ -74,7 +74,7 @@ def check_and_open_readme(path: Path) -> str:
     # Check if the file exists
     if readme_path.exists() and readme_path.is_file() and readme_path.suffix == ".md":
         # Open the file in read mode
-        with open(readme_path, "r", encoding="utf8") as readme_file:
+        with open(readme_path, encoding="utf8") as readme_file:
             # Read the content of the file
             content = readme_file.read()
 
