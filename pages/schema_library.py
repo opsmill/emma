@@ -1,3 +1,4 @@
+import asyncio
 import os
 from datetime import datetime
 from enum import Enum
@@ -55,13 +56,13 @@ if not st.session_state.repo["local_path"]:
     st.session_state.repo["local_path"] = _local_path
 
 
-def init_schema_extension_state(schema_extension: str) -> None:
+async def init_schema_extension_state(schema_extension: str) -> None:
     # Check if the extension is already in the session state
     if schema_extension not in st.session_state.extensions_states:
         st.session_state.extensions_states[schema_extension] = SchemaState.NOT_LOADED
 
     schema_kinds = st.session_state.schema_kinds.get(schema_extension)
-    existing_schemas = get_schema_async(refresh=True)
+    existing_schemas = await get_schema_async(refresh=True)
     if schema_kinds.issubset(existing_schemas):
         st.session_state.extensions_states[schema_extension] = SchemaState.LOADED
 
@@ -196,7 +197,7 @@ with st.container(border=True):
     base_schemas = load_schemas_from_disk(schemas=[schema_base_path])
     # Registering base schema kinds
     register_schema_kinds(schema_base_path.name, base_schemas)
-    init_schema_extension_state(schema_base_name)
+    asyncio.run(init_schema_extension_state(schema_base_name))
 
     # Render container content
     render_schema_extension_content(schema_base_path, schema_base_name, base_schemas)
@@ -220,7 +221,7 @@ with st.container(border=True):
                     schema_extension_path: Path = Path(f"{extensions_folder_path}/{schema_extension_name}")
                     extension_schemas = load_schemas_from_disk(schemas=[schema_extension_path])
                     register_schema_kinds(schema_extension_name, extension_schemas)
-                    init_schema_extension_state(schema_extension_name)
+                    asyncio.run(init_schema_extension_state(schema_extension_name))
 
                     # Each extension is packaged as a folder ...
                     if os.path.isdir(schema_extension_path):
