@@ -6,7 +6,7 @@ from typing import Any, List, Union
 import numpy as np
 import pandas as pd
 import streamlit as st
-from infrahub_sdk.schema import GenericSchema, MainSchemaTypes, NodeSchema
+from infrahub_sdk.schema import GenericSchema, GenericSchemaAPI, MainSchemaTypes, NodeSchema
 from infrahub_sdk.utils import compare_lists
 from pandas.errors import EmptyDataError
 from pydantic import BaseModel
@@ -99,7 +99,7 @@ def preprocess_and_validate_data(
                 relation_schema = schema.get_relationship(column)
                 peer_schema = branch_schemas[relation_schema.peer]
                 is_generic = False
-                if isinstance(peer_schema, GenericSchema):
+                if isinstance(peer_schema, (GenericSchema, GenericSchemaAPI)):
                     is_generic = True
                 # Process relationships for HFID or UUID
                 if isinstance(value, str) and value.startswith("[") and value.endswith("]"):
@@ -121,7 +121,7 @@ def process_and_save_with_batch(data_frame: pd.DataFrame, kind: str, branch: str
     nbr_errors = 0
 
     client = asyncio.run(get_client_async())
-    batch = asyncio.run(client.create_batch())
+    batch = asyncio.run(client.create_batch(return_exceptions=True))
 
     # Process rows and add them to the batch
     for index, row in data_frame.iterrows():
