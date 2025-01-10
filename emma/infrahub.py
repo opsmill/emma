@@ -306,28 +306,23 @@ async def create_and_add_to_batch(  # pylint: disable=too-many-arguments
 @run_async
 async def execute_batch(batch: InfrahubBatch) -> None:
     """Executes a batch and provides feedback for each task."""
-    try:
-        async for node, _ in batch.execute():
-            object_reference = None
-            if node.hfid:
-                object_reference = node.get_human_friendly_id_as_string()
-            elif node._schema.default_filter:
-                accessors = node._schema.default_filter.split("__")
-                object_reference = ""
-
-                for i, accessor in enumerate(accessors):
-                    value = getattr(node, accessor).value
-                    object_reference += value
-                    if i < len(accessors) - 1:
-                        object_reference += "__"
-            if object_reference:
-                st.success(f"Created: [{node._schema.kind}] '{object_reference}'")
+    async for node, result in batch.execute():
+        try:
+            if isinstance(result, Exception):
+                st.error(f"Task execution failed due to GraphQL error: {result}")
             else:
-                st.success(f"Created: [{node._schema.kind}]")
-    except GraphQLError as exc:
-        st.error(f"Batch execution failed due to GraphQL error: {exc}")
-    except Exception as exc:  # pylint: disable=broad-exception-caught
-        st.error(f"Batch execution failed due to unexpected error: {exc}")
+                object_reference = None
+                if node.hfid:
+                    object_reference = node.get_human_friendly_id_as_string()
+                elif node._schema.default_filter:
+                    # DEPRECATED
+                    pass
+                if object_reference:
+                    st.success(f"Created: [{node._schema.kind}] '{object_reference}'")
+                else:
+                    st.success(f"Created: [{node._schema.kind}] '{node.id}'")
+        except Exception as exc:  # pylint: disable=broad-exception-caught
+            st.error(f"Task execution failed due to unexpected error: {exc}")
 
 
 async def get_version_async(client: InfrahubClient) -> str:
