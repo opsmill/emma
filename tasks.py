@@ -32,7 +32,7 @@ def lint_yaml(context: Context):
 def lint_mypy(context: Context):
     """Run Linter to check all Python files."""
     print(" - Check code with mypy")
-    exec_cmd = "mypy --show-error-codes emma"
+    exec_cmd = "mypy --show-error-codes emma pages"
     with context.cd(MAIN_DIRECTORY_PATH):
         context.run(exec_cmd)
 
