@@ -2,7 +2,7 @@
 title: Emma
 ---
 
-Emma is an agent designed to help you interact with Infrahub.
+Emma is the experimental little sister of Otto, and she is to help you interact with Infrahub.
 
 Currently, Emma can help you to:
 
@@ -10,14 +10,22 @@ Currently, Emma can help you to:
 - Export Data from Infrahub in CSV format
 - Build, Load, and Visualize the Infrahub schema
 
+!!! warning
+
+Emma is experimental by design, and may not work as expected. She tests out new ideas before her big brother Otto gets involved and implements them in Infrahub.
+
+!!!
+
 ![Home page](static/home_page.png)
 
 ## Getting Started
 
 ### curl quickstart
 
-```bash
-curl https://infrahub.opsmill.io/0.16.0-emma | docker compose -f - up -d
+This command will use the [Infrahub Quickstart](https://docs.infrahub.app/guides/installation#quick-start-via-curl) method to download a Docker Compose file and start Infrahub and Emma. Note the Infrahub version number in the URL should be updated to the [latest version](https://github.com/opsmill/infrahub/tags).
+
+```console
+curl https://infrahub.opsmill.io/1.1.2-emma | docker compose -f - up -d
 ```
 
 Then connect to the WebUI of [Infrahub](http://localhost:8000) and [Emma](http://localhost:8501)
