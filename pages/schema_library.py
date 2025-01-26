@@ -1,5 +1,6 @@
 import asyncio
 import os
+import re
 from datetime import datetime
 from enum import Enum
 from itertools import chain
@@ -129,7 +130,17 @@ def on_click_schema_load(schema_extension: str):
 
 def render_schema_extension_content(schema_path: Path, schema_name: str, schema_files: list[SchemaFile]) -> None:
     # Render description for the extension
-    st.write(check_and_open_readme(schema_path))
+    readme = check_and_open_readme(schema_path)
+    # Regex pattern to capture everything before and after ## Overview
+    pattern = re.compile(r"([\s\S]*?)(^## Overview[\s\S]*)", re.MULTILINE)
+    # Find matches
+    match = pattern.match(readme)
+    if match:
+        before_overview = match.group(1)
+        st.markdown(before_overview)
+        overview_and_below = match.group(2)
+        with st.expander("More details..."):
+            st.markdown(overview_and_below)
 
     # Prepare vars for the button
     is_button_disabled: bool = False
