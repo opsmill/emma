@@ -102,7 +102,12 @@ def schema_loading_container(
             if response.errors:
                 loading_container.update(label="❌ Load failed ...", state="error", expanded=True)
                 loading_container.error("Infrahub doesn't like it!", icon="🚨")
-                loading_container.exception(response.errors)
+                if "Unable to find" in response.errors["errors"][0]["message"]:
+                    loading_container.error(
+                        "You might be missing schema dependencies. Please load the schemas' dependencies first!",
+                        icon="🔍",
+                    )
+                loading_container.error(response.errors["errors"][0]["message"])
             else:
                 loading_container.update(label="✅ Schema loaded!", state="complete", expanded=True)
                 st.session_state.extensions_states[schema_extension] = SchemaState.LOADED
