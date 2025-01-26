@@ -63,6 +63,9 @@ async def init_schema_extension_state(schema_extension: str) -> None:
         st.session_state.extensions_states[schema_extension] = SchemaState.NOT_LOADED
 
     schema_kinds = st.session_state.schema_kinds.get(schema_extension)
+    # TODO: This accounts for qinq that only has a schema extension and no schema kinds. We need to account for node extensions here as well.
+    if not schema_kinds:
+        return
     existing_schemas = await get_schema_async(refresh=True)
     if schema_kinds.issubset(existing_schemas):
         st.session_state.extensions_states[schema_extension] = SchemaState.LOADED
@@ -141,6 +144,9 @@ def render_schema_extension_content(schema_path: Path, schema_name: str, schema_
         overview_and_below = match.group(2)
         with st.expander("More details..."):
             st.markdown(overview_and_below)
+    else:
+        # This is encountered if there is no "## Overview" in the README (qinq README as an example)
+        st.markdown(readme)
 
     # Prepare vars for the button
     is_button_disabled: bool = False
