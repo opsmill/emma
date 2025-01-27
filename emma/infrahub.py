@@ -285,7 +285,6 @@ async def create_and_save(kind: str, data: dict, branch: str):
 
 @run_async
 async def create_and_add_to_batch(  # pylint: disable=too-many-arguments
-    client: InfrahubClient,
     branch: str,
     kind_name: str,
     data: dict,

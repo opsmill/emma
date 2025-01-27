@@ -39,19 +39,19 @@ def parse_item(item: str, is_generic: bool) -> Union[str, dict[str]]:
     """Parse a single item as a UUID, HFID, or leave as-is."""
     if is_uuid(item):
         return item
+    # FIXME: Need feature in thee SDK to avoid this
+    # If the relationship is toward Generic we will retrieve the ID as we can't use HFID with a relationship to Generic
+    if is_generic:
+        tmp_hfid = parse_hfid(hfid=item)
+        client = asyncio.run(get_client_async())
+        obj = asyncio.run(client.get(kind=tmp_hfid[0], hfid=tmp_hfid[1:], branch=get_instance_branch()))
+        return obj.id
     # FIXME: If there isn't any default_filter, and we keep the HFID here
     # In process_and_save_with_batch() the data will be { id: "['xxx']" } instead of { hfid: "['xxx']" }
     tmp_hfid = parse_hfid(hfid=item)
     client = asyncio.run(get_client_async())
     obj = asyncio.run(client.get(kind=tmp_hfid[0], hfid=tmp_hfid[1:], branch=get_instance_branch()))
     return obj.id
-    # # FIXME: Need feature in thee SDK to avoid this
-    # # If the relationship is toward Generic we will retrieve the ID as we can't use HFID with a relationship to Generic
-    # if is_generic:
-    #     tmp_hfid = parse_hfid(hfid=item)
-    #     client = asyncio.run(get_client_async())
-    #     obj = asyncio.run(client.get(kind=tmp_hfid[0], hfid=tmp_hfid[1:], branch=get_instance_branch()))
-    #     return obj.id
     # # If it's not a Generic we gonna parse the HFID
     # return parse_hfid(hfid=item)[1:]
 
@@ -135,7 +135,6 @@ def process_and_save_with_batch(data_frame: pd.DataFrame, kind: str, branch: str
         try:
             print(f"data={data}")
             create_and_add_to_batch(
-                client=client,
                 branch=branch,
                 kind_name=kind,
                 data=data,
@@ -144,7 +143,7 @@ def process_and_save_with_batch(data_frame: pd.DataFrame, kind: str, branch: str
             data_frame.at[index, "Status"] = "ONGOING"
         except Exception as exc:  # pylint: disable=broad-exception-caught
             nbr_errors += 1
-            with st.expander(icon="⚠️", label=f"Line {index}: Item failed to be imported", expanded=False):
+            with st.expander(icon="⚠️", label=f"Line {index}: Item failed to be imported (creation)", expanded=False):
                 st.write(f"Error: {exc}")
 
     # Execute the batch
@@ -153,7 +152,7 @@ def process_and_save_with_batch(data_frame: pd.DataFrame, kind: str, branch: str
             execute_batch(batch=batch)
         except Exception as exc:  # pylint: disable=broad-exception-caught
             nbr_errors += 1
-            with st.expander(icon="⚠️", label=f"Line {index}: Item failed to be imported", expanded=False):
+            with st.expander(icon="⚠️", label="Item failed to be imported (execution)", expanded=False):
                 st.write(f"Error: {exc}")
 
     # Display final toast message

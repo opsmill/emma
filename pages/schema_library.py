@@ -3,7 +3,6 @@ import os
 from datetime import datetime
 from enum import Enum
 from itertools import chain
-from os import listdir
 from pathlib import Path
 from typing import Any
 
@@ -215,7 +214,7 @@ with st.container(border=True):
             extensions_folder_path: Path = Path(f"{st.session_state.repo['local_path']}/{EXTENSIONS_FOLDER}")
 
             # Loop over the extension directory
-            for schema_extension_name in listdir(extensions_folder_path):  # TODO: Maybe review that...
+            for schema_extension_name in extensions_folder_path.iterdir():  # TODO: Maybe review that...
                 with st.container(border=True):
                     # Init vars
                     schema_extension_path: Path = Path(f"{extensions_folder_path}/{schema_extension_name}")
