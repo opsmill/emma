@@ -32,8 +32,6 @@ const config: Config = {
       "classic",
       {
         docs: {
-          // Please change this to your repo.
-          // Remove this to remove the "edit this page" links.
           editUrl: "https://github.com/opsmill/emma/tree/main/docs",
           routeBasePath: "/",
           sidebarCollapsed: true,
@@ -48,10 +46,6 @@ const config: Config = {
   ],
 
   themeConfig: {
-    // announcementBar: {
-    //   content: 'Welcome to our brand new docs!',
-    //   isCloseable: true,
-    // },
     navbar: {
       logo: {
         alt: "Infrahub",
@@ -61,14 +55,10 @@ const config: Config = {
       items: [
         {
           type: "docSidebar",
-          sidebarId: "docsSidebar",
+          sidebarId: "emmaSidebar",
           position: "left",
           label: "Emma",
         },
-        // {
-        //   type: "search",
-        //   position: "right",
-        // },
         {
           href: "https://github.com/opsmill/emma",
           position: "right",
