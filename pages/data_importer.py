@@ -35,7 +35,7 @@ class Message(BaseModel):
     message: str
 
 
-def parse_item(item: str, is_generic: bool) -> Union[str, dict[str]]:
+def parse_item(item: str, is_generic: bool) -> str:
     """Parse a single item as a UUID, HFID, or leave as-is."""
     if is_uuid(item):
         return item
