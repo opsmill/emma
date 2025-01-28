@@ -67,8 +67,9 @@ async def init_schema_extension_state(schema_extension: str) -> None:
     if not schema_kinds:
         return
     existing_schemas = await get_schema_async(refresh=True)
-    if schema_kinds.issubset(existing_schemas):
-        st.session_state.extensions_states[schema_extension] = SchemaState.LOADED
+    if existing_schemas:
+        if schema_kinds.issubset(existing_schemas):
+            st.session_state.extensions_states[schema_extension] = SchemaState.LOADED
 
 
 # Function that checks if a readme exists in a given folder and return the content if so
