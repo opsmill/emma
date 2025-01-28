@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "emma"
-version = "0.3.0"
+version = "0.6.0"
 description = "Emma is an agent designed to help you interact with Infrahub."
 authors = ["OpsMill <info@opsmill.com>"]
 readme = "README.md"
@@ -29,7 +29,7 @@ ruff = "^0.9"
 mypy = "*"
 yamllint = "^1.35.1"
 towncrier = "^24.7.1"
-pylint = "*"
+pylint = "~3.1"
 types-pyyaml = "^6.0.12.20241230"
 invoke = "^2.2.0"
 types-pytz = "^2024.2.0.20241221"
@@ -157,7 +157,6 @@ ignore = [
     "PTH117",   # `os.path.isabs()` should be replaced by `Path.is_absolute()`
     "PTH118",   # `os.path.join()` should be replaced by `Path` with `/` operator
     "PTH123",   # `open()` should be replaced by `Path.open()`
-    "PTH208",   # Use `pathlib.Path.iterdir()` instead
     "RET503",   # Missing explicit `return` at the end of function able to return non-`None` value
     "RET504",  # Unnecessary assignment before `return` statement
     "RET504",  # Unnecessary assignment to `data` before `return` statement
@@ -174,9 +173,8 @@ ignore = [
     "SIM110",  # Use `return any(getattr(item, resource_field) == resource_id for item in getattr(self, RESOURCE_MAP[resource_type]))` instead of `for` loop
     "SIM114",  # Combine `if` branches using logical `or` operator
     "SIM117",  # Use a single `with` statement with multiple contexts instead of nested `with` statements
-    "SIM118",  # Use `key in dict` instead of `key in dict.keys)
+    "SIM118",  # Use `key in dict` instead of `key in dict.keys
     "SIM910",  # Use `data.get(key)` instead of `data.get(key, None)`
-    "TC003",  # Move standard library import `collections.abc.Iterable` into a type-checking block
     "UP006",   # Use `dict` instead of `Dict` for type annotation
     "UP007",   # Use X | Y for type annotations
     "UP012",    # Unnecessary call to encode as UTF-8
@@ -218,8 +216,8 @@ no-docstring-rgx = "^(_|test_)"
 [tool.pylint.messages_control]
 # Line length is enforced by Black, so pylint doesn't need to check it.
 # Pylint and Black disagree about how to format multi-line arrays; Black wins.
-# Rules already covered by RUFF
-# - too-many-statements
+# assigning-non-slot,no-member,unsupported-membership-test,unsubscriptable-object,unsupported-assignment-operation,not-an-iterable
+# are disabled because of our move to pydantic 2, pylint does not seem to respect the type hint for pydantic 2 model fields.
 disable = """,
     line-too-long,
     missing-module-docstring,
@@ -232,15 +230,22 @@ disable = """,
     keyword-arg-before-vararg,
     too-few-public-methods,
     too-many-instance-attributes,
-    too-many-positional-arguments,
-    too-many-statements,
     fixme,
     consider-using-f-string,
     protected-access,
     import-self,
     wrong-import-order,
+    assigning-non-slot,
+    no-member,
+    unsupported-membership-test,
+    unsubscriptable-object,
+    unsupported-assignment-operation,
+    not-an-iterable,
+    too-many-return-statements,
+    unnecessary-comprehension,
     multiple-statements,
-    unnecessary-comprehension
+    self-assigning-variable,
+    no-else-return,
     """
 
 [tool.pylint.miscellaneous]

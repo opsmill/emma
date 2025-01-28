@@ -14,7 +14,8 @@ def is_uuid(value: str) -> bool:
 # TODO: Could be moved to the SDK later on
 def parse_hfid(hfid: str) -> List[str]:
     """Parse a single HFID string into its components if it contains '__'."""
-    return hfid.split("__") if "__" in hfid else [hfid]
+    parsed_hfid = hfid.split("__") if "__" in hfid else [hfid]
+    return parsed_hfid
 
 
 def is_feature_enabled(feature_name: str) -> bool:

@@ -4,7 +4,6 @@ import re
 from datetime import datetime
 from enum import Enum
 from itertools import chain
-from os import listdir
 from pathlib import Path
 from typing import Any
 
@@ -218,7 +217,7 @@ with st.container(border=True):
     schema_base_path: Path = Path(f"{st.session_state.repo['local_path']}/{schema_base_name}")
     base_schemas = load_schemas_from_disk(schemas=[schema_base_path])
     # Registering base schema kinds
-    register_schema_kinds(schema_base_path.name, base_schemas)
+    register_schema_kinds(schema_extension=schema_base_path.name, schemas=base_schemas)
     asyncio.run(init_schema_extension_state(schema_base_name))
 
     # Render container content
@@ -237,15 +236,17 @@ with st.container(border=True):
             extensions_folder_path: Path = Path(f"{st.session_state.repo['local_path']}/{EXTENSIONS_FOLDER}")
 
             # Loop over the extension directory
-            for schema_extension_name in listdir(extensions_folder_path):  # TODO: Maybe review that...
+            for schema_extension_path in extensions_folder_path.iterdir():  # TODO: Maybe review that...
                 with st.container(border=True):
                     # Init vars
-                    schema_extension_path: Path = Path(f"{extensions_folder_path}/{schema_extension_name}")
+                    # schema_extension_path: Path = Path(f"{extensions_folder_path}/{schema_extension_name}")
                     extension_schemas = load_schemas_from_disk(schemas=[schema_extension_path])
-                    register_schema_kinds(schema_extension_name, extension_schemas)
-                    asyncio.run(init_schema_extension_state(schema_extension_name))
+                    register_schema_kinds(schema_extension=schema_extension_path.name, schemas=extension_schemas)
+                    asyncio.run(init_schema_extension_state(schema_extension_path.name))
 
                     # Each extension is packaged as a folder ...
                     if os.path.isdir(schema_extension_path):
                         # Render container content
-                        render_schema_extension_content(schema_extension_path, schema_extension_name, extension_schemas)
+                        render_schema_extension_content(
+                            schema_extension_path, schema_extension_path.name, extension_schemas
+                        )

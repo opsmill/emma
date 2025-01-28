@@ -285,7 +285,6 @@ async def create_and_save(kind: str, data: dict, branch: str):
 
 @run_async
 async def create_and_add_to_batch(  # pylint: disable=too-many-arguments
-    client: InfrahubClient,
     branch: str,
     kind_name: str,
     data: dict,
@@ -293,7 +292,7 @@ async def create_and_add_to_batch(  # pylint: disable=too-many-arguments
     allow_upsert: bool = True,
 ) -> InfrahubNode:
     """Creates an object and adds it to a batch for deferred saving."""
-    # client: InfrahubClient = await get_client_async()
+    client: InfrahubClient = await get_client_async()
     try:
         obj = await client.create(branch=branch, kind=kind_name, data=data)
         batch.add(task=obj.save, allow_upsert=allow_upsert, node=obj)
@@ -309,7 +308,7 @@ async def execute_batch(batch: InfrahubBatch) -> None:
     async for node, result in batch.execute():
         try:
             if isinstance(result, Exception):
-                st.error(f"Task execution failed due to GraphQL error: {result}")
+                st.error(f"Task execution failed for {node} due to GraphQL error: {result}")
             else:
                 object_reference = None
                 if node.hfid:
