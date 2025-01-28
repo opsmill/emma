@@ -247,4 +247,6 @@ with st.container(border=True):
                     # Each extension is packaged as a folder ...
                     if os.path.isdir(schema_extension_path):
                         # Render container content
-                        render_schema_extension_content(schema_extension_path, schema_extension_path.name, extension_schemas)
+                        render_schema_extension_content(
+                            schema_extension_path, schema_extension_path.name, extension_schemas
+                        )
