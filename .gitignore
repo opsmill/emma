@@ -6,7 +6,6 @@ script.py
 .vscode/settings.json
 .retype/*
 node_modules/*
-development/docker-compose.override.yml
 .DS_Store
 .python-version
 .venv
@@ -23,3 +22,13 @@ results/*
 
 # Ignore schema-library
 schema-library
+
+# Dependencies
+/node_modules
+
+# Production
+/build
+
+# Generated files
+.docusaurus
+.cache-loader

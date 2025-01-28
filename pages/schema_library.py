@@ -1,5 +1,6 @@
 import asyncio
 import os
+import re
 from datetime import datetime
 from enum import Enum
 from itertools import chain
@@ -61,6 +62,9 @@ async def init_schema_extension_state(schema_extension: str) -> None:
         st.session_state.extensions_states[schema_extension] = SchemaState.NOT_LOADED
 
     schema_kinds = st.session_state.schema_kinds.get(schema_extension)
+    # TODO: This accounts for qinq that only has a schema extension and no schema kinds. We need to account for node extensions here as well.
+    if not schema_kinds:
+        return
     existing_schemas = await get_schema_async(refresh=True)
     if schema_kinds.issubset(existing_schemas):
         st.session_state.extensions_states[schema_extension] = SchemaState.LOADED
@@ -101,7 +105,12 @@ def schema_loading_container(
             if response.errors:
                 loading_container.update(label="❌ Load failed ...", state="error", expanded=True)
                 loading_container.error("Infrahub doesn't like it!", icon="🚨")
-                loading_container.exception(response.errors)
+                if "Unable to find" in response.errors["errors"][0]["message"]:
+                    loading_container.error(
+                        "You might be missing schema dependencies. Please load the schemas' dependencies first!",
+                        icon="🔍",
+                    )
+                loading_container.error(response.errors["errors"][0]["message"])
             else:
                 loading_container.update(label="✅ Schema loaded!", state="complete", expanded=True)
                 st.session_state.extensions_states[schema_extension] = SchemaState.LOADED
@@ -123,7 +132,20 @@ def on_click_schema_load(schema_extension: str):
 
 def render_schema_extension_content(schema_path: Path, schema_name: str, schema_files: list[SchemaFile]) -> None:
     # Render description for the extension
-    st.write(check_and_open_readme(schema_path))
+    readme = check_and_open_readme(schema_path)
+    # Regex pattern to capture everything before and after ## Overview
+    pattern = re.compile(r"([\s\S]*?)(^## Overview[\s\S]*)", re.MULTILINE)
+    # Find matches
+    match = pattern.match(readme)
+    if match:
+        before_overview = match.group(1)
+        st.markdown(before_overview)
+        overview_and_below = match.group(2)
+        with st.expander("More details..."):
+            st.markdown(overview_and_below)
+    else:
+        # This is encountered if there is no "## Overview" in the README (qinq README as an example)
+        st.markdown(readme)
 
     # Prepare vars for the button
     is_button_disabled: bool = False

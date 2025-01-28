@@ -11,19 +11,31 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  VALE_VERSION: "3.7.1"
+
 jobs:
-  yaml-lint:
-    runs-on: "ubuntu-latest"
+  files-changed:
+    name: Detect which file has changed
+    runs-on: ubuntu-latest
     timeout-minutes: 5
+    outputs:
+      documentation: ${{ steps.changes.outputs.documentation_all }}
+      python: ${{ steps.changes.outputs.python_all }}
+      yaml: ${{ steps.changes.outputs.yaml_all }}
     steps:
       - name: "Check out repository code"
         uses: "actions/checkout@v4"
-      - name: "Setup environment"
-        run: "pip install yamllint==1.35.1"
-      - name: "Linting: yamllint"
-        run: "yamllint -s ."
+      - name: Check for file changes
+        uses: opsmill/paths-filter@v3.0.2
+        id: changes
+        with:
+          token: ${{ github.token }}
+          filters: .github/file-filters.yml
 
   python-lint:
+    if: needs.files-changed.outputs.python == 'true'
+    needs: ["files-changed"]
     runs-on: "ubuntu-latest"
     strategy:
       matrix:
@@ -59,42 +71,76 @@ jobs:
       - name: "Linting: ruff format"
         run: "poetry run ruff format --check --diff ."
       - name: "Mypy Tests"
-        run: "poetry run mypy --show-error-codes ."
+        run: "poetry run mypy --show-error-codes emma pages"
       - name: "Pylint Tests"
         run: "poetry run pylint emma pages *.py"
 
-  # linter:
-  #   runs-on: "ubuntu-latest"
-  #   timeout-minutes: 5
-  #   env:
-  #     VALIDATE_PYTHON_MYPY: true
-  #     VALIDATE_PYTHON_RUFF: true
-  #     VALIDATE_PYTHON_PYLINT: true
-  #     VALIDATE_YAML: true
-  #     VALIDATE_GITHUB_ACTIONS: true
-  #     PYTHON_MYPY_CONFIG_FILE: pyproject.toml
-  #     PYTHON_RUFF_CONFIG_FILE: pyproject.toml
-  #     MULTI_STATUS: false
-  #   steps:
-  #     - name: Checkout code
-  #       uses: actions/checkout@v4
-  #       with:
-  #         # super-linter needs the full git history to get the
-  #         # list of files that changed across commits
-  #         fetch-depth: 0
+  yaml-lint:
+    if: needs.files-changed.outputs.yaml == 'true'
+    needs: ["files-changed"]
+    runs-on: "ubuntu-latest"
+    timeout-minutes: 5
+    steps:
+      - name: "Check out repository code"
+        uses: "actions/checkout@v4"
+        with:
+          submodules: true
+      - name: "Setup environment"
+        run: "pip install yamllint==1.35.1"
+      - name: "Linting: yamllint"
+        run: "yamllint -s ."
 
-  #     - name: Set up Python
-  #       uses: actions/setup-python@v5
-  #       with:
-  #         python-version: "3.12"
-  #     - name: "Setup environment"
-  #       run: |
-  #         pipx install poetry
-  #         poetry config virtualenvs.prefer-active-python true
-  #     - name: "Install Package"
-  #       run: "poetry install"
+  documentation:
+    defaults:
+      run:
+        working-directory: ./docs
+    if: |
+      always() && !cancelled() &&
+      !contains(needs.*.result, 'failure') &&
+      !contains(needs.*.result, 'cancelled') &&
+      needs.files-changed.outputs.documentation == 'true'
+    needs: ["files-changed", "yaml-lint", "python-lint"]
+    runs-on: "ubuntu-22.04"
+    timeout-minutes: 5
+    steps:
+      - name: "Check out repository code"
+        uses: "actions/checkout@v4"
+        with:
+          submodules: true
+      - name: Install NodeJS
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: docs/package-lock.json
+      - name: "Install dependencies"
+        run: npm install
+      - name: "Setup Python environment"
+        run: "pip install invoke toml"
+      - name: "Build docs website"
+        run: "invoke docs"
 
-  #     - name: Super-linter
-  #       uses: super-linter/super-linter/slim@v6.7.0
-  #       env:
-  #         PYTHONPATH: "/github/workspace:/github/workflow/.venv/lib/python3.12/site-packages"
+  validate-documentation-style:
+    if: |
+      always() && !cancelled() &&
+      !contains(needs.*.result, 'failure') &&
+      !contains(needs.*.result, 'cancelled')
+    needs: ["files-changed", "yaml-lint", "python-lint"]
+    runs-on: "ubuntu-22.04"
+    timeout-minutes: 5
+    steps:
+      - name: "Check out repository code"
+        uses: "actions/checkout@v4"
+        with:
+          submodules: true
+
+      # The official GitHub Action for Vale doesn't work, installing manually instead:
+      # https://github.com/errata-ai/vale-action/issues/103
+      - name: Download Vale
+        run: |
+          curl -sL "https://github.com/errata-ai/vale/releases/download/v${VALE_VERSION}/vale_${VALE_VERSION}_Linux_64-bit.tar.gz" -o vale.tar.gz
+          tar -xzf vale.tar.gz
+        env:
+          VALE_VERSION: ${{ env.VALE_VERSION }}
+      - name: "Validate documentation style"
+        run: ./vale $(find ./docs -type f \( -name "*.mdx" -o -name "*.md" \) )

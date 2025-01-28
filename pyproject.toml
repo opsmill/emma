@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "emma"
-version = "0.3.0"
+version = "0.6.0"
 description = "Emma is an agent designed to help you interact with Infrahub."
 authors = ["OpsMill <info@opsmill.com>"]
 readme = "README.md"

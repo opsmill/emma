@@ -1,6 +1,18 @@
-# Emma
+<!-- markdownlint-disable -->
+![Infrahub Logo](https://assets-global.website-files.com/657aff4a26dd8afbab24944b/657b0e0678f7fd35ce130776_Logo%20INFRAHUB.svg)
+<!-- markdownlint-restore -->
 
-Emma is an agent designed to help you interact with Infrahub.
+# Infrahub by OpsMill
+
+[Infrahub](https://github.com/opsmill/infrahub) by [OpsMill](https://opsmill.com) acts as a central hub to manage the data, templates and playbooks that powers your infrastructure. At its heart, Infrahub is built on 3 fundamental pillars:
+
+- **A Flexible Schema**: A model of the infrastructure and the relation between the objects in the model, that's easily extensible.
+- **Version Control**: Natively integrated into the graph database which opens up some new capabilities like branching, diffing, and merging data directly in the database.
+- **Unified Storage**: By combining a graph database and git, Infrahub stores data and code needed to manage the infrastructure.
+
+## Emma
+
+Emma is an experimental agent designed to help you interact with Infrahub.
 
 Currently, Emma can help you to:
 
@@ -10,70 +22,6 @@ Currently, Emma can help you to:
 
 ![Home page](static/home_page.png)
 
-## Getting Started
+## Running Emma
 
-### curl quickstart
-
-```bash
-curl https://infrahub.opsmill.io/0.16.0-emma | docker compose -f - up -d
-```
-
-Then connect to the WebUI of [Infrahub](http://localhost:8000) and [Emma](http://localhost:8501)
-
-### Running Locally with Poetry
-
-To run Emma locally using Poetry, follow these steps:
-
-1. **Install Dependencies:**
-
- ```console
- poetry install
- ```
-
-2. **Run the Application:**
-
- ```console
- poetry run streamlit run main.py
- ```
-
-3. **Set Environment Variables:**
-
- Emma uses Infrahub standard environment variables to connect to Infrahub:
-
- ```console
- export INFRAHUB_ADDRESS="http://localhost:8000"
- export INFRAHUB_API_TOKEN="06438eb2-8019-4776-878c-0941b1f1d1ec"
- ```
-
-### Running with Docker Compose
-
-To run Emma using Docker Compose, follow these steps:
-
-1. **Build and Run the Application:**
-
- ```console
- docker compose up --build &
- ```
-
-2. **Connecting to Infrahub Network:**
-
-If you run Infrahub as another container in the local network, you need to connect Emma to it. After starting both containers, run the following command:
-
-```console
-docker network connect <infrahub-network> emma-emma-1
-```
-
-## Screenshots
-
-![Schema builder](static/schema_builder.png)
-![Schema visualizer](static/schema_visualizer.png)
-![Data exporter](static/data_exporter.png)
-![Schema loader](static/schema_loader.png)
-
-## Experimental Features
-
-To turn on experimental features in Emma, set the following environmental variable with options provided by the OpsMill CS team:
-
-```console
-export EMMA_FEATURE_FLAGS="feature1,feature2"
-```
+Documentation for using Emma is available [here](https://docs.infrahub.app/emma/emma/)
