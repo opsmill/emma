@@ -182,4 +182,13 @@ jobs:
         run: "poetry install --no-interaction --no-ansi"
 
       - name: "Run Streamlit"
-        run: "poetry run streamlit run main.py"
+        run: |
+          timeout 30s poetry run streamlit run main.py &
+          PID=$!
+          sleep 10
+          if ps -p $PID > /dev/null; then
+            kill $PID
+            exit 0
+          else
+            exit 1
+          fi
