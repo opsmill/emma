@@ -24,4 +24,4 @@ Currently, Emma can help you to:
 
 ## Running Emma
 
-Documentation for using Emma is available [here](https://docs.infrahub.app/emma/emma/)
+Documentation for using Emma is available [here](https://docs.infrahub.app/emma/)
