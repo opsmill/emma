@@ -13,9 +13,10 @@ from openai import OpenAI
 
 from emma.assistant_utils import generate_yaml
 from emma.gql_queries import generate_full_query, get_gql_schema
-from emma.infrahub import run_gql_query
+from emma.infrahub import run_gql_query, get_instance_branch
 from emma.streamlit_utils import handle_reachability_error, set_page_config
 from menu import menu_with_redirect
+
 
 api_key = "EmmaDefaultAuthMakingInfrahubEasierToUse!!!11"
 
@@ -151,6 +152,7 @@ if st.sidebar.button("New Chat", disabled=buttons_disabled):
 if "infrahub_query_fid" not in st.session_state:
     with st.spinner(text="Processing the schema! Just a second."):
         gql_schema = get_gql_schema(st.session_state.infrahub_branch)
+        # gql_schema = get_gql_schema(branch=get_instance_branch())
 
         if not gql_schema:
             handle_reachability_error()
