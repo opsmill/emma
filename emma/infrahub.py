@@ -404,7 +404,7 @@ async def get_objects_as_df(
     include_id: bool = True,
     branch: str | None = "main",
     populate_store: bool | None = True,
-    prefetch_relationships: bool | None = True
+    prefetch_relationships: bool | None = True,
 ) -> pd.DataFrame | None:
     client: InfrahubClient = await get_client_async()
     if not await check_reachability_async(client=client):

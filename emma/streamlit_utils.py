@@ -16,13 +16,13 @@ from emma.infrahub import (
 )
 
 
-def get_current_page_name():
+def get_current_page():
     ctx = get_script_run_ctx()
     if ctx is None:
         raise RuntimeError("Couldn't get script context")
 
-    mgr = PagesManager.get_current()                  # singleton manager
-    pages: dict = mgr.pages                           # dict[page_hash → PageInfo]
+    mgr = PagesManager.get_current()  # singleton manager
+    pages: dict = mgr.pages  # dict[page_hash → PageInfo]
     page_info = pages.get(ctx.page_script_hash)
     if page_info is None:
         raise RuntimeError(f"No page found for hash {ctx.page_script_hash}")

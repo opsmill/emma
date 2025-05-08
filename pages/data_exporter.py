@@ -1,5 +1,5 @@
-from ipaddress import IPv4Network, IPv6Network
 import types
+from ipaddress import IPv4Network, IPv6Network
 from typing import Dict, List
 
 import pandas as pd
@@ -31,12 +31,7 @@ def convert_df_to_csv(df: pd.DataFrame) -> bytes:
 @st.cache_data
 def fetch_data(kind: str, branch: str) -> pd.DataFrame:
     """Fetches data once per session for the selected model."""
-    df = get_objects_as_df(
-        kind=kind,
-        include_id=False,
-        branch=branch,
-        prefetch_relationships=False
-    )
+    df = get_objects_as_df(kind=kind, include_id=False, branch=branch, prefetch_relationships=False)
     # Only convert IPv4Network and IPv6Network objects to strings
     for col in df.columns:
         if df[col].dtype == "object":  # Only check object columns
