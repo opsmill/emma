@@ -1,4 +1,5 @@
 import types
+from ipaddress import IPv4Network, IPv6Network
 from typing import Dict, List
 
 import pandas as pd
@@ -30,7 +31,14 @@ def convert_df_to_csv(df: pd.DataFrame) -> bytes:
 @st.cache_data
 def fetch_data(kind: str, branch: str) -> pd.DataFrame:
     """Fetches data once per session for the selected model."""
-    return get_objects_as_df(kind=kind, include_id=False, branch=branch)
+    df = get_objects_as_df(kind=kind, include_id=False, branch=branch, prefetch_relationships=False)
+    # Only convert IPv4Network and IPv6Network objects to strings
+    for col in df.columns:
+        if df[col].dtype == "object":  # Only check object columns
+            if df[col].apply(lambda x: isinstance(x, (IPv4Network, IPv6Network))).any():
+                df[col] = df[col].apply(lambda x: str(x) if isinstance(x, (IPv4Network, IPv6Network)) else x)
+
+    return df
 
 
 def get_column_labels(model_schema) -> ColumnLabels:
@@ -105,6 +113,8 @@ else:
             The columns marked as '(Mandatory)' cannot be omitted.
             """,
     )
+    # Omit all optional columns by default
+    st.session_state["omitted_columns"] = column_labels_info.optional
 
     # Multiselect for omitting columns
     omitted_columns = st.multiselect(

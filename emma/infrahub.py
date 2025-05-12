@@ -24,6 +24,7 @@ from infrahub_sdk.node import (
     RelationshipManager,
 )
 from infrahub_sdk.schema import GenericSchema, MainSchemaTypes, NodeSchema, SchemaLoadResponse
+from infrahub_sdk.types import Order
 from infrahub_sdk.utils import find_files
 from infrahub_sdk.yaml import SchemaFile
 from pydantic import BaseModel
@@ -398,51 +399,26 @@ async def create_branch(branch_name: str) -> BranchData | None:
 
 
 @run_async
-async def get_objects_as_df(kind: str, include_id: bool = True, branch: str | None = None) -> pd.DataFrame | None:
+async def get_objects_as_df(
+    kind: str,
+    include_id: bool = True,
+    branch: str | None = "main",
+    populate_store: bool | None = True,
+    prefetch_relationships: bool | None = True,
+) -> pd.DataFrame | None:
     client: InfrahubClient = await get_client_async()
     if not await check_reachability_async(client=client):
         return None
 
-    objs = await retrieve_nodes(client=client, kind=kind, branch=branch)
+    objs = await client.all(
+        kind=kind,
+        branch=branch,
+        populate_store=populate_store,
+        prefetch_relationships=prefetch_relationships,
+        fragment=True,
+        parallel=True,
+        order=Order(disable=True),
+    )
 
     df = pd.DataFrame([await convert_node_to_dict(obj, include_id=include_id) for obj in objs])
     return df
-
-
-# FIXME: Until https://github.com/opsmill/infrahub-sdk-python/issues/159
-async def retrieve_nodes(
-    client: InfrahubClient,
-    kind: str,
-    branch: str | None = "main",
-    page_size: int = 100,
-) -> list[InfrahubNode]:
-    # Retrieve the number of objects for this Kind
-    resp = await client.execute_graphql(query="query { " + f"{kind}" + " { count }}", branch_name=branch)
-    count = int(resp[f"{kind}"]["count"])
-
-    batch = await client.create_batch()
-    has_remaining_items = True
-    page_number = 1
-    # Creatting one client.all() query per page_size
-    while has_remaining_items:
-        page_offset = (page_number - 1) * page_size
-        batch.add(
-            task=client.all,
-            kind=kind,
-            offset=page_offset,
-            limit=page_size,
-            populate_store=True,
-            prefetch_relationships=True,
-            branch=branch,
-        )
-        remaining_items = count - (page_offset + page_size)
-
-        if remaining_items < 0:
-            has_remaining_items = False
-        page_number += 1
-
-    nodes = []
-    async for _, response in batch.execute():
-        nodes.extend(response)
-
-    return nodes

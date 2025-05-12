@@ -2,8 +2,8 @@ import asyncio
 
 import streamlit as st
 from streamlit.delta_generator import DeltaGenerator
+from streamlit.runtime.pages_manager import PagesManager
 from streamlit.runtime.scriptrunner import get_script_run_ctx
-from streamlit.source_util import get_pages
 
 from emma.infrahub import (
     check_reachability_async,
@@ -17,17 +17,16 @@ from emma.infrahub import (
 
 
 def get_current_page():
-    """This is a snippet from Zachary Blackwood using his st_pages package per
-    https://discuss.streamlit.io/t/how-can-i-learn-what-page-i-am-looking-at/56980
-    for getting the page name without having the script run twice as it does using
-    """
-    pages = get_pages("")
     ctx = get_script_run_ctx()
-    try:
-        current_page = pages[ctx.page_script_hash]
-    except KeyError:
-        current_page = [p for p in pages.values() if p["relative_page_hash"] == ctx.page_script_hash][0]
-    return current_page["page_name"]
+    if ctx is None:
+        raise RuntimeError("Couldn't get script context")
+
+    mgr = PagesManager.get_current()  # singleton manager
+    pages: dict = mgr.pages  # dict[page_hash → PageInfo]
+    page_info = pages.get(ctx.page_script_hash)
+    if page_info is None:
+        raise RuntimeError(f"No page found for hash {ctx.page_script_hash}")
+    return page_info.page_name
 
 
 def set_page_config(title: str | None = None, wide: bool | None = True):
