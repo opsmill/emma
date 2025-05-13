@@ -16,23 +16,23 @@ infrahub-sdk = {version = "^1", extras = ["all"]}
 watchdog = "^6.0.0"
 langchain = "^0.2.17"
 langchain-community = "^0.2.19"
-openai = "^1.59.8"
+openai = "^1.78.1"
 langchain-openai = "^0.1.22"
-streamlit-flow-component = "^1.2.9"
+streamlit-flow-component = "^1.6.1"
 streamlit-sortables = "^0.3.1"
 st-pages = "^1.0.1"
-jinja2 = "^3.1.5"
+jinja2 = "^3.1.6"
 gitpython = "^3.1.43"
 
 [tool.poetry.group.dev.dependencies]
-ruff = "^0.9"
+ruff = "^0.11"
 mypy = "*"
 yamllint = "^1.35.1"
 towncrier = "^24.7.1"
-pylint = "~3.1"
+pylint = "~3.3"
 types-pyyaml = "^6.0.12.20241230"
 invoke = "^2.2.0"
-types-pytz = "^2024.2.0.20241221"
+types-pytz = "^2025.2.0.20250326"
 
 
 [tool.coverage.run]
