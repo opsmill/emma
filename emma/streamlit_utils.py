@@ -2,7 +2,6 @@ import asyncio
 
 import streamlit as st
 from streamlit.delta_generator import DeltaGenerator
-from streamlit.runtime.pages_manager import PagesManager
 from streamlit.runtime.scriptrunner import get_script_run_ctx
 
 from emma.infrahub import (
@@ -21,12 +20,12 @@ def get_current_page():
     if ctx is None:
         raise RuntimeError("Couldn't get script context")
 
-    mgr = PagesManager.get_current()  # singleton manager
-    pages: dict = mgr.pages  # dict[page_hash → PageInfo]
-    page_info = pages.get(ctx.page_script_hash)
-    if page_info is None:
-        raise RuntimeError(f"No page found for hash {ctx.page_script_hash}")
-    return page_info.page_name
+    # Extract page name from main_script_path
+    if ctx.main_script_path.endswith("main.py"):
+        return "main"
+    # For pages, extract the filename without extension
+    filename = ctx.main_script_path.split("/")[-1]
+    return filename.replace(".py", "")
 
 
 def set_page_config(title: str | None = None, wide: bool | None = True):
