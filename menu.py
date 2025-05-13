@@ -33,6 +33,7 @@ def menu():
         st.page_link("pages/data_importer.py", label="📥 Data Importer")
         st.page_link("pages/schema_loader.py", label="📦 Schema Loader")
         st.page_link("pages/schema_library.py", label="📚 Schema Library")
+        st.page_link("pages/infrahub_explorer.py", label="🔍 Infrahub Explorer")
         # st.page_link("pages/schema_visualizer.py", label="👀 Schema Visualizer")
         # Example usage of feature flags
         if is_feature_enabled("test_page"):
