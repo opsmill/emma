@@ -6,7 +6,6 @@ import pandas as pd
 import requests
 import streamlit as st
 from langchain_community.agents.openai_assistant import OpenAIAssistantV2Runnable
-from langchain_core.messages import HumanMessage
 from openai import OpenAI
 
 from emma.streamlit_utils import set_page_config
