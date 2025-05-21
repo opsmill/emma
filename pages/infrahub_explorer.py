@@ -1,7 +1,8 @@
 import json
 import os
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
+from emma.infrahub import get_instance_address
 import pandas as pd
 import requests
 import streamlit as st
@@ -14,50 +15,121 @@ from menu import menu_with_redirect
 # ————————————————
 # Setup & state defaults
 # ————————————————
+for key, default in {
+    "infrahub_branch": "main",
+    "mcp_server_url": "http://localhost:8001",
+    "thread_id": None,
+    "messages": [],
+    # cache our tool-list and schema
+    "mcp_tools": None,
+    "schema_data": None,
+}.items():
+    if key not in st.session_state:
+        st.session_state[key] = default
 
+# OpenAI + Assistant client
 api_key = "EmmaDefaultAuthMakingInfrahubEasierToUse!!!11"
 client = OpenAI(base_url="https://emma.opsmill.cloud/v1", api_key=api_key)
 agent = OpenAIAssistantV2Runnable(
-    assistant_id=os.environ.get("INFRAHUB_EXPLORER_ASSISTANT_ID", "asst_1XurhPZgTg2iBk3FcuqWQH0l"),
+    assistant_id=os.environ.get(
+        "INFRAHUB_EXPLORER_ASSISTANT_ID",
+        "asst_1XurhPZgTg2iBk3FcuqWQH0l",
+    ),
     as_agent=True,
     client=client,
     check_every_ms=1000,
 )
 
-for key, default in {
-    "infrahub_branch": "main",
-    "mcp_server_url": "http://localhost:8001",
-    "thread_id": None,
-    # now each msg is a dict with keys: role, type, content/data
-    "messages": [],
-}.items():
-    if key not in st.session_state:
-        st.session_state[key] = default
 
+def call_mcp(tool: str, params: dict[str, Any] | None = None) -> dict | None:
+    """
+    JSON-RPC style call into the MCP server.
 
-def call_mcp(tool: str, params: Dict[str, Any]) -> Any:
+    Args:
+        tool: Name of the tool to call
+        params: Dictionary of parameters to pass to the tool
+
+    Returns:
+        dict: Result of the tool call or None if there was an error
+
+    """
+    extended_params = params
+    if st.session_state.infrahub_address:
+        extended_params["infrahub_url"] = get_instance_address()
+
+    if tool == "tools/discover":
+        payload = {"tool": "tools/discover", "params": {}}
+    else:
+        payload = {
+            "tool": "tools/call",
+            "params": {
+                "name": tool,
+                "arguments": extended_params
+            },
+        }
+
     resp = requests.post(
         url=st.session_state.mcp_server_url,
-        json={"tool": tool, "params": params},
-        timeout=30,
+        json=payload,
+        timeout=60,
     )
     resp.raise_for_status()
-    res = resp.json().get("result", {})
-    if not res.get("success", False):
-        st.error(f"MCP error: {res.get('error', 'Unknown')}")
+    data = resp.json()
+
+    # expected shape: {"result": ...}
+    result = data.get("result")
+    if result is None:
+        st.error(f"Malformed MCP reply: {data}")
         return None
-    return res
+
+    # for real tool calls, check success flag
+    if tool != "tools/discover" and not result.get("success", False):
+        st.error(f"MCP error: {result.get('error', 'Unknown')}")
+        return None
+
+    return result
 
 
 @st.cache_data
-def fetch_schema(branch: str) -> Dict[str, Any]:
-    r = call_mcp("infrahub_get_schema", {"infrahub_url": st.session_state.infrahub_address, "branch": branch})
+def discover_tools() -> list[dict[str, Any]]:
+    """Fetch the list of available MCP tools (name / description / parameters).
+
+    Returns:
+        list[dict[str, Any]]: List of tools, each with name, description, and parameters
+
+    """
+    tools = call_mcp("tools/discover", {})
+    return tools or []
+
+
+@st.cache_data
+def fetch_schema(branch: str) -> dict[str, Any]:
+    """Fetch the schema for the given branch from Infrahub.
+
+    Returns:
+        dict[str, Any]: Dictionary of all schema organized by kind
+
+    """
+    r = call_mcp(
+        "infrahub_get_schemas",
+        {
+            "branch": branch,
+            # omit 'kind' → None to get all schemas
+        },
+    )
     schemas = r.get("schemas", []) if r else []
     return {s["kind"]: s for s in schemas}
 
 
-schema_data = fetch_schema(branch=st.session_state.infrahub_branch)
+# On first run, populate our session_state
+if st.session_state.mcp_tools is None:
+    st.session_state.mcp_tools = discover_tools()
+if st.session_state.schema_data is None:
+    st.session_state.schema_data = fetch_schema(st.session_state.infrahub_branch)
 
+# ————————————————
+# UI Layout
+# ————————————————
 set_page_config(title="Infrahub Explorer")
 st.markdown("# Infrahub Explorer")
 menu_with_redirect()
@@ -71,27 +143,23 @@ with st.expander("MCP Server Configuration", expanded=False):
 # ————————————————
 # Chat input & handling
 # ————————————————
-
 demo_prompts = [
-    "Retrieve the schema for the Tag",
+    "Retrieve the schema for Tag",
     "List all the tags",
     "Give me the name of all the Devices",
+    "Give me the interfaces of the Device named 'atl1-edge1'",
 ]
 
 if not st.session_state.messages:
-    # Add buttons for demo prompts
     st.markdown("Example of prompt you can use:")
-
     for demo in demo_prompts:
         if st.button(demo):
             st.session_state.prompt_input = demo
-
     st.markdown("Or enter a message below to start.")
-
 
 prompt = st.chat_input("Enter your message")
 
-# Set the input field
+# If using a demo button
 if "prompt_input" in st.session_state:
     prompt = st.session_state.prompt_input
     del st.session_state.prompt_input
@@ -103,197 +171,191 @@ for message in st.session_state.messages:
     else:
         msg_type = message.get("type", "text")
         if msg_type == "dataframe":
-            # assume you stored records under "data"
             df = pd.DataFrame.from_records(message["content"])
             st.dataframe(df)
-
         elif msg_type == "csv":
             st.download_button("📥 Download CSV", message["content"], "data.csv", "text/csv")
-
         elif msg_type == "json" and message["role"] == "assistant":
             with st.expander("🔧 Agent JSON (debug)", expanded=False):
                 st.code(message["content"], language="json")
-
         else:
-            # fallback to plain text
             st.markdown(message["content"])
 
 # Handle new user input
 if prompt:
-    # 1) record user
+    # 1) record user message
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
 
-    # 2) ask the agent
-    sys = (
-        "You’re a high-performance Infrahub AI assistant. "
-        "Interpret the user’s request and output *only* one JSON object with these keys:\n"
-        "- action: one of “fetch_nodes”, “count”, or “fetch_schema”\n"
-        "- kind: the object type (required for all actions, including fetch_schema)\n"
-        "- filters: a dict of filters to apply (use {} for fetch_schema)\n"
-        "- partial_match: boolean (true or false; use false for fetch_schema)\n"
-        "- output: “dataframe” or “csv” (use null for fetch_schema)\n"
-        "- columns: optional list of column names (use null or omit for fetch_schema)\n"
-        "If the user asks to filter on any attribute (e.g. “any attribute”, “attributes”), "
-        "use key “any” (not “attributes”).\n"
-        "No extra text, only the JSON."
-    )
-    with st.chat_message("assistant"):
-        chat_input = {"content": f"System: {sys}\nUser: {prompt}\nKinds: {list(schema_data.keys())}"}
+    # 2) ask the assistant
+    tool_list_md = "\n".join(f"- **{t['name']}**: {t['description']}" for t in st.session_state.mcp_tools)
+    kinds_md = ", ".join(list(st.session_state.schema_data.keys()))
 
+    system_prompt = f"""
+        You’re a high-performance Infrahub AI assistant.  You have these MCP tools:
+        {tool_list_md}
+
+        Valid schema kinds are: {kinds_md}
+
+        RULES:
+        1) If the user asks about a kind in the list, call exactly one of your tools.
+
+        2) If they ask about a kind _not_ in the list, call `infrahub_get_schemas` with no args.
+
+        3) Always output *only* one JSON object:
+            {{
+            "action": "<tool name>",
+            "arguments": {{ ... }}
+            }}
+
+        EXAMPLES:
+        User: Retrieve the schema for Device
+            {{
+                "action": "infrahub_get_schemas",
+                "arguments": {{ "kind": "{{ valid kind from above }}", "branch": "{st.session_state.infrahub_branch}" }}
+            }}
+
+        User: List all the tags
+            {{
+                "action": "infrahub_get_nodes",
+                "arguments": {{ "kind": "{{ valid kind from above }}", "branch": "{st.session_state.infrahub_branch}" }}
+            }}
+
+        User: Retrieve the interfaces of the device 'atl1-core1'
+            {{
+                "action": "infrahub_get_related_nodes",
+                "arguments": {{
+                    "kind": "{{ valid kind from above }}",
+                    "filters": {{ "hfid__value": "atl1-core1" }},
+                    "relation": "interfaces",
+                    "branch": "{st.session_state.infrahub_branch}"
+                }}
+            }}
+
+        User: Retrieve the interfaces of the device '183e2e4e-a505-c9c9-3b9c-1065606772de'
+            {{
+                "action": "infrahub_get_related_nodes",
+                "arguments": {{
+                    "kind": "{{ valid kind from above }}",
+                    "filters": {{ "ids": ["183e2e4e-a505-c9c9-3b9c-1065606772de"] }},
+                    "relation": "interfaces",
+                    "branch": "{st.session_state.infrahub_branch}"
+                }}
+            }}
+
+        No extra text.only the JSON.
+    """
+
+    # invoke the assistant
+    with st.chat_message("assistant"):
+        chat_input = {
+            "content": f"System: {system_prompt}\nUser: {prompt}"
+        }
         if st.session_state.thread_id:
             chat_input["thread_id"] = st.session_state.thread_id
-        with st.spinner(text="Thinking..."):
-            resp = agent.invoke(input=chat_input)
+        resp = agent.invoke(input=chat_input)
 
+    # persist thread id
     if not st.session_state.thread_id:
         st.session_state.thread_id = resp.return_values.get("thread_id")
 
     raw = resp.return_values.get("output", "").strip()
-    # strip fences
     if raw.startswith("```"):
         raw = raw.strip("`").replace("json", "", 1).strip()
 
-    # 3) store the JSON under a collapsed expander
+    # store JSON for debug
     st.session_state.messages.append({"role": "assistant", "type": "json", "content": raw})
 
-    # 4) parse it
+    # parse
     try:
-        opts = json.loads(raw)
-    except json.JSONDecodeError:
-        st.session_state.messages.append(
-            {"role": "assistant", "type": "text", "content": "❗ Failed to parse agent JSON"}
-        )
-        opts = {}
-
-    # 5) perform the action
-    action = opts.get("action")
-    kind = opts.get("kind", None)
-    filters = opts.get("filters", [])
-    pm = opts.get("partial_match", False)
-    out = opts.get("output", "dataframe")
-    cols = opts.get("columns")
-
-    # stylesheet: coerce single string -> list
-    if isinstance(cols, str):
-        cols = [cols]
+        call = json.loads(raw)
+        action = call["action"]
+        args = call.get("arguments", {})
+    except Exception:
+        st.session_state.messages.append({
+            "role": "assistant", "type": "text",
+            "content": "❗ Failed to parse assistant JSON"
+        })
+        action = args = None
 
     df: Optional[pd.DataFrame] = None
 
-    if action in ("fetch_nodes", "count"):
-        params = []
-        if not kind and filters:
-            if filters.get("kind"):
-                kind = filters.get("kind")
-                del filters["kind"]
-        if not kind:
-            st.session_state.messages.append({"role": "assistant", "type": "text", "content": "❌ No kind specified"})
+    # handle each tool
+    if action == "infrahub_get_nodes":
+        res = call_mcp(action, args)
+        if res:
+            nodes = res.get("nodes", [])
+            df = pd.json_normalize(nodes)
+    elif action == "infrahub_get_schemas":
+        res = call_mcp(action, args)
+        # case A: you got the full list back
+        if res and "schemas" in res:
+            schemas = res["schemas"]
+            df = pd.DataFrame([
+                {"kind": s["kind"], "attrs": len(s["attributes"]), "rels": len(s["relationships"])}
+                for s in schemas
+            ])
+        # case B: you got a single schema back
+        if res and "attributes" in res and "relationships" in res:
+            # header
+            st.session_state.messages.append({
+                "role": "assistant",
+                "type": "text",
+                "content": f"## Schema: {res.get('kind','?')}"
+            })
+            # attributes table
+            if res["attributes"]:
+                st.session_state.messages.append({
+                    "role": "assistant",
+                    "type": "dataframe",
+                    "content": pd.json_normalize(res["attributes"]).to_dict("records")
+                })
+            # relationships table
+            if res["relationships"]:
+                st.session_state.messages.append({
+                    "role": "assistant",
+                    "type": "dataframe",
+                    "content": pd.json_normalize(res["relationships"]).to_dict("records")
+                })
             df = None
         else:
-            params = {
-                "infrahub_url": st.session_state.infrahub_address,
-                "kind": kind,
-                "branch": st.session_state.infrahub_branch,
-                "partial_match": pm,
-            }
-        if filters:
-            params["filters"] = filters
-        nodes = call_mcp("infrahub_get_nodes", params).get("nodes", []) or []
-        df = pd.json_normalize(nodes)
-        df.columns = [c.split(".", 1)[1] if c.startswith(("attributes.", "relationships.")) else c for c in df.columns]
-        if action == "count":
-            st.session_state.messages.append(
-                {"role": "assistant", "type": "text", "content": f"**Count:** {len(df)} ✅"}
-            )
+            # unexpected shape
+            st.session_state.messages.append({
+                "role": "assistant",
+                "type": "text",
+                "content": f"❗ Unexpected response shape from infrahub_get_schemas: {res}"
+            })
             df = None
-        else:
-            st.session_state.last_df = df
-            st.session_state.last_kind = kind
+    elif action == "infrahub_get_related_nodes":
+        # if not args.get("node_id"):
+        #     kind = args["kind"]
+        #     name = args["arguments"].pop("name__value", None)
+        #     # fetch the node to get its id
+        #     node_res = call_mcp("infrahub_get_nodes", {
+        #         "kind": kind, "branch": st.session_state.infrahub_branch,
+        #         "filters": {"any__value": name}
+        #     })
+        #     node_id = node_res["nodes"][0]["index"]
+        #     args["node_id"] = node_id
 
-    elif action == "fetch_schema":
-        if kind or filters:
-            if not kind and filters:
-                kind = filters.get("kind")
-            schema = schema_data.get(kind)
-            if not schema:
-                st.session_state.messages.append(
-                    {"role": "assistant", "type": "text", "content": f"No schema found for kind '{kind}'"}
-                )
-            else:
-                # render attributes & relationships under expanders
-                st.session_state.messages.append({"role": "assistant", "type": "text", "content": f"## Schema: {kind}"})
-                attrs = schema.get("attributes", [])
-                if attrs:
-                    st.session_state.messages.append(
-                        {
-                            "role": "assistant",
-                            "type": "dataframe",
-                            "content": pd.json_normalize(attrs).to_dict(orient="records"),
-                        }
-                    )
-                rels = schema.get("relationships", [])
-                if rels:
-                    st.session_state.messages.append(
-                        {
-                            "role": "assistant",
-                            "type": "dataframe",
-                            "content": pd.json_normalize(rels).to_dict(orient="records"),
-                        }
-                    )
-        else:
-            # high-level summary of all schemas
-            summary = [
-                {
-                    "kind": k,
-                    "attributes": len(v.get("attributes", [])),
-                    "relationships": len(v.get("relationships", [])),
-                }
-                for k, v in schema_data.items()
-            ]
-            df = pd.DataFrame(summary)
+        res = call_mcp(action, args)
+        if res:
+            nodes = res.get("nodes", [])
+            df = pd.json_normalize(nodes)
 
-    # 6) if there's a leftover DataFrame to show
+    elif action == "infrahub_query_graphql":
+        res = call_mcp(action, args)
+        if res:
+            data = res.get("data", {})
+            st.session_state.messages.append({"role": "assistant", "type": "json", "content": json.dumps(data, indent=2)})
+    else:
+        st.session_state.messages.append(
+            {"role": "assistant", "type": "text", "content": f"❌ Unknown action: {action}"}
+        )
+
+    # render DataFrame if present
     if df is not None:
-        # column filter
-        if cols:
-            available = df.columns.tolist()
-            lookup = {c.lower(): c for c in available}
-            pick = []
-            for r in cols:
-                if r in available:
-                    pick.append(r)
-                elif r.lower() in lookup:
-                    pick.append(lookup[r.lower()])
-                else:
-                    for p in ("attributes.", "relationships."):
-                        c2 = p + r
-                        if c2 in available:
-                            pick.append(c2)
-                            break
-            if pick:
-                df = df[pick]
-            else:
-                st.session_state.messages.append(
-                    {
-                        "role": "assistant",
-                        "type": "text",
-                        "content": (
-                            f"None of the requested columns were found.\nRequested: {cols}\nAvailable: {available}"
-                        ),
-                    }
-                )
-                df = None
+        st.session_state.messages.append({"role": "assistant", "type": "dataframe", "content": df.to_dict("records")})
 
-        # store and/or serialize
-        if df is not None:
-            if out == "csv":
-                csv = df.to_csv(index=False)
-                st.session_state.messages.append({"role": "assistant", "type": "csv", "content": csv})
-            else:
-                st.session_state.messages.append(
-                    {"role": "assistant", "type": "dataframe", "content": df.to_dict(orient="records")}
-                )
-
-    # 7) refresh so the top-loop will render everything
     st.rerun()
