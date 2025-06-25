@@ -12,22 +12,25 @@ updates:
       time: "09:00"
     target-branch: main
     labels:
-      - "type/housekeeping"
+      - "changes/patch"
     groups:
       all:
         patterns:
           - "*"
 
+  # Group all pip updates except infrahub-sdk
   - package-ecosystem: "pip"
     directory: "/"
     schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "09:00"
+      interval: "daily"
+      time: "12:00"
     target-branch: main
     labels:
-      - "type/housekeeping"
+      - "changes/patch"
     groups:
       all:
         patterns:
-          - "*"
+          - "^(?!infrahub-sdk$).*"  # Regex to exclude infrahub-sdk
+      infrahub-sdk:
+        patterns:
+          - "infrahub-sdk"

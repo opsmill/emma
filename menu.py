@@ -43,6 +43,7 @@ def menu():
             if is_feature_enabled("alpha_builders"):
                 st.page_link("pages/query_builder.py", label="🔍 Query Builder")
                 st.page_link("pages/template_builder.py", label="📝 Template Builder")
+                st.page_link("pages/docs_agent.py", label="📚 Docs Agent")
 
 
 def menu_with_redirect():
