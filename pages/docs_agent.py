@@ -45,7 +45,6 @@ with col2:
     st.subheader("🪄 AI-Refactored Output")
     if user_input:
         with st.spinner("Refactoring..."):
-
             response = agent.invoke(
                 input={"content": user_input},
             )
