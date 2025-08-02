@@ -38,8 +38,6 @@ const sidebars: SidebarsConfig = {
         'reference/feature-flags',
       ],
     },
-    'screenshots',
-    'experimental',
   ]
 };
 
