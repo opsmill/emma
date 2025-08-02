@@ -41,6 +41,9 @@ npm run build  # Build documentation
 # Markdown linting (run from project root)
 markdownlint docs/docs/**/*.mdx
 markdownlint --fix docs/docs/**/*.mdx  # Auto-fix issues
+
+# Vale documentation style validation (requires Vale to be installed)
+vale $(find ./docs -type f \( -name "*.mdx" -o -name "*.md" \) | grep -v node_modules)
 ```
 
 ### Docker
