@@ -10,6 +10,10 @@ node_modules/*
 .python-version
 .venv
 **/__pycache__
+.mypy_cache
+# .pytest_cache
+# .ruff_cache
+.claude
 
 # Direnv files (https://direnv.net/)
 .direnv/
