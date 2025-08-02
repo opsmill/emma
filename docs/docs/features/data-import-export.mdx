@@ -1,30 +1,28 @@
 ---
-title: Data Import & Export
+title: Data Import and Export
 ---
 
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
-# Data Import & Export
-
 Emma provides powerful tools for importing data into Infrahub from CSV files and exporting Infrahub data back to CSV format. This enables easy migration from existing systems and data sharing between tools.
 
 ![Data Exporter](../static/data_exporter.png)
 
-## Data Import
+## Data import
 
 The Data Importer allows you to upload CSV files and map their columns to Infrahub schema attributes, making it easy to bulk-load infrastructure data.
 
-### Supported File Formats
+### Supported file formats
 
 - **CSV files** with headers
 - **UTF-8 encoding** (recommended)
 - **Common delimiters**: comma, semicolon, tab
 - **File size**: Up to 100MB per upload
 
-### Import Process
+### Import process
 
-#### Step 1: Prepare Your Data
+#### Step 1: Prepare your data
 
 Ensure your CSV file:
 
@@ -41,7 +39,7 @@ switch-01,Cisco 3850,FCW2140L0EF,datacenter-1,192.168.1.10,active
 switch-02,Cisco 3850,FCW2140L0EG,datacenter-1,192.168.1.11,active
 ```
 
-#### Step 2: Upload and Map
+#### Step 2: Upload and map
 
 1. **Select your CSV file** using the file upload interface
 2. **Choose the target schema** from your Infrahub instance
@@ -49,7 +47,7 @@ switch-02,Cisco 3850,FCW2140L0EG,datacenter-1,192.168.1.11,active
 4. **Configure relationship handling** for foreign key references
 5. **Set data validation options** like duplicate handling
 
-#### Step 3: Preview and Validate
+#### Step 3: Preview and validate
 
 Emma provides a preview showing:
 
@@ -58,7 +56,7 @@ Emma provides a preview showing:
 - **Relationship resolution** - How foreign keys will be resolved
 - **Import statistics** - Number of records to be created/updated
 
-#### Step 4: Execute Import
+#### Step 4: Execute import
 
 After reviewing the preview:
 
@@ -66,7 +64,7 @@ After reviewing the preview:
 2. **Monitor progress** through the real-time status updates
 3. **Review results** including success/failure counts and any error details
 
-### Advanced Import Features
+### Advanced import features
 
 <Tabs>
 <TabItem value="relationships" label="Relationship Handling" default>
@@ -143,13 +141,13 @@ For large datasets:
 </TabItem>
 </Tabs>
 
-## Data Export
+## Data export
 
 The Data Exporter extracts data from Infrahub and formats it as CSV files for use in other tools or for backup purposes.
 
-### Export Options
+### Export options
 
-#### Schema-Based Export
+#### Schema-based export
 
 Export all objects of a specific schema type:
 
@@ -158,7 +156,7 @@ Export all objects of a specific schema type:
 3. **Configure relationship handling** (include related object details)
 4. **Set filtering criteria** to limit exported records
 
-#### Query-Based Export
+#### Query-based export
 
 Export data using custom filters:
 
@@ -167,7 +165,7 @@ Export data using custom filters:
 - **Relationship filters** - Filter based on related object properties
 - **Complex queries** - Combine multiple filter criteria
 
-#### Bulk Export
+#### Bulk export
 
 Export multiple schema types in a single operation:
 
@@ -175,7 +173,7 @@ Export multiple schema types in a single operation:
 - **Dependency order** - Automatic ordering for reimport compatibility
 - **Consistent snapshots** - Ensure data consistency across exports
 
-### Export Formats
+### Export formats
 
 Emma supports multiple CSV format options:
 
@@ -198,9 +196,9 @@ Emma supports multiple CSV format options:
 - Include relationship IDs
 - Export related object details
 
-### Advanced Export Features
+### Advanced export features
 
-#### Incremental Export
+#### Incremental export
 
 Export only changes since last export:
 
@@ -208,7 +206,7 @@ Export only changes since last export:
 - **Change tracking** - Export based on Infrahub's change tracking
 - **Delta exports** - Include only modified fields
 
-#### Scheduled Exports
+#### Scheduled exports
 
 Configure automated exports:
 
@@ -216,9 +214,9 @@ Configure automated exports:
 - **Event-triggered** - Export on data changes
 - **Multiple formats** - Generate different exports for different consumers
 
-## Data Quality and Validation
+## Data quality and validation
 
-### Import Validation
+### Import validation
 
 Emma validates imported data against:
 
@@ -227,7 +225,7 @@ Emma validates imported data against:
 - **Constraints** - Check uniqueness, required fields, and custom rules
 - **Relationships** - Verify referenced objects exist
 
-### Export Verification
+### Export verification
 
 Exported data includes:
 
@@ -235,9 +233,9 @@ Exported data includes:
 - **Integrity checks** - Checksums for data verification
 - **Audit trail** - Information about data source and transformation
 
-## Best Practices
+## Best practices
 
-### Import Best Practices
+### Import best practices
 
 1. **Validate data quality** before import using external tools
 2. **Start with small batches** to test mappings and validations
@@ -245,7 +243,7 @@ Exported data includes:
 4. **Clean up data** to remove duplicates and inconsistencies
 5. **Backup Infrahub** before large imports
 
-### Export Best Practices
+### Export best practices
 
 1. **Document export purposes** to choose appropriate options
 2. **Test import compatibility** if exporting for reimport
@@ -253,7 +251,7 @@ Exported data includes:
 4. **Include metadata** for audit and tracking purposes
 5. **Validate exported data** before using in downstream systems
 
-### Performance Optimization
+### Performance optimization
 
 1. **Use appropriate batch sizes** (typically 100-1000 records)
 2. **Limit concurrent operations** to avoid overwhelming Infrahub
@@ -261,9 +259,9 @@ Exported data includes:
 4. **Use filtering** to export only necessary data
 5. **Schedule large operations** during low-usage periods
 
-## Integration Scenarios
+## Integration scenarios
 
-### Common Use Cases
+### Common use cases
 
 **Migration from Legacy Systems:**
 
@@ -289,7 +287,7 @@ Exported data includes:
 - Create regular data extracts for reporting
 - Integration with data lakes and warehouses
 
-### Integration with Other Emma Features
+### Integration with other Emma features
 
 - **Schema Library** - Use library schemas as import targets
 - **Schema Builder** - Create schemas for imported data
@@ -297,7 +295,7 @@ Exported data includes:
 
 ## Troubleshooting
 
-### Common Import Issues
+### Common import issues
 
 **File Upload Problems:**
 
@@ -323,7 +321,7 @@ Exported data includes:
 - Check network connectivity
 - Monitor Infrahub resource usage
 
-### Common Export Issues
+### Common export issues
 
 **Missing Data:**
 

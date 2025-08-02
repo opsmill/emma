@@ -2,8 +2,6 @@
 title: Schema Library
 ---
 
-# Schema Library
-
 Emma's Schema Library provides a curated collection of ready-to-use schemas for common infrastructure components. These schemas are designed by the community and OpsMill to reflect real-world infrastructure needs and best practices.
 
 ## Overview
@@ -16,13 +14,13 @@ The Schema Library offers:
 - **Documentation and examples** for each schema
 - **Regular updates** with new schemas and improvements
 
-## Library Organization
+## Library organization
 
 ### Base Schemas
 
 Foundation schemas that other schemas build upon:
 
-#### Core Infrastructure
+#### Core infrastructure
 
 - **Device** - Base class for all infrastructure devices
 - **Interface** - Network interfaces and connections
@@ -30,14 +28,14 @@ Foundation schemas that other schemas build upon:
 - **Organization** - Companies, vendors, and organizational units
 - **Person** - Individual people and contacts
 
-#### Network Fundamentals
+#### Network fundamentals
 
 - **IPAddress** - IPv4 and IPv6 address management
 - **IPPrefix** - Network subnets and prefixes
 - **VLAN** - Virtual LAN definitions
 - **VRF** - Virtual Routing and Forwarding instances
 
-#### Physical Infrastructure
+#### Physical infrastructure
 
 - **Rack** - Equipment racks and enclosures
 - **Power** - Power distribution and consumption
@@ -48,7 +46,7 @@ Foundation schemas that other schemas build upon:
 
 Specialized schemas for specific domains and technologies:
 
-#### Routing and Switching
+#### Routing and switching
 
 - **BGP** - Border Gateway Protocol configuration
 - **OSPF** - Open Shortest Path First protocol
@@ -63,14 +61,14 @@ Specialized schemas for specific domains and technologies:
 - **Certificate** - SSL/TLS certificate management
 - **VPN** - Virtual Private Network configurations
 
-#### Cloud and Virtualization
+#### Cloud and virtualization
 
 - **VirtualMachine** - VM instances and configurations
 - **Container** - Container and Kubernetes resources
 - **CloudProvider** - Cloud service provider resources
 - **LoadBalancer** - Load balancing configurations
 
-#### Compute and Storage
+#### Compute and storage
 
 - **Server** - Physical and virtual servers
 - **Storage** - Storage arrays and volumes
@@ -88,37 +86,37 @@ Specialized schemas for specific domains and technologies:
 
 Cutting-edge schemas for emerging technologies:
 
-#### Modern Infrastructure
+#### Modern infrastructure
 
 - **ServiceMesh** - Service mesh configurations
 - **API** - API definitions and documentation
 - **Microservice** - Microservice architectures
 - **GitOps** - GitOps workflow definitions
 
-#### Automation and Orchestration
+#### Automation and orchestration
 
 - **Playbook** - Ansible and automation playbooks
 - **Pipeline** - CI/CD pipeline definitions
 - **Webhook** - Webhook configurations
 - **Event** - Event-driven architectures
 
-#### Monitoring and Observability
+#### Monitoring and observability
 
 - **Monitor** - Monitoring system configurations
 - **Alert** - Alerting rules and policies
 - **Dashboard** - Monitoring dashboards
 - **SLA** - Service Level Agreements
 
-## Using Library Schemas
+## Using library schemas
 
-### Browsing the Library
+### Browsing the library
 
 1. **Navigate to Schema Library** in Emma's sidebar
 2. **Browse by category** (Base, Extensions, Experimental)
 3. **Search by name or description** to find specific schemas
 4. **View schema details** including attributes, relationships, and examples
 
-### Schema Information
+### Schema information
 
 Each library schema includes:
 
@@ -143,23 +141,23 @@ Each library schema includes:
 - Best practices for data modeling
 - Common pitfalls and how to avoid them
 
-### Loading Library Schemas
+### Loading library schemas
 
-#### Individual Schema Loading
+#### Individual schema loading
 
 1. **Select a schema** from the library browser
 2. **Review dependencies** - Emma shows required base schemas
 3. **Click "Load Schema"** to install into Infrahub
 4. **Verify installation** using the Schema Visualizer
 
-#### Bulk Loading
+#### Bulk loading
 
 1. **Select multiple schemas** using checkboxes
 2. **Review dependency tree** for all selected schemas
 3. **Load in dependency order** - Emma handles sequencing
 4. **Monitor progress** through the loading status display
 
-#### Dependency Management
+#### Dependency management
 
 Emma automatically:
 
@@ -168,9 +166,9 @@ Emma automatically:
 - **Warns about conflicts** with existing schemas
 - **Handles circular dependencies** with clear error messages
 
-## Customizing Library Schemas
+## Customizing library schemas
 
-### Local Modifications
+### Local modifications
 
 Library schemas can serve as starting points for customization:
 
@@ -188,7 +186,7 @@ Library schemas can serve as starting points for customization:
 - Implement custom validation rules
 - Create derived schemas for specialized use cases
 
-### Best Practices for Customization
+### Best practices for customization
 
 **Naming Conventions:**
 
@@ -204,7 +202,7 @@ Library schemas can serve as starting points for customization:
 - Document deviations from standards
 - Plan migration strategies
 
-### Contributing Back
+### Contributing back
 
 The Schema Library benefits from community contributions:
 
@@ -222,11 +220,11 @@ The Schema Library benefits from community contributions:
 - Include example data and use cases
 - Submit through the appropriate channels
 
-## Integration Patterns
+## Integration patterns
 
-### Common Scenarios
+### Common scenarios
 
-#### Network Infrastructure Setup
+#### Network infrastructure setup
 
 **Basic Network:**
 
@@ -242,7 +240,7 @@ The Schema Library benefits from community contributions:
 Organization → Location → Device → Interface → VLAN → BGP
 ```
 
-#### Data Center Modeling
+#### Data center modeling
 
 **Physical Infrastructure:**
 
@@ -252,7 +250,7 @@ Organization → Location → Device → Interface → VLAN → BGP
 4. Add Server and Storage schemas
 5. Include networking and security schemas
 
-#### Cloud Infrastructure
+#### Cloud infrastructure
 
 **Multi-Cloud Setup:**
 
@@ -261,7 +259,7 @@ Organization → Location → Device → Interface → VLAN → BGP
 3. Include LoadBalancer and Security schemas
 4. Add monitoring and automation schemas
 
-### Schema Relationships
+### Schema relationships
 
 Understanding how library schemas connect:
 
@@ -278,9 +276,9 @@ Understanding how library schemas connect:
 - IP addresses assigned to Interfaces
 - VLANs spanning multiple Devices
 
-## Library Maintenance
+## Library maintenance
 
-### Version Management
+### Version management
 
 **Schema Versioning:**
 
@@ -295,7 +293,7 @@ Understanding how library schemas connect:
 - Migration guides provided for major version changes
 - Deprecation notices for removed features
 
-### Update Process
+### Update process
 
 **Regular Updates:**
 
@@ -311,9 +309,9 @@ Understanding how library schemas connect:
 - Test updates in development environments
 - Plan migration for deprecated schemas
 
-## Advanced Usage
+## Advanced usage
 
-### Schema Composition
+### Schema composition
 
 Building complex models from library components:
 
@@ -331,7 +329,7 @@ Building complex models from library components:
 - Include operational and business context
 - Enable service-level reporting and automation
 
-### Integration with External Systems
+### Integration with external systems
 
 **Data Import/Export:**
 
@@ -349,7 +347,7 @@ Building complex models from library components:
 
 ## Troubleshooting
 
-### Common Issues
+### Common issues
 
 **Schema Not Found:**
 
@@ -372,7 +370,7 @@ Building complex models from library components:
 - Review schema validation errors
 - Check for name conflicts
 
-### Performance Considerations
+### Performance considerations
 
 **Large Library Sets:**
 
@@ -381,16 +379,16 @@ Building complex models from library components:
 - Clear browser cache periodically
 - Monitor network performance
 
-## Getting Help
+## Getting help
 
-### Documentation Resources
+### Documentation resources
 
 - **Schema descriptions** within the library browser
 - **Example data** for each schema
 - **Best practice guides** for common scenarios
 - **Community forums** for questions and discussion
 
-### Support Channels
+### Support channels
 
 - **GitHub Issues** for bug reports and feature requests
 - **Community Discussions** for usage questions
