@@ -42,7 +42,6 @@ branch = true
 exclude_lines = ["if TYPE_CHECKING:", "raise NotImplementedError()"]
 
 [tool.pytest.ini_options]
-asyncio_mode = "auto"
 testpaths = ["tests"]
 filterwarnings = ["ignore:pkg_resources is deprecated"]
 addopts = "-vs"
@@ -202,6 +201,7 @@ max-line-length = 150
 max-complexity = 15
 
 [tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S101", "PLC0415"]  # Allow assert in tests and imports within functions
 
 [tool.pylint.general]
 extension-pkg-whitelist = ["pydantic", "ujson"]
