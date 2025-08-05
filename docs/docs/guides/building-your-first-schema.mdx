@@ -18,7 +18,7 @@ By the end of this guide, you'll have created a "NetworkDevice" schema that incl
 Before starting, ensure you have:
 
 - Emma running and connected to your Infrahub instance
-- Basic understanding of what schemas are (see [First Steps](../getting-started/first-steps))
+- Basic understanding of what schemas are (see [First Steps](../getting-started/first-steps.mdx))
 - An OpenAI API key configured for AI features
 
 ## Step 1: Plan your schema
@@ -113,12 +113,12 @@ schemas:
 
 ### Verify key elements
 
-✅ **Naming**: Schema name follows your conventions  
-✅ **Namespace**: Appropriate namespace for organization  
-✅ **Inheritance**: Inherits from appropriate base schema  
-✅ **Attributes**: All required attributes are present with correct types  
-✅ **Relationships**: References to Location and Organization schemas  
-✅ **Validation**: IP address validation and required field constraints  
+✅ **Naming**: Schema name follows your conventions
+✅ **Namespace**: Appropriate namespace for organization
+✅ **Inheritance**: Inherits from appropriate base schema
+✅ **Attributes**: All required attributes are present with correct types
+✅ **Relationships**: References to Location and Organization schemas
+✅ **Validation**: IP address validation and required field constraints
 
 ## Step 5: Refine if needed
 
@@ -209,29 +209,29 @@ Then:
 
 ### Schema generation issues
 
-**Problem**: AI generates incorrect attribute types  
+**Problem**: AI generates incorrect attribute types
 **Solution**: Be more specific about data types in your description, for example: "IPv4 address" instead of "IP address"
 
-**Problem**: Missing relationships  
+**Problem**: Missing relationships
 **Solution**: Explicitly mention all required relationships and their cardinality
 
-**Problem**: Schema doesn't inherit correctly  
+**Problem**: Schema doesn't inherit correctly
 **Solution**: Check if base schemas exist in your Infrahub instance first
 
 ### Schema loading issues
 
-**Problem**: Validation errors when loading  
+**Problem**: Validation errors when loading
 **Solution**: Check that referenced schemas (Location, Organization) exist in Infrahub
 
-**Problem**: Namespace conflicts  
+**Problem**: Namespace conflicts
 **Solution**: Use unique namespaces or check existing schema names
 
 ### Data import issues
 
-**Problem**: Relationship resolution fails  
+**Problem**: Relationship resolution fails
 **Solution**: Ensure referenced objects (locations, vendors) exist before importing devices
 
-**Problem**: Validation errors on IP addresses  
+**Problem**: Validation errors on IP addresses
 **Solution**: Verify IP address format in your CSV data
 
 ## Next steps
@@ -265,9 +265,9 @@ Congratulations! You've created your first schema with Emma. Here's what to expl
 
 ## Resources
 
-- [Schema Builder Reference](../features/schema-builder) - Detailed Schema Builder documentation
+- [Schema Builder Reference](../features/schema-builder.mdx) - Detailed Schema Builder documentation
 - [Schema Library](https://docs.infrahub.app/schema-library) - Pre-built schemas and examples
-- [Data Import & Export](../features/data-import-export) - Advanced data import techniques
+- [Data Import & Export](../features/data-import-export.mdx) - Advanced data import techniques
 - [Infrahub Schema Documentation](https://docs.infrahub.app/reference/schema/) - Official schema reference
 
 You're now ready to build more complex schemas and models with Emma!
