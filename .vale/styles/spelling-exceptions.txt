@@ -8,6 +8,7 @@ append_git_suffix
 artifact_definitions
 artifact_name
 async
+auditable
 Authentik
 boolean
 certifi
@@ -45,6 +46,7 @@ eslint
 excalidraw
 fanout
 file_path
+Gbps
 generate_artifacts
 generator_definition
 generator_definitions
@@ -63,6 +65,7 @@ httpx
 human_friendly_id
 id_token
 idempotency
+idempotently
 include_in_menu
 Infrahub
 Infrahub's
@@ -83,12 +86,14 @@ json
 JSONSchema
 kbps
 Keycloak
+Kriten
 kubectl
 LibreNMS
 livestream
 Loopbacks
 markdownlint
 max_count
+Mbps
 memgraph
 menu_placement
 min_max
@@ -99,6 +104,7 @@ namespaces
 Nautobot
 Neo4j
 Netbox
+Netpicker
 NetPicker
 Netutils
 Newsfragment
@@ -151,6 +157,7 @@ Tooltips
 towncrier
 Towncrier
 TruffleHog
+UIs
 uncheck
 uniqueness_constraints
 upsert
@@ -169,6 +176,8 @@ VLANs
 vscode
 VSCode
 walkthrough
+widget's
+Widget's
 Yaml
 yamllint
 YouTube
