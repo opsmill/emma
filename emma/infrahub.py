@@ -25,7 +25,6 @@ from infrahub_sdk.node import (
 )
 from infrahub_sdk.schema import GenericSchema, MainSchemaTypes, NodeSchema, SchemaLoadResponse
 from infrahub_sdk.types import Order
-from infrahub_sdk.utils import find_files
 from infrahub_sdk.yaml import SchemaFile
 from pydantic import BaseModel
 
@@ -143,6 +142,16 @@ async def convert_node_to_dict(obj: InfrahubNode, include_id: bool = True) -> di
                 )
             data[rel_name] = peers
     return data
+
+
+def find_files(extension: list[str], directory: Path) -> list[Path]:
+    """Find all files with given extensions in a directory."""
+    files: list[Path] = []
+    for ext in extension:
+        # Handle both with and without leading dot
+        pattern = f"*.{ext}" if not ext.startswith(".") else f"*{ext}"
+        files.extend(directory.rglob(pattern))
+    return sorted(files)
 
 
 # This is coming from https://github.com/opsmill/infrahub-sdk-python/blob/e9631aef895547f4b8337d6e174063338acbaf76/infrahub_sdk/yaml.py#L60
