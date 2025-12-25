@@ -12,7 +12,7 @@ Emma is an experimental AI-powered assistant for Infrahub that helps you manage 
 Before installing Emma, ensure you have:
 
 - **Infrahub instance**: Emma requires a running Infrahub instance to connect to
-- **Docker** (for containerized deployment) or **Python 3.10+** and **Poetry** (for local development)
+- **Docker** (for containerized deployment) or **Python 3.10+** and **uv** (for local development)
 
 ## Installation methods
 
@@ -23,7 +23,7 @@ The easiest way to get started is using the Infrahub quickstart with Emma includ
 
 ```bash
 # Download and start Infrahub + Emma with Docker Compose
-curl https://infrahub.opsmill.io/1.4.12-emma | docker compose -f - up -d
+curl https://infrahub.opsmill.io/1.6.2-emma | docker compose -f - up -d
 ```
 
 This command will:
@@ -79,16 +79,16 @@ git clone https://github.com/opsmill/emma.git
 cd emma
 ```
 
-2. **Install dependencies with Poetry:**
+2. **Install dependencies with uv:**
 
 ```bash
-poetry install
+uv sync
 ```
 
 3. **Run Emma:**
 
 ```bash
-poetry run streamlit run main.py
+uv run streamlit run main.py
 ```
 
 Emma will start on http://localhost:8501

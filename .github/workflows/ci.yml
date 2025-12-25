@@ -41,8 +41,6 @@ jobs:
       matrix:
         python-version:
           - "3.12"
-        poetry-version:
-          - "1.8.5"
     timeout-minutes: 5
     steps:
       - name: "Check out repository code"
@@ -52,28 +50,21 @@ jobs:
         uses: "actions/setup-python@v6"
         with:
           python-version: ${{ matrix.python-version }}
-      - name: "Install Poetry ${{ matrix.poetry-version }}"
-        uses: "snok/install-poetry@v1"
-        with:
-          version: ${{ matrix.poetry-version }}
-          virtualenvs-create: true
-          virtualenvs-in-project: true
-          installer-parallel: true
-      - name: "Setup Python environment"
-        run: |
-          poetry config virtualenvs.create true --local
-          poetry env use ${{ matrix.python-version }}
+
+      - name: "Install uv"
+        uses: "astral-sh/setup-uv@v5"
+
       - name: "Install dependencies"
-        run: "poetry install --no-interaction --no-ansi --with dev"
+        run: "uv sync --group dev"
 
       - name: "Linting: ruff check"
-        run: "poetry run ruff check ."
+        run: "uv run ruff check ."
       - name: "Linting: ruff format"
-        run: "poetry run ruff format --check --diff ."
+        run: "uv run ruff format --check --diff ."
       - name: "Mypy Tests"
-        run: "poetry run mypy --show-error-codes emma pages"
+        run: "uv run mypy --show-error-codes emma pages"
       - name: "Pylint Tests"
-        run: "poetry run pylint emma pages *.py"
+        run: "uv run pylint emma pages *.py"
 
   yaml-lint:
     if: needs.files-changed.outputs.yaml == 'true'
@@ -153,8 +144,6 @@ jobs:
       matrix:
         python-version:
           - "3.12"
-        poetry-version:
-          - "1.8.5"
     timeout-minutes: 5
     steps:
       - name: "Check out repository code"
@@ -165,25 +154,15 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: "Install Poetry ${{ matrix.poetry-version }}"
-        uses: "snok/install-poetry@v1"
-        with:
-          version: ${{ matrix.poetry-version }}
-          virtualenvs-create: true
-          virtualenvs-in-project: true
-          installer-parallel: true
-
-      - name: "Setup Python environment"
-        run: |
-          poetry config virtualenvs.create true --local
-          poetry env use ${{ matrix.python-version }}
+      - name: "Install uv"
+        uses: "astral-sh/setup-uv@v5"
 
       - name: "Install dependencies"
-        run: "poetry install --no-interaction --no-ansi"
+        run: "uv sync"
 
       - name: "Run Streamlit"
         run: |
-          timeout 30s poetry run streamlit run main.py &
+          timeout 30s uv run streamlit run main.py &
           PID=$!
           sleep 10
           if ps -p $PID > /dev/null; then
