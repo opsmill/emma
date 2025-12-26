@@ -409,13 +409,10 @@ dependencies = [
     { name = "langchain-community" },
     { name = "langchain-openai" },
     { name = "openai" },
-    { name = "pylint" },
-    { name = "ruff" },
     { name = "st-pages" },
     { name = "streamlit" },
     { name = "streamlit-flow-component" },
     { name = "streamlit-sortables" },
-    { name = "towncrier" },
     { name = "watchdog" },
 ]
 
@@ -440,13 +437,10 @@ requires-dist = [
     { name = "langchain-community", specifier = ">=0.4.1" },
     { name = "langchain-openai", specifier = ">=1.1.6" },
     { name = "openai", specifier = ">=2.14.0" },
-    { name = "pylint", specifier = ">=4.0.4" },
-    { name = "ruff", specifier = ">=0.14.10" },
     { name = "st-pages", specifier = ">=1.0.1" },
     { name = "streamlit", specifier = ">=1.52.2" },
     { name = "streamlit-flow-component", specifier = ">=1.6.1" },
     { name = "streamlit-sortables", specifier = ">=0.3.1" },
-    { name = "towncrier", specifier = ">=25.8.0" },
     { name = "watchdog", specifier = ">=6.0.0" },
 ]
 
