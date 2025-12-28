@@ -30,8 +30,8 @@ This command will:
 
 - Download the latest Infrahub and Emma configuration
 - Start both services with proper networking
-- Make Emma available at http://localhost:8501
-- Make Infrahub available at http://localhost:8000
+- Make Emma available at `http://localhost:8501`
+- Make Infrahub available at `http://localhost:8000`
 
 :::tip
 Update the version number in the URL to the [latest Infrahub release](https://github.com/opsmill/infrahub/tags) for the most recent features.
@@ -65,7 +65,7 @@ docker network ls
 docker network connect <infrahub-network-name> emma-emma-1
 ```
 
-Emma will be available at http://localhost:8501
+Emma will be available at `http://localhost:8501`
 
 </TabItem>
 <TabItem value="local" label="Local Development">
@@ -91,7 +91,7 @@ uv sync
 uv run streamlit run main.py
 ```
 
-Emma will start on http://localhost:8501
+Emma will start on `http://localhost:8501`
 
 </TabItem>
 </Tabs>
