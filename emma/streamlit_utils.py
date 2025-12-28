@@ -15,7 +15,8 @@ from emma.infrahub import (
 )
 
 
-def get_current_page():
+def get_current_page() -> str:
+    """Get the current page name from the script context."""
     ctx = get_script_run_ctx()
     if ctx is None:
         raise RuntimeError("Couldn't get script context")
@@ -28,7 +29,8 @@ def get_current_page():
     return filename.replace(".py", "")
 
 
-def set_page_config(title: str | None = None, wide: bool | None = True):
+def set_page_config(title: str | None = None, wide: bool | None = True) -> None:
+    """Set the Streamlit page configuration."""
     icon = "static/emma.png"
     if wide:
         st.set_page_config(page_title=title, page_icon=icon, layout="wide")
@@ -48,12 +50,12 @@ def display_expander(name: str, content: str) -> None:
         st.markdown(content)
 
 
-def set_branch():
-    # Callback function to save the branch selection to Session State
+def set_branch() -> None:
+    """Callback function to save the branch selection to Session State."""
     st.session_state.infrahub_branch = st.session_state._infrahub_branch
 
 
-def display_branch_selector(sidebar: DeltaGenerator):
+def display_branch_selector(sidebar: DeltaGenerator) -> None:
     # st.session_state._infrahub_branch = None
     branches = get_branches(address=st.session_state.infrahub_address)
     current_branch = get_instance_branch()
@@ -72,7 +74,8 @@ def display_branch_selector(sidebar: DeltaGenerator):
     )
 
 
-def display_infrahub_address(sidebar: DeltaGenerator):
+def display_infrahub_address(sidebar: DeltaGenerator) -> None:
+    """Display the Infrahub address in the sidebar."""
     sidebar.selectbox(
         label="Infrahub Address:",
         options=[st.session_state.infrahub_address],
@@ -81,7 +84,8 @@ def display_infrahub_address(sidebar: DeltaGenerator):
     )
 
 
-def input_infrahub_address():
+def input_infrahub_address() -> None:
+    """Display a form to input the Infrahub address."""
     with st.form(key="input_address_form"):
         new_address = st.text_input(label="Enter Infrahub Address", value=st.session_state.infrahub_address)
         submit_address = st.form_submit_button(label="Submit")
@@ -91,7 +95,8 @@ def input_infrahub_address():
             st.rerun()
 
 
-def schema_bootstrap_message():
+def schema_bootstrap_message() -> None:
+    """Display a message to bootstrap the schema if empty."""
     if is_current_schema_empty():
         with st.container(border=True):
             st.info(
@@ -104,7 +109,7 @@ def schema_bootstrap_message():
                 st.switch_page("pages/schema_library.py")
 
 
-def ensure_infrahub_address_and_branch():
+def ensure_infrahub_address_and_branch() -> None:
     # Input Infrahub address via UI if not set
     if not get_instance_address():
         st.info("""
@@ -134,7 +139,8 @@ def ensure_infrahub_address_and_branch():
         st.stop()
 
 
-def handle_reachability_error(redirect: bool | None = True):
+def handle_reachability_error(redirect: bool | None = True) -> None:
+    """Handle Infrahub reachability errors."""
     st.toast(icon="🚨", body=f"Error: {st.session_state.infrahub_error_message}")
     st.cache_data.clear()  # TODO: Maybe something less violent ?
     if not redirect:
@@ -145,7 +151,8 @@ def handle_reachability_error(redirect: bool | None = True):
 
 
 @st.dialog("Set or Update Infrahub Instance")
-def update_infrahub_instance_dialog():
+def update_infrahub_instance_dialog() -> None:
+    """Display a dialog to update the Infrahub instance address."""
     new_instance = st.text_input(label="Infrahub Address:", placeholder="http://infrahub-server-fqdn")
     if new_instance or st.button("Submit"):
         st.session_state.infrahub_address = new_instance
@@ -153,7 +160,8 @@ def update_infrahub_instance_dialog():
 
 
 @st.dialog("Create a branch")
-def create_branch_dialog():
+def create_branch_dialog() -> None:
+    """Display a dialog to create a new branch."""
     new_branch_name = st.text_input(label="New Branch", placeholder="new-branch-name")
     if new_branch_name or st.button("Submit"):
         create_branch(branch_name=new_branch_name)
@@ -161,17 +169,20 @@ def create_branch_dialog():
         st.rerun()
 
 
-def update_infrahub_instance_button(sidebar: DeltaGenerator):
+def update_infrahub_instance_button(sidebar: DeltaGenerator) -> None:
+    """Display a button to update the Infrahub instance."""
     if sidebar.button("Replace Instance"):
         update_infrahub_instance_dialog()
 
 
-def add_create_branch_button(sidebar: DeltaGenerator):
+def add_create_branch_button(sidebar: DeltaGenerator) -> None:
+    """Display a button to create a new branch."""
     if sidebar.button("Create a new branch"):
         create_branch_dialog()
 
 
-def display_logo():
+def display_logo() -> None:
+    """Display the OpsMill logo."""
     st.logo(
         "static/opsmill-logo.png",
         link="https://github.com/opsmill",

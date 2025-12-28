@@ -3,6 +3,7 @@ import io
 import json
 import os
 import re
+from typing import Any
 
 import streamlit as st
 import yaml
@@ -60,8 +61,9 @@ with a comment on the first line with a filename.
 Something like '# interfaces.yml` is ideal (based on the content of the schema)"""
 
 
-def transform_schema(schema_dict):
-    transformed = {
+def transform_schema(schema_dict: dict[str, Any]) -> dict[str, Any]:
+    """Transform a schema dictionary into a simplified format."""
+    transformed: dict[str, Any] = {
         "name": schema_dict["name"],
         "namespace": schema_dict["namespace"],
         "label": schema_dict["label"],
@@ -96,8 +98,9 @@ def transform_schema(schema_dict):
     return transformed
 
 
-def transform_schema_overview(schema_dict):
-    overview = {}
+def transform_schema_overview(schema_dict: dict[str, Any]) -> dict[str, Any]:
+    """Transform a schema dictionary into an overview format."""
+    overview: dict[str, Any] = {}
     namespace = schema_dict["namespace"]
 
     if namespace not in overview:
@@ -113,8 +116,9 @@ def transform_schema_overview(schema_dict):
     return overview
 
 
-def merge_overviews(overview_list):
-    merged = {}
+def merge_overviews(overview_list: list[dict[str, Any]]) -> dict[str, Any]:
+    """Merge multiple schema overviews into one."""
+    merged: dict[str, Any] = {}
     for overview in overview_list:
         for namespace, nodes in overview.items():
             if namespace not in merged:
@@ -126,7 +130,7 @@ def merge_overviews(overview_list):
     return merged
 
 
-def translate_errors(schema_errors):
+def translate_errors(schema_errors: list[dict[str, Any]]) -> str:
     human_readable = []
     for error in schema_errors:
         if "loc" in error:
@@ -262,10 +266,10 @@ if prompt:
 
         output = response.return_values["output"]  # type: ignore[union-attr]
 
-        st.write(output)  # type: ignore[union-attr]
+        st.write(output)
 
     st.session_state.messages.append(
-        {"role": "assistant", "content": output}  # type: ignore[union-attr]
+        {"role": "assistant", "content": output}
     )
 
     st.session_state.combined_code = "\n\n".join(re.findall(r"```(?:\w+)?(.*?)```", output, re.DOTALL)).lstrip("\n")
@@ -307,7 +311,7 @@ with col1:
             # We use 'ai' as the role here to format the message the same as assistant messages,
             # But not include them in the messages we look for schema in.
             st.session_state.messages.append(
-                {"role": "ai", "content": message}  # type: ignore[union-attr]
+                {"role": "ai", "content": message}
             )
             st.rerun()
 

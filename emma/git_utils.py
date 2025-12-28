@@ -11,9 +11,8 @@ SCHEMA_LIBRARY_REFRESH_INTERVAL = timedelta(hours=1)
 
 
 @st.cache_resource
-def get_repo():
+def get_repo() -> Repo:
     """Retrieve or return the git repository."""
-
     if st.session_state.repo["exists"]:
         return Repo(st.session_state.repo["local_path"])
 

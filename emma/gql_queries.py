@@ -133,7 +133,7 @@ def generate_full_query(branch: str | None, root_object_name: str) -> str | None
     """
     query_type = get_gql_schema(branch)
 
-    root_object = None if not query_type else query_type.fields.get(root_object_name)  # type: ignore[union-attr]
+    root_object = None if not query_type else query_type.fields.get(root_object_name)
 
     if not query_type or not root_object:
         return "NOT_FOUND"
@@ -154,4 +154,4 @@ def generate_full_query(branch: str | None, root_object_name: str) -> str | None
 
 if __name__ == "__main__":
     # For testing sake
-    print(generate_full_query.run(tool_input={"branch": None, "root_object_name": "InfraInterfaceL3"}))  # type: ignore[attr-defined]
+    print(generate_full_query.run(tool_input={"branch": None, "root_object_name": "InfraInterfaceL3"}))  # pyright: ignore[reportFunctionMemberAccess]
