@@ -7,12 +7,15 @@ on:
     branches:
       - main
 
+permissions:
+  contents: read
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 env:
-  VALE_VERSION: "3.7.1"
+  VALE_VERSION: "3.13.0"
 
 jobs:
   files-changed:
@@ -23,6 +26,7 @@ jobs:
       documentation: ${{ steps.changes.outputs.documentation_all }}
       python: ${{ steps.changes.outputs.python_all }}
       yaml: ${{ steps.changes.outputs.yaml_all }}
+      markdown: ${{ steps.changes.outputs.markdown_all }}
     steps:
       - name: "Check out repository code"
         uses: "actions/checkout@v5"
@@ -78,10 +82,31 @@ jobs:
         uses: "actions/checkout@v5"
         with:
           submodules: true
-      - name: "Setup environment"
-        run: "pip install yamllint==1.35.1"
+      - name: "Install uv"
+        uses: "astral-sh/setup-uv@v7"
+        with:
+          version: "0.9.18"
+      - name: "Install dependencies"
+        run: "uv sync --group dev"
       - name: "Linting: yamllint"
-        run: "yamllint -s ."
+        run: "uv run yamllint -s ."
+
+  markdown-lint:
+    if: needs.files-changed.outputs.markdown == 'true'
+    needs: ["files-changed"]
+    runs-on: "ubuntu-latest"
+    timeout-minutes: 5
+    steps:
+      - name: "Check out repository code"
+        uses: "actions/checkout@v5"
+      - name: "Install NodeJS"
+        uses: "actions/setup-node@v6"
+        with:
+          node-version: 20
+      - name: "Install markdownlint-cli"
+        run: "npm install -g markdownlint-cli"
+      - name: "Run markdownlint"
+        run: 'markdownlint "**/*.{md,mdx}"'
 
   documentation:
     defaults:
@@ -92,7 +117,7 @@ jobs:
       !contains(needs.*.result, 'failure') &&
       !contains(needs.*.result, 'cancelled') &&
       needs.files-changed.outputs.documentation == 'true'
-    needs: ["files-changed", "yaml-lint", "python-lint"]
+    needs: ["files-changed", "yaml-lint", "python-lint", "markdown-lint"]
     runs-on: "ubuntu-22.04"
     timeout-minutes: 5
     steps:
@@ -108,17 +133,23 @@ jobs:
           cache-dependency-path: docs/package-lock.json
       - name: "Install dependencies"
         run: npm install
-      - name: "Setup Python environment"
-        run: "pip install invoke toml"
+      - name: "Install uv"
+        uses: "astral-sh/setup-uv@v7"
+        with:
+          version: "0.9.18"
+      - name: "Install Python dependencies"
+        run: "uv sync"
+        working-directory: ./
       - name: "Build docs website"
-        run: "invoke docs"
+        run: "uv run invoke docs"
+        working-directory: ./
 
   validate-documentation-style:
     if: |
       always() && !cancelled() &&
       !contains(needs.*.result, 'failure') &&
       !contains(needs.*.result, 'cancelled')
-    needs: ["files-changed", "yaml-lint", "python-lint"]
+    needs: ["files-changed", "yaml-lint", "python-lint", "markdown-lint"]
     runs-on: "ubuntu-22.04"
     timeout-minutes: 5
     steps:

@@ -10,7 +10,7 @@ requires-python = ">=3.10,<3.13"
 
 dependencies = [
     "streamlit>=1.52.2",
-    "infrahub-sdk[all]>=1.17.0",
+    "infrahub-sdk[all]>=1.17.0,<2.0.0",
     "watchdog>=6.0.0",
     "langchain>=1.2.0",
     "langchain-community>=0.4.1",
@@ -31,7 +31,7 @@ dev = [
     "towncrier>=25.8.0",
     "pylint>=4.0.4",
     "types-pyyaml>=6.0.12.20250915",
-    "invoke>=2.2.1",
+    "invoke>=2.2.1,<3.0.0",
     "types-pytz>=2025.2.0.20251108",
 ]
 
@@ -53,6 +53,9 @@ addopts = "-vs"
 [tool.mypy]
 pretty = true
 ignore_missing_imports = true
+disallow_untyped_defs = true
+warn_return_any = true
+warn_unused_ignores = true
 exclude = ["schema-library"]
 
 [tool.ruff]
