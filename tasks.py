@@ -31,7 +31,8 @@ def lint_yaml(context: Context) -> None:
 def lint_markdown(context: Context) -> None:
     """Run Linter to check all Markdown files."""
     print(" - Check code with markdownlint")
-    exec_cmd = "markdownlint ."
+    # Use same glob pattern as CI to include .mdx files
+    exec_cmd = 'markdownlint "**/*.{md,mdx}"'
     with context.cd(MAIN_DIRECTORY_PATH):
         context.run(exec_cmd)
 

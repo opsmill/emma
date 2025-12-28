@@ -9,6 +9,13 @@ from typing import Any
 
 import pytz
 import streamlit as st
+from httpx import HTTPError
+from infrahub_sdk.exceptions import (
+    AuthenticationError,
+    GraphQLError,
+    ServerNotReachableError,
+    ServerNotResponsiveError,
+)
 from infrahub_sdk.yaml import SchemaFile
 
 from emma.git_utils import SCHEMA_LIBRARY_REFRESH_INTERVAL, get_repo
@@ -100,7 +107,13 @@ def schema_loading_container(
                 schemas=[item.content for item in schema_files],
                 address=st.session_state.infrahub_address,
             )
-        except Exception as exc:
+        except (
+            AuthenticationError,
+            GraphQLError,
+            HTTPError,
+            ServerNotReachableError,
+            ServerNotResponsiveError,
+        ) as exc:
             loading_container.update(label="❌ Load failed ...", state="error", expanded=True)
             loading_container.error(f"Exception during schema load: {exc}", icon="🚨")
             st.session_state.extensions_states[schema_extension] = SchemaState.NOT_LOADED
