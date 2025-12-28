@@ -60,13 +60,13 @@ docker-compose up  # Runs on port 8501
 - **main.py**: Entry point - Emma homepage
 - **menu.py**: Sidebar navigation system
 - **emma/**: Core Python module with utilities and services
-    - `infrahub.py`: Infrahub API integration
-    - `assistant_utils.py`: AI assistant utilities
-    - `streamlit_utils.py`: UI utilities
+  - `infrahub.py`: Infrahub API integration
+  - `assistant_utils.py`: AI assistant utilities
+  - `streamlit_utils.py`: UI utilities
 - **pages/**: Individual Streamlit pages for features
-    - Schema management: builder, loader, visualizer
-    - Data operations: importer, exporter
-    - Schema library browser
+  - Schema management: builder, loader, visualizer
+  - Data operations: importer, exporter
+  - Schema library browser
 
 ### AI Integration
 

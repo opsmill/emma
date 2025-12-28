@@ -268,9 +268,7 @@ if prompt:
 
         st.write(output)
 
-    st.session_state.messages.append(
-        {"role": "assistant", "content": output}
-    )
+    st.session_state.messages.append({"role": "assistant", "content": output})
 
     st.session_state.combined_code = "\n\n".join(re.findall(r"```(?:\w+)?(.*?)```", output, re.DOTALL)).lstrip("\n")
 
@@ -308,11 +306,12 @@ with col1:
 
                 message = "Hmm, looks like we've got some problems.\n\n" + errors_out
 
+            else:
+                message = "Schema check completed with an unexpected result."
+
             # We use 'ai' as the role here to format the message the same as assistant messages,
             # But not include them in the messages we look for schema in.
-            st.session_state.messages.append(
-                {"role": "ai", "content": message}
-            )
+            st.session_state.messages.append({"role": "ai", "content": message})
             st.rerun()
 
 
