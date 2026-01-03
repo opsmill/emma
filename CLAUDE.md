@@ -12,16 +12,16 @@ Emma is an experimental AI-powered assistant for Infrahub, a network infrastruct
 
 ```bash
 # Install dependencies
-poetry install
+uv sync
 
 # Run the application
-poetry run streamlit run main.py
+uv run streamlit run main.py
 
 # Format code
-poetry run invoke format
+uv run invoke format
 
 # Run all linters (yaml, ruff, mypy, pylint)
-poetry run invoke lint
+uv run invoke lint
 
 # Run tests
 pytest
@@ -60,13 +60,13 @@ docker-compose up  # Runs on port 8501
 - **main.py**: Entry point - Emma homepage
 - **menu.py**: Sidebar navigation system
 - **emma/**: Core Python module with utilities and services
-    - `infrahub.py`: Infrahub API integration
-    - `assistant_utils.py`: AI assistant utilities
-    - `streamlit_utils.py`: UI utilities
+  - `infrahub.py`: Infrahub API integration
+  - `assistant_utils.py`: AI assistant utilities
+  - `streamlit_utils.py`: UI utilities
 - **pages/**: Individual Streamlit pages for features
-    - Schema management: builder, loader, visualizer
-    - Data operations: importer, exporter
-    - Schema library browser
+  - Schema management: builder, loader, visualizer
+  - Data operations: importer, exporter
+  - Schema library browser
 
 ### AI Integration
 
@@ -88,7 +88,7 @@ Infrastructure schemas are YAML-based and stored in `schema-library/`. They defi
 - Streamlit for web UI
 - Infrahub SDK for backend operations
 - OpenAI/LangChain for AI features
-- Poetry for dependency management
+- uv for dependency management
 - Ruff, MyPy, Pylint for code quality
 
 ## Development Guidelines

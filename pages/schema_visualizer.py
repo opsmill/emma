@@ -101,7 +101,7 @@ def visualize_schema_flow(generics: List[GenericSchema], nodes: List[NodeSchema]
         hide_watermark=True,
     )
 
-    return selected_id
+    return str(selected_id) if selected_id else ""
 
 
 def display_node_info(selected_id: str, generics: List[GenericSchema], nodes: List[NodeSchema]) -> None:

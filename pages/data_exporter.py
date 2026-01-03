@@ -1,6 +1,6 @@
 import types
 from ipaddress import IPv4Network, IPv6Network
-from typing import Dict, List
+from typing import Any, Dict, List
 
 import pandas as pd
 import streamlit as st
@@ -25,7 +25,8 @@ class ColumnMapping(BaseModel):
 @st.cache_data
 def convert_df_to_csv(df: pd.DataFrame) -> bytes:
     """Convert DataFrame to CSV in bytes format."""
-    return df.to_csv(index=False).encode("utf-8")
+    csv_str = df.to_csv(index=False)
+    return csv_str.encode("utf-8") if csv_str else b""
 
 
 @st.cache_data
@@ -41,7 +42,7 @@ def fetch_data(kind: str, branch: str) -> pd.DataFrame:
     return df
 
 
-def get_column_labels(model_schema) -> ColumnLabels:
+def get_column_labels(model_schema: Any) -> ColumnLabels:
     """Retrieve column labels for optional and mandatory columns."""
     optional_columns = [attr.name for attr in model_schema.attributes if attr.optional]
     optional_columns.extend([rel.name for rel in model_schema.relationships if rel.optional])
@@ -58,7 +59,7 @@ def create_column_label_mapping(
         f"{col} (Mandatory)" if col in mandatory_columns and col not in to_omit else f"{col} (Optional)"
         for col in mandatory_columns + optional_columns
     ]
-    label_to_col = {label: col for label, col in zip(column_labels, mandatory_columns + optional_columns)}
+    label_to_col = {label: col for label, col in zip(column_labels, mandatory_columns + optional_columns, strict=True)}
     return ColumnMapping(labels=column_labels, label_to_col=label_to_col)
 
 

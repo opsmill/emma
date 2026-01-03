@@ -1,0 +1,15 @@
+# Files to ignore
+
+.claude/
+.git/
+.kiro/
+.mypy_cache/
+.ruff_cache/
+.venv/
+CLAUDE.md
+docs/.docusaurus/
+docs/build/
+docs/node_modules/
+docs/README.md
+node_modules/
+schema-library/

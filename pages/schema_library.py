@@ -9,6 +9,13 @@ from typing import Any
 
 import pytz
 import streamlit as st
+from httpx import HTTPError
+from infrahub_sdk.exceptions import (
+    AuthenticationError,
+    GraphQLError,
+    ServerNotReachableError,
+    ServerNotResponsiveError,
+)
 from infrahub_sdk.yaml import SchemaFile
 
 from emma.git_utils import SCHEMA_LIBRARY_REFRESH_INTERVAL, get_repo
@@ -94,40 +101,81 @@ def schema_loading_container(
     with st.status(f"Loading schema extension `{schema_extension}` ...", expanded=True) as loading_container:
         # Place request
         st.write("Calling Infrahub API...")
-        response = load_schema(
-            branch=st.session_state.infrahub_branch,
-            schemas=[item.content for item in schema_files],
-        )
+        try:
+            response = load_schema(
+                branch=st.session_state.infrahub_branch,
+                schemas=[item.content for item in schema_files],
+                address=st.session_state.infrahub_address,
+            )
+        except (
+            AuthenticationError,
+            GraphQLError,
+            HTTPError,
+            ServerNotReachableError,
+            ServerNotResponsiveError,
+        ) as exc:
+            loading_container.update(label="❌ Load failed ...", state="error", expanded=True)
+            loading_container.error(f"Exception during schema load: {exc}", icon="🚨")
+            st.session_state.extensions_states[schema_extension] = SchemaState.NOT_LOADED
+            return
 
         st.write("Computing results...")
 
-        # Process the response
-        if response:
-            if response.errors:
-                loading_container.update(label="❌ Load failed ...", state="error", expanded=True)
-                loading_container.error("Infrahub doesn't like it!", icon="🚨")
-                if "Unable to find" in response.errors["errors"][0]["message"]:
-                    loading_container.error(
-                        "You might be missing schema dependencies. Please load the schemas' dependencies first!",
-                        icon="🔍",
-                    )
-                loading_container.error(response.errors["errors"][0]["message"])
-            else:
-                loading_container.update(label="✅ Schema loaded!", state="complete", expanded=True)
-                st.session_state.extensions_states[schema_extension] = SchemaState.LOADED
+        # Handle no response (connectivity issue)
+        if response is None:
+            loading_container.update(label="❌ Load failed ...", state="error", expanded=True)
+            loading_container.error("No response from Infrahub - check server connectivity", icon="🚨")
+            st.session_state.extensions_states[schema_extension] = SchemaState.NOT_LOADED
+            return
 
-                if response.schema_updated:
-                    st.write("Schema loaded successfully!")
-                    st.write("Generating balloons...")
-                    st.balloons()  # 🎉
-                else:
-                    loading_container.info(
-                        "The schema in Infrahub was already up to date, no changes were required!",
-                        icon="ℹ️",
-                    )
+        # Handle error response
+        if response.errors:
+            loading_container.update(label="❌ Load failed ...", state="error", expanded=True)
+
+            # Extract the error message safely
+            error_message = "Unknown error"
+            if isinstance(response.errors, dict) and "errors" in response.errors:
+                errors_list = response.errors.get("errors", [])
+                if errors_list and isinstance(errors_list, list):
+                    error_message = errors_list[0].get("message", "Unknown error")
+            elif isinstance(response.errors, str):
+                error_message = response.errors
+
+            loading_container.error("Infrahub doesn't like it!", icon="🚨")
+
+            # Provide helpful context for common errors
+            if "Authentication is required" in error_message:
+                loading_container.error(
+                    "Authentication required. Please set the INFRAHUB_API_TOKEN environment variable.",
+                    icon="🔐",
+                )
+            elif "Unable to find" in error_message:
+                loading_container.error(
+                    "You might be missing schema dependencies. Please load the schemas' dependencies first!",
+                    icon="🔍",
+                )
+
+            loading_container.error(error_message)
+            st.session_state.extensions_states[schema_extension] = SchemaState.NOT_LOADED
+            return
+
+        # Handle success
+        loading_container.update(label="✅ Schema loaded!", state="complete", expanded=True)
+        st.session_state.extensions_states[schema_extension] = SchemaState.LOADED
+
+        if response.schema_updated:
+            st.write("Schema loaded successfully!")
+            st.write("Generating balloons...")
+            st.balloons()  # 🎉
+        else:
+            loading_container.info(
+                "The schema in Infrahub was already up to date, no changes were required!",
+                icon="ℹ️",
+            )
 
 
-def on_click_schema_load(schema_extension: str):
+def on_click_schema_load(schema_extension: str) -> None:
+    """Callback to mark a schema extension as loading."""
     st.session_state.extensions_states[schema_extension] = SchemaState.LOADING
 
 

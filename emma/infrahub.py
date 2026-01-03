@@ -1,4 +1,5 @@
 import asyncio
+import concurrent.futures
 import os
 from enum import Enum
 from functools import wraps
@@ -49,20 +50,31 @@ class FileNotValidError(Exception):
         super().__init__(self.message)
 
 
-def run_async(func):
+def run_async(func: Any) -> Any:
+    """Decorator to run async functions synchronously.
+
+    This decorator handles running async functions in various contexts:
+    - When no event loop exists: uses asyncio.run()
+    - When an event loop exists but isn't running: uses run_until_complete()
+    - When an event loop is running (e.g., Streamlit): creates a new event loop in a thread
+    """
+
     @wraps(func)
-    def wrapper(*args, **kwargs):
+    def wrapper(*args: Any, **kwargs: Any) -> Any:
         try:
-            # Check if an event loop is already running
             loop = asyncio.get_running_loop()
         except RuntimeError:
-            # No event loop, run the async function with asyncio.run
+            # No event loop exists, safe to use asyncio.run
             return asyncio.run(func(*args, **kwargs))
 
-        # If an event loop is running, run the coroutine and await its result
         if loop.is_running():
-            coroutine = func(*args, **kwargs)
-            return asyncio.run_coroutine_threadsafe(coroutine, loop).result()
+            # Event loop is running (common in Streamlit)
+            # We cannot use run_coroutine_threadsafe as it requires the loop
+            # to be running in a different thread and actively processing.
+            # Instead, create a new event loop in a separate thread.
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                future = executor.submit(asyncio.run, func(*args, **kwargs))
+                return future.result(timeout=120)  # 2 minute timeout
 
         return loop.run_until_complete(func(*args, **kwargs))
 
@@ -70,13 +82,12 @@ def run_async(func):
 
 
 def is_current_schema_empty() -> bool:
+    """Check if the current schema is empty (only default namespaces)."""
     DEFAULT_NAMESPACES = ["Core", "Profile", "Builtin", "Ipam", "Lineage"]
 
     # FIXME: Here the fact that the schema is cached creates issue
     # e.g. if I trash the schema on Infrahub side I need to reboot emma for this to be taken into account...
-    branch: str = get_instance_branch()
-    if branch is None:
-        branch = "main"
+    branch: str = get_instance_branch() or "main"
     schema: dict[str, Any] | None = fetch_schema(branch)
     # FIXME: Here the fact that the schema is cached creates issue
 
@@ -92,15 +103,18 @@ def is_current_schema_empty() -> bool:
 
 
 def get_instance_address() -> str | None:
+    """Get the Infrahub instance address from session state or environment."""
     if "infrahub_address" not in st.session_state or not st.session_state.infrahub_address:
         st.session_state.infrahub_address = os.environ.get("INFRAHUB_ADDRESS")
-    return st.session_state.infrahub_address
+    addr = st.session_state.infrahub_address
+    return str(addr) if addr else None
 
 
-def get_instance_branch() -> str:
+def get_instance_branch() -> str | None:
+    """Get the current Infrahub branch from session state."""
     if "infrahub_branch" not in st.session_state:
         st.session_state.infrahub_branch = None
-    return st.session_state.infrahub_branch
+    return str(st.session_state.infrahub_branch) if st.session_state.infrahub_branch else None
 
 
 async def convert_node_to_dict(obj: InfrahubNode, include_id: bool = True) -> dict[str, Any]:
@@ -268,14 +282,17 @@ def get_cached_schema(branch: str | None = None) -> dict[str, MainSchemaTypes] |
 
 
 async def get_schema_async(branch: str | None = None, refresh: bool = False) -> dict[str, MainSchemaTypes] | None:
+    """Get schema from Infrahub asynchronously."""
     client: InfrahubClient = await get_client_async()
     if await check_reachability_async(client=client):
-        return await client.schema.all(branch=branch, refresh=refresh)
+        result = await client.schema.all(branch=branch, refresh=refresh)
+        return dict(result) if result else None
     return None
 
 
 @run_async
-async def create_and_save(kind: str, data: dict, branch: str):
+async def create_and_save(kind: str, data: dict[str, Any], branch: str) -> InfrahubNode | None:
+    """Create and save a node to Infrahub."""
     node = None
     client: InfrahubClient = await get_client_async()
     if await check_reachability_async(client=client):
@@ -335,9 +352,10 @@ async def execute_batch(batch: InfrahubBatch) -> None:
 
 
 async def get_version_async(client: InfrahubClient) -> str:
+    """Get the Infrahub server version."""
     query = "query { InfrahubInfo { version }}"
     response = await client.execute_graphql(query=query, raise_for_error=True)
-    return response["InfrahubInfo"]["version"]
+    return str(response["InfrahubInfo"]["version"])
 
 
 async def check_reachability_async(client: InfrahubClient) -> bool:
@@ -361,24 +379,40 @@ async def check_reachability_async(client: InfrahubClient) -> bool:
 
 @run_async
 async def fetch_schema(branch: str | None = None) -> dict[str, MainSchemaTypes] | None:
+    """Fetch schema from Infrahub."""
     client: InfrahubClient = await get_client_async()
     if await check_reachability_async(client=client):
-        return await client.schema.all(branch=branch)
+        result = await client.schema.all(branch=branch)
+        return dict(result) if result else None
     return None
 
 
 @run_async
-async def run_gql_query(query: str, branch: str | None = None) -> dict[str, MainSchemaTypes]:
-    client: InfrahubClient = get_client_async()
-    return await client.execute_graphql(query, branch_name=branch, raise_for_error=False)
+async def run_gql_query(query: str, branch: str | None = None) -> dict[str, Any]:
+    """Run a GraphQL query against Infrahub."""
+    client: InfrahubClient = await get_client_async()
+    result = await client.execute_graphql(query, branch_name=branch, raise_for_error=False)
+    return dict(result) if result else {}
 
 
 @run_async
-async def load_schema(branch: str, schemas: list[dict] | None = None) -> SchemaLoadResponse | None:
-    client: InfrahubClient = await get_client_async()
-    if await check_reachability_async(client=client):
-        return await client.schema.load(schemas, branch)
-    return None
+async def load_schema(
+    branch: str, schemas: list[dict] | None = None, address: str | None = None
+) -> SchemaLoadResponse | None:
+    """Load schemas into Infrahub.
+
+    Args:
+        branch: The branch to load schemas into.
+        schemas: List of schema dictionaries to load.
+        address: The Infrahub server address. Must be provided explicitly
+                 when called from a threaded context (e.g., Streamlit).
+
+    Note: This function doesn't do a reachability check before loading
+    because the SDK's schema.load() will return appropriate errors if
+    the server is unreachable or authentication fails.
+    """
+    client: InfrahubClient = await get_client_async(address=address)
+    return await client.schema.load(schemas, branch)
 
 
 @run_async
@@ -393,9 +427,11 @@ async def check_schema(branch: str, schemas: list[dict] | None = None) -> Schema
 
 @run_async
 async def get_branches(address: str | None = None) -> dict[str, BranchData] | None:
+    """Get all branches from Infrahub."""
     client: InfrahubClient = await get_client_async(address=address)
     if await check_reachability_async(client=client):
-        return await client.branch.all()
+        result = await client.branch.all()
+        return dict(result) if result else None
     return None
 
 

@@ -45,13 +45,13 @@ def parse_item(item: str, is_generic: bool) -> str:
         tmp_hfid = parse_hfid(hfid=item)
         client = asyncio.run(get_client_async())
         obj = asyncio.run(client.get(kind=tmp_hfid[0], hfid=tmp_hfid[1:], branch=get_instance_branch()))
-        return obj.id
+        return str(obj.id)
     # FIXME: If there isn't any default_filter, and we keep the HFID here
     # In process_and_save_with_batch() the data will be { id: "['xxx']" } instead of { hfid: "['xxx']" }
     tmp_hfid = parse_hfid(hfid=item)
     client = asyncio.run(get_client_async())
     obj = asyncio.run(client.get(kind=tmp_hfid[0], hfid=tmp_hfid[1:], branch=get_instance_branch()))
-    return obj.id
+    return str(obj.id)
     # # If it's not a Generic we gonna parse the HFID
     # return parse_hfid(hfid=item)[1:]
 
@@ -123,7 +123,10 @@ def preprocess_and_validate_data(
     return prepocessed_df, errors
 
 
-def process_and_save_with_batch(data_frame: pd.DataFrame, kind: str, branch: str, st_msg: DeltaGenerator):
+def process_and_save_with_batch(
+    data_frame: pd.DataFrame, kind: str, branch: str | None, st_msg: DeltaGenerator
+) -> None:
+    """Process and save data frame rows with batch operations."""
     nbr_errors = 0
 
     client = asyncio.run(get_client_async())

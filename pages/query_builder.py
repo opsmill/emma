@@ -3,6 +3,7 @@ import io
 import json
 import os
 import re
+from typing import Any
 
 import streamlit as st
 import yaml
@@ -31,7 +32,8 @@ agent = OpenAIAssistantV2Runnable(
 )
 
 
-def execute_agent(agent_runner, user_prompt):
+def execute_agent(agent_runner: Any, user_prompt: dict[str, Any]) -> AgentFinish:
+    """Execute an agent with the given prompt."""
     tool_map = {tool.name: tool for tool in tools}
 
     resp = agent_runner.invoke(
@@ -58,7 +60,7 @@ def execute_agent(agent_runner, user_prompt):
     return resp
 
 
-def remove_extra_values(d):
+def remove_extra_values(d: Any) -> Any:
     if isinstance(d, dict):
         schema_key = "__schema"
         if schema_key in d:
@@ -210,9 +212,9 @@ if prompt:
             response = execute_agent(agent, chat_input)
 
         if "query_thread_id" not in st.session_state:
-            st.session_state.query_thread_id = response.return_values["thread_id"]  # type: ignore[union-attr]
+            st.session_state.query_thread_id = response.return_values["thread_id"]
 
-        output = response.return_values["output"]  # type: ignore[union-attr]
+        output = response.return_values["output"]
 
         st.write(output)
 

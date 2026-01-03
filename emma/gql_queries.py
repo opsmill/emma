@@ -1,5 +1,3 @@
-from typing import Optional
-
 from graphql import GraphQLList, GraphQLNonNull, GraphQLObjectType, build_client_schema, get_introspection_query
 from langchain.tools import tool
 
@@ -24,7 +22,7 @@ EXCLUDED_TYPES = (
 )
 
 
-def get_gql_schema(branch: Optional[str] = None) -> Optional[GraphQLObjectType]:
+def get_gql_schema(branch: str | None = None) -> GraphQLObjectType | None:
     schema_query = get_introspection_query()
     introspection_result = run_gql_query(query=schema_query, branch=branch)
 
@@ -35,7 +33,7 @@ def get_gql_schema(branch: Optional[str] = None) -> Optional[GraphQLObjectType]:
     return None
 
 
-def generate_query(object_type: GraphQLObjectType, visited_types: Optional[set] = None) -> str:
+def generate_query(object_type: GraphQLObjectType, visited_types: set | None = None) -> str:
     if visited_types is None:
         visited_types = set()
 
@@ -71,7 +69,7 @@ def generate_query(object_type: GraphQLObjectType, visited_types: Optional[set] 
 
 
 @tool
-def generate_full_query(branch: Optional[str], root_object_name: str) -> Optional[str]:
+def generate_full_query(branch: str | None, root_object_name: str) -> str | None:
     """
     Generates a comprehensive GraphQL query for a specified root object, including all its fields
     and nested sub-objects, based on the schema retrieved from the specified branch.
@@ -135,7 +133,7 @@ def generate_full_query(branch: Optional[str], root_object_name: str) -> Optiona
     """
     query_type = get_gql_schema(branch)
 
-    root_object = None if not query_type else query_type.fields.get(root_object_name)  # type: ignore[union-attr]
+    root_object = None if not query_type else query_type.fields.get(root_object_name)
 
     if not query_type or not root_object:
         return "NOT_FOUND"
@@ -156,4 +154,4 @@ def generate_full_query(branch: Optional[str], root_object_name: str) -> Optiona
 
 if __name__ == "__main__":
     # For testing sake
-    print(generate_full_query.run(tool_input={"branch": None, "root_object_name": "InfraInterfaceL3"}))  # type: ignore[attr-defined]
+    print(generate_full_query.run(tool_input={"branch": None, "root_object_name": "InfraInterfaceL3"}))  # pyright: ignore[reportFunctionMemberAccess]
