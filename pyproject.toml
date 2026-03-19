@@ -1,6 +1,6 @@
 [project]
 name = "emma"
-version = "0.6.1"
+version = "0.6.2"
 description = "Emma is an agent designed to help you interact with Infrahub."
 authors = [
     {name = "OpsMill", email = "info@opsmill.com"}
@@ -10,7 +10,7 @@ requires-python = ">=3.10,<3.13"
 
 dependencies = [
     "streamlit>=1.52.2",
-    "infrahub-sdk[all]>=1.17.0,<2.0.0",
+    "infrahub-sdk[all]>=1.18.1,<2.0.0",
     "watchdog>=6.0.0",
     "langchain>=1.2.0",
     "langchain-community>=0.4.1",
