@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Any, List, Tuple
 
 import pandas as pd
 import streamlit as st
-from httpx import HTTPError
+from httpx import HTTPError, HTTPStatusError
 from infrahub_sdk import Config, InfrahubClient
 from infrahub_sdk.batch import InfrahubBatch
 from infrahub_sdk.branch import BranchData
@@ -354,7 +354,7 @@ async def execute_batch(batch: InfrahubBatch) -> None:
 async def get_version_async(client: InfrahubClient) -> str:
     """Get the Infrahub server version."""
     query = "query { InfrahubInfo { version }}"
-    response = await client.execute_graphql(query=query, raise_for_error=True)
+    response = await client.execute_graphql(query=query)
     return str(response["InfrahubInfo"]["version"])
 
 
@@ -391,7 +391,10 @@ async def fetch_schema(branch: str | None = None) -> dict[str, MainSchemaTypes] 
 async def run_gql_query(query: str, branch: str | None = None) -> dict[str, Any]:
     """Run a GraphQL query against Infrahub."""
     client: InfrahubClient = await get_client_async()
-    result = await client.execute_graphql(query, branch_name=branch, raise_for_error=False)
+    try:
+        result = await client.execute_graphql(query, branch_name=branch)
+    except (HTTPStatusError, GraphQLError):
+        return {}
     return dict(result) if result else {}
 
 

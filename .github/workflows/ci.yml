@@ -169,6 +169,35 @@ jobs:
       - name: "Validate documentation style"
         run: ./vale $(find ./docs -type f \( -name "*.mdx" -o -name "*.md" \) | grep -v node_modules)
 
+  pytest:
+    if: needs.files-changed.outputs.python == 'true'
+    needs: ["files-changed"]
+    runs-on: "ubuntu-latest"
+    strategy:
+      matrix:
+        python-version:
+          - "3.12"
+    timeout-minutes: 5
+    steps:
+      - name: "Check out repository code"
+        uses: "actions/checkout@v6"
+
+      - name: "Set up Python ${{ matrix.python-version }}"
+        uses: "actions/setup-python@v6"
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: "Install uv"
+        uses: "astral-sh/setup-uv@v7"
+        with:
+          version: "0.9.18"
+
+      - name: "Install dependencies"
+        run: "uv sync --group dev"
+
+      - name: "Run pytest"
+        run: "uv run pytest"
+
   streamlit-test:
     if: needs.files-changed.outputs.python == 'true'
     needs: ["files-changed"]
