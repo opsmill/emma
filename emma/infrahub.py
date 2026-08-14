@@ -24,7 +24,12 @@ from infrahub_sdk.node import (
     RelatedNode,
     RelationshipManager,
 )
-from infrahub_sdk.schema import GenericSchema, MainSchemaTypes, NodeSchema, SchemaLoadResponse
+from infrahub_sdk.schema import (
+    GenericSchemaAPI,
+    MainSchemaTypesAPI,
+    NodeSchemaAPI,
+    SchemaLoadResponse,
+)
 from infrahub_sdk.types import Order
 from infrahub_sdk.yaml import SchemaFile
 from pydantic import BaseModel
@@ -117,8 +122,41 @@ def get_instance_branch() -> str | None:
     return str(st.session_state.infrahub_branch) if st.session_state.infrahub_branch else None
 
 
+def describe_related_node(related_node: InfrahubNode | None, fallback_id: str | None) -> str | None:
+    """Describe a related node by its human-friendly ID, falling back to its id.
+
+    Args:
+        related_node: The related node, or None when it could not be retrieved.
+        fallback_id: The id to fall back to when there is no node to describe.
+
+    Returns:
+        The human-friendly ID of the node, its id, or the fallback id.
+    """
+    if related_node is None:
+        return fallback_id
+    if related_node.hfid:
+        return str(related_node.get_human_friendly_id_as_string(include_kind=True))
+    return related_node.id
+
+
+def get_node_from_store(obj: InfrahubNode, peer_id: str | None) -> InfrahubNode | None:
+    """Look a peer up in the client's store without raising when it is absent.
+
+    Args:
+        obj: The node whose client owns the store.
+        peer_id: The id of the peer to look up, if it is known.
+
+    Returns:
+        The stored node, or None when there is no id or no match.
+    """
+    if not peer_id:
+        return None
+    stored = obj._client.store.get(key=peer_id, raise_when_missing=False)
+    return stored if isinstance(stored, InfrahubNode) else None
+
+
 async def convert_node_to_dict(obj: InfrahubNode, include_id: bool = True) -> dict[str, Any]:
-    data = {}
+    data: dict[str, Any] = {}
 
     if include_id:
         data["index"] = obj.id or None
@@ -132,28 +170,24 @@ async def convert_node_to_dict(obj: InfrahubNode, include_id: bool = True) -> di
         if rel and isinstance(rel, RelatedNode):
             if rel.initialized:
                 await rel.fetch()
-                related_node = obj._client.store.get(key=rel.peer.id, raise_when_missing=False)
-                data[rel_name] = (
-                    related_node.get_human_friendly_id_as_string(include_kind=True)
-                    if related_node.hfid
-                    else related_node.id
-                )
+                related_node = get_node_from_store(obj=obj, peer_id=rel.peer.id)
+                data[rel_name] = describe_related_node(related_node=related_node, fallback_id=rel.peer.id)
         elif rel and isinstance(rel, RelationshipManager):
-            peers: List[dict[str, Any]] = []
+            peers: List[str | None] = []
             if not rel.initialized:
                 await rel.fetch()
             for peer in rel.peers:
                 # FIXME: We are using the store to avoid doing to many queries to Infrahub
                 # but we could end up doing store+infrahub if the store is not populated
-                related_node = obj._client.store.get(key=peer.id, raise_when_missing=False)
+                related_node = get_node_from_store(obj=obj, peer_id=peer.id)
                 if not related_node:
-                    await peer.fetch()
-                    related_node = peer.peer
-                peers.append(
-                    related_node.get_human_friendly_id_as_string(include_kind=True)
-                    if related_node.hfid
-                    else related_node.id
-                )
+                    # RelationshipManager is the async flavour, so its peers are the
+                    # async RelatedNode; the isinstance check tells the type checker
+                    # that fetch() is awaitable here.
+                    if isinstance(peer, RelatedNode):
+                        await peer.fetch()
+                    related_node = peer.peer if isinstance(peer.peer, InfrahubNode) else None
+                peers.append(describe_related_node(related_node=related_node, fallback_id=peer.id))
             data[rel_name] = peers
     return data
 
@@ -190,19 +224,19 @@ def load_schemas_from_disk(schemas: list[Path]) -> list[SchemaFile]:
 
 
 def convert_schema_to_dict(
-    node: GenericSchema | NodeSchema,
+    node: GenericSchemaAPI | NodeSchemaAPI,
 ) -> dict[str, Any]:
     """
-    Convert a schema item (GenericSchema or NodeSchema) to a dictionary.
+    Convert a schema item (GenericSchemaAPI or NodeSchemaAPI) to a dictionary.
 
     Parameters:
-        item (GenericSchema | NodeSchema): The schema item to convert.
+        item (GenericSchemaAPI | NodeSchemaAPI): The schema item to convert.
         include_id (bool): Whether to include the ID of the item.
 
     Returns:
         Dict[str, Any]: The converted dictionary.
     """
-    data = {
+    data: dict[str, Any] = {
         "name": node.name,
         "namespace": node.namespace,
         "label": node.label,
@@ -271,17 +305,19 @@ def dict_to_df(data: dict[str, Any]) -> Tuple[pd.DataFrame, pd.DataFrame, pd.Dat
 
 
 async def get_client_async(address: str | None = None, branch: str | None = None) -> InfrahubClient:
+    # The SDK treats an empty address the same as no address, resolving it from the
+    # environment or its own config instead.
     if branch:
-        return InfrahubClient(address=address, config=Config(timeout=60, default_branch=branch))
-    return InfrahubClient(address=address, config=Config(timeout=60))
+        return InfrahubClient(address=address or "", config=Config(timeout=60, default_branch=branch))
+    return InfrahubClient(address=address or "", config=Config(timeout=60))
 
 
 @st.cache_data
-def get_cached_schema(branch: str | None = None) -> dict[str, MainSchemaTypes] | None:
+def get_cached_schema(branch: str | None = None) -> dict[str, MainSchemaTypesAPI] | None:
     return asyncio.run(get_schema_async(branch=branch))
 
 
-async def get_schema_async(branch: str | None = None, refresh: bool = False) -> dict[str, MainSchemaTypes] | None:
+async def get_schema_async(branch: str | None = None, refresh: bool = False) -> dict[str, MainSchemaTypesAPI] | None:
     """Get schema from Infrahub asynchronously."""
     client: InfrahubClient = await get_client_async()
     if await check_reachability_async(client=client):
@@ -329,26 +365,43 @@ async def create_and_add_to_batch(  # pylint: disable=too-many-arguments
         raise
 
 
+def report_saved_node(node: InfrahubNode) -> None:
+    """Report that a node was saved, naming it as helpfully as possible.
+
+    Args:
+        node: The node that was saved.
+    """
+    object_reference = node.get_human_friendly_id_as_string() if node.hfid else None
+    st.success(f"Created: [{node._schema.kind}] '{object_reference or node.id}'")
+
+
 @run_async
-async def execute_batch(batch: InfrahubBatch) -> None:
-    """Executes a batch and provides feedback for each task."""
+async def execute_batch(batch: InfrahubBatch) -> int:
+    """Executes a batch and provides feedback for each task.
+
+    The batch is created with ``return_exceptions=True``, so a failing task is handed
+    back as a result rather than raised. The count of those failures is returned so
+    callers can report the real outcome instead of assuming success.
+
+    Args:
+        batch: The batch to execute.
+
+    Returns:
+        The number of tasks that failed.
+    """
+    nbr_errors = 0
     async for node, result in batch.execute():
+        if isinstance(result, Exception):
+            nbr_errors += 1
+            st.error(f"Task execution failed for {node} due to GraphQL error: {result}")
+            continue
         try:
-            if isinstance(result, Exception):
-                st.error(f"Task execution failed for {node} due to GraphQL error: {result}")
-            else:
-                object_reference = None
-                if node.hfid:
-                    object_reference = node.get_human_friendly_id_as_string()
-                elif node._schema.default_filter:
-                    # DEPRECATED
-                    pass
-                if object_reference:
-                    st.success(f"Created: [{node._schema.kind}] '{object_reference}'")
-                else:
-                    st.success(f"Created: [{node._schema.kind}] '{node.id}'")
+            report_saved_node(node=node)
         except Exception as exc:  # pylint: disable=broad-exception-caught
+            nbr_errors += 1
             st.error(f"Task execution failed due to unexpected error: {exc}")
+
+    return nbr_errors
 
 
 async def get_version_async(client: InfrahubClient) -> str:
@@ -378,7 +431,7 @@ async def check_reachability_async(client: InfrahubClient) -> bool:
 
 
 @run_async
-async def fetch_schema(branch: str | None = None) -> dict[str, MainSchemaTypes] | None:
+async def fetch_schema(branch: str | None = None) -> dict[str, MainSchemaTypesAPI] | None:
     """Fetch schema from Infrahub."""
     client: InfrahubClient = await get_client_async()
     if await check_reachability_async(client=client):
@@ -399,9 +452,7 @@ async def run_gql_query(query: str, branch: str | None = None) -> dict[str, Any]
 
 
 @run_async
-async def load_schema(
-    branch: str, schemas: list[dict] | None = None, address: str | None = None
-) -> SchemaLoadResponse | None:
+async def load_schema(branch: str, schemas: list[dict], address: str | None = None) -> SchemaLoadResponse | None:
     """Load schemas into Infrahub.
 
     Args:
@@ -419,7 +470,7 @@ async def load_schema(
 
 
 @run_async
-async def check_schema(branch: str, schemas: list[dict] | None = None) -> SchemaCheckResponse | None:
+async def check_schema(branch: str, schemas: list[dict]) -> SchemaCheckResponse | None:
     client: InfrahubClient = await get_client_async()
     if await check_reachability_async(client=client):
         success, response = await client.schema.check(schemas=schemas, branch=branch)
@@ -451,8 +502,8 @@ async def get_objects_as_df(
     kind: str,
     include_id: bool = True,
     branch: str | None = "main",
-    populate_store: bool | None = True,
-    prefetch_relationships: bool | None = True,
+    populate_store: bool = True,
+    prefetch_relationships: bool = True,
 ) -> pd.DataFrame | None:
     client: InfrahubClient = await get_client_async()
     if not await check_reachability_async(client=client):

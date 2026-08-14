@@ -161,14 +161,13 @@ menu_with_redirect()
 
 yaml_buffer = generate_yaml(st.session_state.messages)
 
-if st.sidebar.download_button(
+st.sidebar.download_button(
     label="Export Conversation",
     data=yaml_buffer,
     file_name=f"schema_generator_log_{datetime.datetime.now(tz=datetime.timezone.utc)}.md",
     mime="text/markdown",
     disabled=buttons_disabled,
-):
-    pass
+)
 
 
 if st.sidebar.button("New Chat", disabled=buttons_disabled):

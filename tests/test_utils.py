@@ -20,6 +20,13 @@ class TestIsUuid:
         assert is_uuid("") is False
         assert is_uuid("550e8400-e29b-41d4-a716") is False  # Too short
 
+    def test_non_string_input(self):
+        """Test that non-string values are reported as not a UUID, not raised on."""
+        assert is_uuid(42) is False
+        assert is_uuid(1.5) is False
+        assert is_uuid(None) is False
+        assert is_uuid(["550e8400-e29b-41d4-a716-446655440000"]) is False
+
 
 class TestParseHfid:
     """Test parse_hfid function."""

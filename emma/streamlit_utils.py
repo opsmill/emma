@@ -124,14 +124,13 @@ def ensure_infrahub_address_and_branch() -> None:
         try:
             client = asyncio.run(get_client_async(address=address))
             is_reachable = asyncio.run(check_reachability_async(client=client))
-
-            if not is_reachable:
-                handle_reachability_error()
-                input_infrahub_address()
-                st.stop()
-
         except ValueError as e:
             st.session_state.infrahub_error_message = str(e)
+            handle_reachability_error()
+            input_infrahub_address()
+            st.stop()
+
+        if not is_reachable:
             handle_reachability_error()
             input_infrahub_address()
             st.stop()
