@@ -5,7 +5,6 @@ import re
 
 import streamlit as st
 from infrahub_sdk.exceptions import GraphQLError
-from infrahub_sdk.jinja2 import identify_faulty_jinja_code
 from jinja2 import Template, TemplateSyntaxError
 from langchain_community.agents.openai_assistant import OpenAIAssistantV2Runnable
 from openai import OpenAI
@@ -251,8 +250,9 @@ Here's the rendered output:
 Want to download the template? Or refine it?"""
 
         except TemplateSyntaxError as e:
-            # Handle Jinja2 template syntax errors
-            st.session_state.template_errors = identify_faulty_jinja_code(e)
+            # A syntax error is raised while parsing the template, so there is no render
+            # traceback to pick frames out of; the exception carries the line itself.
+            st.session_state.template_errors = f"Line {e.lineno}: {e.message}"
 
             message = (
                 "Hmm, looks like we encountered a problem while rendering the template:\n\n"

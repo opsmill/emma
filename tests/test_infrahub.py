@@ -6,8 +6,15 @@ from unittest.mock import AsyncMock, MagicMock
 import httpx
 import pytest
 from infrahub_sdk.exceptions import GraphQLError
+from infrahub_sdk.node import InfrahubNode
 
-from emma.infrahub import execute_batch, get_version_async, run_gql_query
+from emma.infrahub import (
+    describe_related_node,
+    execute_batch,
+    get_node_from_store,
+    get_version_async,
+    run_gql_query,
+)
 
 
 def make_node(kind: str = "LabSite", hfid=None, node_id: str = "abc123") -> MagicMock:
@@ -183,3 +190,57 @@ class TestExecuteBatch:
 
         assert asyncio.run(execute_batch.__wrapped__(batch=batch)) == 0
         assert "xyz789" in mock_st.success.call_args[0][0]
+
+
+class TestDescribeRelatedNode:
+    """Test describe_related_node function."""
+
+    def test_prefers_human_friendly_id(self):
+        """Test that a node with an HFID is described by it."""
+        node = make_node(hfid=["rtp1"])
+
+        assert describe_related_node(related_node=node, fallback_id="id-1") == "rtp1"
+
+    def test_falls_back_to_node_id(self):
+        """Test that a node without an HFID is described by its own id."""
+        node = make_node(hfid=None, node_id="node-9")
+
+        assert describe_related_node(related_node=node, fallback_id="id-1") == "node-9"
+
+    def test_falls_back_to_given_id_when_node_missing(self):
+        """Test that a missing node falls back to the id we already had.
+
+        The store lookup is best-effort, so this used to dereference None.
+        """
+        assert describe_related_node(related_node=None, fallback_id="id-1") == "id-1"
+
+    def test_returns_none_when_nothing_is_known(self):
+        """Test that no node and no id yields None rather than raising."""
+        assert describe_related_node(related_node=None, fallback_id=None) is None
+
+
+class TestGetNodeFromStore:
+    """Test get_node_from_store function."""
+
+    def test_returns_stored_node(self):
+        """Test that a hit in the store is returned."""
+        stored = MagicMock(spec=InfrahubNode)
+        obj = MagicMock()
+        obj._client.store.get.return_value = stored
+
+        assert get_node_from_store(obj=obj, peer_id="abc") is stored
+        obj._client.store.get.assert_called_once_with(key="abc", raise_when_missing=False)
+
+    def test_returns_none_without_a_peer_id(self):
+        """Test that no lookup is attempted when the peer has no id."""
+        obj = MagicMock()
+
+        assert get_node_from_store(obj=obj, peer_id=None) is None
+        obj._client.store.get.assert_not_called()
+
+    def test_returns_none_on_miss(self):
+        """Test that a miss in the store yields None."""
+        obj = MagicMock()
+        obj._client.store.get.return_value = None
+
+        assert get_node_from_store(obj=obj, peer_id="abc") is None
