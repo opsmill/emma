@@ -11,5 +11,8 @@ docs/.docusaurus/
 docs/build/
 docs/node_modules/
 docs/README.md
+# towncrier fragments are prose snippets spliced into CHANGELOG.md, not documents,
+# so they cannot carry a top-level heading of their own.
+emma/changelog.d/
 node_modules/
 schema-library/
