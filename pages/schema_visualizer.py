@@ -1,7 +1,7 @@
 from typing import List
 
 import streamlit as st
-from infrahub_sdk.schema import GenericSchema, NodeSchema
+from infrahub_sdk.schema import GenericSchemaAPI, NodeSchemaAPI
 from streamlit_flow import streamlit_flow
 from streamlit_flow.elements import StreamlitFlowEdge, StreamlitFlowNode
 from streamlit_flow.layouts import LayeredLayout
@@ -16,13 +16,13 @@ st.markdown("# Schema Visualizer")
 menu_with_redirect()
 
 
-def visualize_schema_flow(generics: List[GenericSchema], nodes: List[NodeSchema], key: str) -> str:
+def visualize_schema_flow(generics: List[GenericSchemaAPI], nodes: List[NodeSchemaAPI], key: str) -> str:
     """
     Visualize the schema using Streamlit Flow.
 
     Parameters:
-        generics (List[GenericSchema]): List of generic schema items.
-        nodes (List[NodeSchema]): List of node schema items.
+        generics (List[GenericSchemaAPI]): List of generic schema items.
+        nodes (List[NodeSchemaAPI]): List of node schema items.
         key (str): Unique key for the Streamlit Flow component.
 
     Returns:
@@ -104,14 +104,14 @@ def visualize_schema_flow(generics: List[GenericSchema], nodes: List[NodeSchema]
     return str(selected_id) if selected_id else ""
 
 
-def display_node_info(selected_id: str, generics: List[GenericSchema], nodes: List[NodeSchema]) -> None:
+def display_node_info(selected_id: str, generics: List[GenericSchemaAPI], nodes: List[NodeSchemaAPI]) -> None:
     """
     Display detailed information about the selected node.
 
     Parameters:
         selected_id (str): The ID of the selected node.
-        generics (List[GenericSchema]): List of generic schema items.
-        nodes (List[NodeSchema]): List of node schema items.
+        generics (List[GenericSchemaAPI]): List of generic schema items.
+        nodes (List[NodeSchemaAPI]): List of node schema items.
     """
     node = next((item for item in generics + nodes if f"{item.namespace}{item.name}" == selected_id), None)
     if node:
@@ -153,8 +153,11 @@ if not infrahub_schema:
 
 else:
     # Process schema data to separate Generics and Nodes
-    _generics = [item for item in infrahub_schema.values() if isinstance(item, GenericSchema)]
-    _nodes = [item for item in infrahub_schema.values() if isinstance(item, NodeSchema)]
+    # get_cached_schema returns the API flavour of the schema models, so these have
+    # to be matched against GenericSchemaAPI/NodeSchemaAPI rather than the
+    # definition models, which never match and left the graph empty.
+    _generics = [item for item in infrahub_schema.values() if isinstance(item, GenericSchemaAPI)]
+    _nodes = [item for item in infrahub_schema.values() if isinstance(item, NodeSchemaAPI)]
 
     # Create a Tab for "All Nodes" So if we want more Tab (i.e per Namespace) we could
     tabs = st.tabs(["All Nodes"])

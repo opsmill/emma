@@ -1,13 +1,22 @@
 import os
 import uuid
-from typing import List
+from typing import Any, List
 
 
-def is_uuid(value: str) -> bool:
+def is_uuid(value: Any) -> bool:
+    """Check whether a value is a UUID.
+
+    Args:
+        value: The value to check. Non-string input (a number parsed out of a CSV
+            cell, for instance) is simply not a UUID rather than an error.
+
+    Returns:
+        True if the value parses as a UUID.
+    """
     try:
         uuid.UUID(value)
         return True
-    except ValueError:
+    except (AttributeError, TypeError, ValueError):
         return False
 
 

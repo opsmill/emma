@@ -1,4 +1,4 @@
-"""Tests for get_version_async and run_gql_query in emma.infrahub."""
+"""Tests for get_version_async, run_gql_query and execute_batch in emma.infrahub."""
 
 import asyncio
 from unittest.mock import AsyncMock, MagicMock
@@ -7,7 +7,31 @@ import httpx
 import pytest
 from infrahub_sdk.exceptions import GraphQLError
 
-from emma.infrahub import get_version_async, run_gql_query
+from emma.infrahub import execute_batch, get_version_async, run_gql_query
+
+
+def make_node(kind: str = "LabSite", hfid=None, node_id: str = "abc123") -> MagicMock:
+    """Build a stand-in for an InfrahubNode as execute_batch consumes it."""
+    node = MagicMock()
+    node.hfid = hfid
+    node.id = node_id
+    node.get_human_friendly_id_as_string.return_value = "__".join(hfid) if hfid else ""
+    node._schema.kind = kind
+    node._schema.default_filter = None
+    return node
+
+
+def make_batch(results: list) -> MagicMock:
+    """Build a stand-in batch that yields the given (node, result) pairs."""
+
+    async def _execute():
+        for node, result in results:
+            yield node, result
+
+    batch = MagicMock()
+    batch.execute = _execute
+    batch.num_tasks = len(results)
+    return batch
 
 
 class TestGetVersionAsync:
@@ -108,3 +132,54 @@ class TestRunGqlQuery:
         result = asyncio.run(run_gql_query.__wrapped__("{ Q }"))
 
         assert result == {}
+
+
+class TestExecuteBatch:
+    """Test execute_batch function."""
+
+    def test_returns_zero_when_every_task_succeeds(self, monkeypatch):
+        """Test that a fully successful batch reports no errors."""
+        monkeypatch.setattr("emma.infrahub.st", MagicMock())
+        batch = make_batch([(make_node(hfid=["rtp1"]), "ok"), (make_node(hfid=["sjc2"]), "ok")])
+
+        assert asyncio.run(execute_batch.__wrapped__(batch=batch)) == 0
+
+    def test_counts_failed_tasks(self, monkeypatch):
+        """Test that per-task exceptions are counted rather than reported as success.
+
+        The batch is created with return_exceptions=True, so a failing task is handed
+        back as a result instead of being raised. Those failures used to be displayed
+        but not counted, which made a wholly failed import report success.
+        """
+        mock_st = MagicMock()
+        monkeypatch.setattr("emma.infrahub.st", mock_st)
+        batch = make_batch(
+            [
+                (make_node(hfid=["rtp1"]), "ok"),
+                (make_node(hfid=["RTP-BIG-SITE"]), GraphQLError(errors=[{"message": "regex violation"}])),
+                (make_node(hfid=["lon3"]), GraphQLError(errors=[{"message": "bad choice"}])),
+            ]
+        )
+
+        assert asyncio.run(execute_batch.__wrapped__(batch=batch)) == 2
+        assert mock_st.error.call_count == 2
+        assert mock_st.success.call_count == 1
+
+    def test_counts_unexpected_errors(self, monkeypatch):
+        """Test that an error raised while reporting a task is counted too."""
+        mock_st = MagicMock()
+        monkeypatch.setattr("emma.infrahub.st", mock_st)
+        node = make_node(hfid=["rtp1"])
+        node.get_human_friendly_id_as_string.side_effect = RuntimeError("boom")
+        batch = make_batch([(node, "ok")])
+
+        assert asyncio.run(execute_batch.__wrapped__(batch=batch)) == 1
+
+    def test_reports_node_id_when_no_hfid(self, monkeypatch):
+        """Test that a node without an HFID is reported by id."""
+        mock_st = MagicMock()
+        monkeypatch.setattr("emma.infrahub.st", mock_st)
+        batch = make_batch([(make_node(hfid=None, node_id="xyz789"), "ok")])
+
+        assert asyncio.run(execute_batch.__wrapped__(batch=batch)) == 0
+        assert "xyz789" in mock_st.success.call_args[0][0]

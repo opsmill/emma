@@ -26,7 +26,9 @@ The Data Importer allows you to upload CSV files and map their columns to Infrah
 
 Ensure your CSV file:
 
-- **Has column headers** that roughly match your schema attributes
+- **Has column headers** that match the names of the attributes and relationships in
+  your schema. Columns are matched by name, so a header that matches nothing is
+  reported and ignored. Surrounding whitespace in a header or a value is stripped.
 - **Contains clean data** with consistent formatting
 - **Includes required fields** as defined by your schema
 - **Uses consistent values** for relationships and enums
@@ -39,57 +41,79 @@ switch-01,Cisco 3850,FCW2140L0EF,datacenter-1,192.168.1.10,active
 switch-02,Cisco 3850,FCW2140L0EG,datacenter-1,192.168.1.11,active
 ```
 
-#### Step 2: Upload and map
+#### Step 2: Upload
 
-1. **Select your CSV file** using the file upload interface
-2. **Choose the target schema** from your Infrahub instance
-3. **Map CSV columns** to schema attributes using the dropdown selectors
-4. **Configure relationship handling** for foreign key references
-5. **Set data validation options** like duplicate handling
+1. **Choose the target kind** from your Infrahub instance
+2. **Select your CSV file** using the file upload interface
+
+Columns are matched to the schema by name; there is no manual mapping step.
 
 #### Step 3: Preview and validate
 
-Emma provides a preview showing:
+Emma checks the file against the schema and shows what it found:
 
-- **Mapped data** - How your CSV data will appear in Infrahub
-- **Validation results** - Any data quality issues or constraint violations
-- **Relationship resolution** - How foreign keys will be resolved
-- **Import statistics** - Number of records to be created/updated
+- **Errors** stop the import. A missing mandatory column, or a relationship reference
+  that matches no object, is reported against the line it came from.
+- **Warnings** do not stop the import. A column that matches nothing in the schema is
+  reported and left out of the data sent to Infrahub.
+
+If there are no errors, the resolved rows are shown in an editable table, so values can
+be corrected before the import runs.
 
 #### Step 4: execute import
 
 After reviewing the preview:
 
-1. **Confirm the import** if everything looks correct
-2. **Monitor progress** through the real-time status updates
-3. **Review results** including success/failure counts and any error details
+1. **Confirm the import** by selecting **Import Data**
+2. **Review the results**, which name each object created and each row rejected by
+   Infrahub, followed by a count of how many of the rows were imported
 
 ### Advanced import features
 
 <Tabs>
 <TabItem value="relationships" label="Relationship Handling" default>
 
-Emma intelligently handles relationships between objects:
+A column that matches a relationship in the schema references an object that already
+exists in Infrahub. Emma resolves every reference before the import runs, and reports
+the line number of any reference it cannot match.
 
-**By Name/ID Lookup:**
+**Reference by human-friendly ID:**
 
-- Reference existing objects by name or ID
-- Automatic resolution of relationship targets
-- Error reporting for unresolved references
-
-**Nested Object Creation:**
-
-- Create related objects inline during import
-- Support for hierarchical data structures
-- Maintains referential integrity
-
-**Example:**
+Emma looks the value up under the kind the relationship points at, so a `site`
+relationship pointing at `LabSite` resolves `rtp1` to the `LabSite` named `rtp1`:
 
 ```csv
-device_name,interface_name,ip_address,vlan_name
-switch-01,GigabitEthernet1/0/1,192.168.1.10,production
-switch-01,GigabitEthernet1/0/2,192.168.1.11,management
+site,name,height_u
+rtp1,R101,42
+sjc2,R201,45
 ```
+
+If the target's human-friendly ID has several components, join them with `__`: a rack
+identified by its site and its own name is written `rtp1__R101`.
+
+A UUID is also accepted, and is used as-is with no lookup.
+
+**Reference by kind and human-friendly ID:**
+
+Prefixing the value with a kind (`LabSite__rtp1`) overrides the kind declared by the
+relationship. This is required when the relationship points at a generic, because the
+concrete kind of the target cannot be inferred:
+
+```csv
+name,endpoint
+cable-01,LabInterface__switch-01__Ethernet1
+```
+
+**Cardinality-many relationships:**
+
+Write a list, and each entry is resolved in turn:
+
+```csv
+name,tags
+switch-01,"['production', 'edge']"
+```
+
+An empty cell, `[]`, or `""` leaves the relationship unset.
 
 </TabItem>
 <TabItem value="validation" label="Data Validation">
