@@ -10,18 +10,14 @@
 - **Version Control**: Natively integrated into the graph database which opens up some new capabilities like branching, diffing, and merging data directly in the database.
 - **Unified Storage**: By combining a graph database and git, Infrahub stores data and code needed to manage the infrastructure.
 
-## Emma
+## Emma (deprecated)
 
-Emma is an experimental agent designed to help you interact with Infrahub.
+Emma was an experimental agent designed to help you interact with Infrahub. It has always been a place to experiment, and most of the capabilities it tried out have since matured into proper projects in the Infrahub ecosystem, so Emma is now deprecated. This repository stays online for reference only.
 
-Currently, Emma can help you to:
+- Loading schemas through a UI is now covered by the [Infrahub Marketplace](https://marketplace.infrahub.app/).
+- Importing CSV data is now covered by the [`infrahub-importing-data`](https://github.com/opsmill/infrahub-skills/tree/main/skills/infrahub-importing-data) skill.
+- Building schemas from a description is now covered by the [`infrahub-managing-schemas`](https://github.com/opsmill/infrahub-skills/tree/main/skills/infrahub-managing-schemas) skill.
 
-- Import CSV Data into Infrahub
-- Export Data from Infrahub in CSV format
-- Build, Load, and Visualize the Infrahub schema
+Both skills are part of [Infrahub AI Skills](https://github.com/opsmill/infrahub-skills), installable with `npx skills add opsmill/infrahub-skills`.
 
-![Home page](static/home_page.png)
-
-## Running Emma
-
-Documentation for using Emma is available in the [Emma documentation](https://docs.infrahub.app/emma/).
+See the [deprecation notice](https://docs.infrahub.app/emma/) for details.
